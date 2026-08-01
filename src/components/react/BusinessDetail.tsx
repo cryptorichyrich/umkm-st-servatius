@@ -128,7 +128,7 @@ export default function BusinessDetail({ slug }: Props) {
   }
 
   const waLink = business.whatsapp
-    ? `https://wa.me/${business.whatsapp.replace(/[^0-9]/g, '')}?text=Halo, saya tertarik dengan ${encodeURIComponent(business.name)} yang saya lihat di Direktori UMKM Paroki.`
+    ? `https://wa.me/${business.whatsapp.replace(/[^0-9]/g, '')}?text=Halo, saya tertarik dengan ${encodeURIComponent(business.name)} yang saya lihat di Direktori UMKM St. Servatius.`
     : null;
 
   const allImages = [business.logo_url, ...(business.images || []).map((img) => img.image_url)].filter(
@@ -303,7 +303,7 @@ export default function BusinessDetail({ slug }: Props) {
 
       {/* CTA */}
       <div className="mt-8 rounded-2xl bg-paroki-50 p-6 text-center">
-        <p className="text-paroki-700">Punya usaha juga? Daftarkan di Direktori UMKM Paroki!</p>
+        <p className="text-paroki-700">Punya usaha juga? Daftarkan di Direktori UMKM St. Servatius!</p>
         <a
           href="/daftar"
           className="mt-3 inline-block rounded-lg bg-paroki-600 px-6 py-2.5 font-semibold text-white hover:bg-paroki-700"
