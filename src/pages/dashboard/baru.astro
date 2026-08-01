@@ -1,0 +1,10 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BusinessForm from '../../components/react/BusinessForm.tsx';
+
+const title = 'Tambah Usaha';
+---
+
+<BaseLayout title={title}>
+  <BusinessForm client:load />
+</BaseLayout>

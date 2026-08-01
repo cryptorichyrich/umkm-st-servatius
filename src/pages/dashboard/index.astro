@@ -1,0 +1,10 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import DashboardApp from '../../components/react/DashboardApp.tsx';
+
+const title = 'Dashboard';
+---
+
+<BaseLayout title={title}>
+  <DashboardApp client:load />
+</BaseLayout>

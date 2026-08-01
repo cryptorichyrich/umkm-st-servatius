@@ -1,0 +1,65 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BusinessGrid from '../../components/react/BusinessGrid.tsx';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+
+export async function getStaticPaths() {
+  // Default categories (fallback when Supabase not configured)
+  const defaultCategories = [
+    { id: '1', name: 'Kuliner & Minuman', slug: 'kuliner-minuman', icon: '🍜', sort_order: 1 },
+    { id: '2', name: 'Jasa & Service', slug: 'jasa-service', icon: '🔧', sort_order: 2 },
+    { id: '3', name: 'Kerajinan Tangan', slug: 'kerajinan-tangan', icon: '✂️', sort_order: 3 },
+    { id: '4', name: 'Fashion & Pakaian', slug: 'fashion-pakaian', icon: '👕', sort_order: 4 },
+    { id: '5', name: 'Kecantikan & Kesehatan', slug: 'kecantikan-kesehatan', icon: '💄', sort_order: 5 },
+    { id: '6', name: 'Elektronik & Gadget', slug: 'elektronik-gadget', icon: '📱', sort_order: 6 },
+    { id: '7', name: 'Pendidikan & Les', slug: 'pendidikan-les', icon: '📚', sort_order: 7 },
+    { id: '8', name: 'Pertanian & Peternakan', slug: 'pertanian-peternakan', icon: '🌱', sort_order: 8 },
+    { id: '9', name: 'Otomotif', slug: 'otomotif', icon: '🚗', sort_order: 9 },
+    { id: '10', name: 'Lainnya', slug: 'lainnya', icon: '📦', sort_order: 10 },
+  ];
+
+  if (!isSupabaseConfigured) {
+    return defaultCategories.map((cat) => ({
+      params: { slug: cat.slug },
+      props: { category: cat },
+    }));
+  }
+
+  const { data: categories } = await supabase
+    .from('categories')
+    .select('*')
+    .order('sort_order');
+
+  return (categories || defaultCategories).map((cat) => ({
+    params: { slug: cat.slug },
+    props: { category: cat },
+  }));
+}
+
+const { category } = Astro.props;
+---
+
+<BaseLayout
+  title={`${category.icon} ${category.name}`}
+  description={`Usaha ${category.name} dari umat paroki.`}
+>
+  <section class="mx-auto max-w-6xl px-4 py-8">
+    <nav class="mb-4 text-sm text-paroki-500">
+      <a href="/" class="hover:text-paroki-700">Home</a>
+      <span class="mx-2">/</span>
+      <a href="/direktori" class="hover:text-paroki-700">Direktori</a>
+      <span class="mx-2">/</span>
+      <span class="text-paroki-700">{category.name}</span>
+    </nav>
+
+    <div class="mb-8 flex items-center gap-3">
+      <span class="text-4xl">{category.icon}</span>
+      <div>
+        <h1 class="font-serif text-3xl font-bold text-paroki-900">{category.name}</h1>
+        <p class="mt-1 text-paroki-600">Jelajahi usaha dalam kategori ini.</p>
+      </div>
+    </div>
+
+    <BusinessGrid client:load mode="category" categoryId={category.id} limit={12} />
+  </section>
+</BaseLayout>

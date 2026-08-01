@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+/* Custom theme tokens */
+@theme {
+  --color-paroki-50: #fdf8f3;
+  --color-paroki-100: #f9ecd9;
+  --color-paroki-200: #f2d4ad;
+  --color-paroki-300: #e9b67d;
+  --color-paroki-400: #df944a;
+  --color-paroki-500: #d97a2c;
+  --color-paroki-600: #c76223;
+  --color-paroki-700: #a54a1f;
+  --color-paroki-800: #843c20;
+  --color-paroki-900: #6b3320;
+  --color-paroki-950: #3b1910;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Lora', Georgia, serif;
+}
+
+/* Base styles */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-paroki-50 text-paroki-950 antialiased;
+  font-family: var(--font-sans);
+}
+
+/* Smooth fade-in for dynamic content */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}

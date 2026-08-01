@@ -1,0 +1,10 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminPanel from '../../components/react/AdminPanel.tsx';
+
+const title = 'Admin Panel';
+---
+
+<BaseLayout title={title}>
+  <AdminPanel client:load />
+</BaseLayout>
