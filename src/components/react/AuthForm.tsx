@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Store, UserCheck, Check } from 'lucide-react';
 
 interface Props {
   mode: 'login' | 'register';
@@ -9,7 +8,6 @@ interface Props {
 export default function AuthForm({ mode }: Props) {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  const [selectedRole, setSelectedRole] = useState<'owner' | 'member'>('member');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -31,21 +29,20 @@ export default function AuthForm({ mode }: Props) {
             data: {
               full_name: fullName,
               phone,
-              role: selectedRole,
+              role: 'member',
             },
           },
         });
         if (error) throw error;
 
-        // If signup succeeded and we have a user, upsert profile with role + verification_type
         if (data.user) {
           await supabase.from('profiles').upsert({
             id: data.user.id,
             full_name: fullName,
             phone,
-            role: selectedRole,
-            verification_status: 'pending',
-            verification_type: selectedRole === 'owner' ? 'umkm' : 'member',
+            role: 'member',
+            verification_status: 'unverified',
+            verification_type: '',
           });
         }
       } else {
@@ -82,58 +79,6 @@ export default function AuthForm({ mode }: Props) {
               onChange={(e) => setPhone(e.target.value)} placeholder="08xxxxxxxxxx"
               className={inputClass} />
           </div>
-
-          {/* Role Selection */}
-          <div>
-            <label className={labelClass}>Daftar sebagai</label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setSelectedRole('member')}
-                className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 text-center transition ${
-                  selectedRole === 'member'
-                    ? 'border-gold-500 bg-gold-50'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
-                }`}
-              >
-                <span className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                  selectedRole === 'member' ? 'bg-gold-500 text-white' : 'bg-gray-100 text-gray-500'
-                }`}>
-                  <UserCheck className="h-5 w-5" />
-                </span>
-                <span className="text-sm font-bold text-ink">Anggota Umat</span>
-                <span className="text-[11px] leading-tight text-gray-500">Verifikasi anggota paroki untuk beri ulasan</span>
-                {selectedRole === 'member' && (
-                  <span className="flex items-center gap-0.5 text-[11px] font-bold text-gold-600">
-                    <Check className="h-3 w-3" /> Dipilih
-                  </span>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedRole('owner')}
-                className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 text-center transition ${
-                  selectedRole === 'owner'
-                    ? 'border-paroki-600 bg-paroki-50'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
-                }`}
-              >
-                <span className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                  selectedRole === 'owner' ? 'bg-paroki-600 text-white' : 'bg-gray-100 text-gray-500'
-                }`}>
-                  <Store className="h-5 w-5" />
-                </span>
-                <span className="text-sm font-bold text-ink">Pelaku UMKM</span>
-                <span className="text-[11px] leading-tight text-gray-500">Daftarkan usaha, perlu verifikasi bisnis</span>
-                {selectedRole === 'owner' && (
-                  <span className="flex items-center gap-0.5 text-[11px] font-bold text-paroki-700">
-                    <Check className="h-3 w-3" /> Dipilih
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
         </>
       )}
 
@@ -162,9 +107,7 @@ export default function AuthForm({ mode }: Props) {
 
       {isRegister && (
         <p className="rounded-lg bg-paroki-50 px-4 py-3 text-xs leading-relaxed text-paroki-700">
-          {selectedRole === 'owner'
-            ? 'Setelah daftar, lengkapi profil usaha Anda. Admin akan memverifikasi bisnis Anda sebelum tampil di direktori.'
-            : 'Setelah daftar, admin akan memverifikasi keanggotaan paroki Anda. Setelah terverifikasi, Anda dapat memberikan ulasan.'}
+          Setelah mendaftar, lakukan verifikasi anggota paroki dengan mengunggah foto KK Gereja. Setelah terverifikasi, Anda dapat memberikan ulasan dan mendaftarkan usaha.
         </p>
       )}
     </form>
