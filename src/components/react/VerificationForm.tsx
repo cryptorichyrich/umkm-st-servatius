@@ -534,6 +534,10 @@ export default function VerificationForm({
             onDragOver(e);
           }}
           onDragLeave={onDragLeave}
+          onClick={() => {
+            const input = document.getElementById(`upload-${field}`) as HTMLInputElement | null;
+            input?.click();
+          }}
           className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center transition ${
             dragOver
               ? 'border-paroki-500 bg-paroki-50'

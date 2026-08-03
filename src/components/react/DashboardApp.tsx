@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, type Business, type Profile, type BusinessStatus, type Product, type Favorite } from '../../lib/supabase';
 import ProductForm from './ProductForm';
-import VerificationForm from './VerificationForm';
 import FavoriteButton from './FavoriteButton';
 import ViewCounter from './ViewCounter';
 
@@ -87,20 +86,20 @@ function VerificationBadge({ type, status }: { type: string; status: string }) {
 }
 
 // ─────────────────────────────────────────────
-// Tab button
+// Tab link (URL-based navigation)
 // ─────────────────────────────────────────────
-function TabButton({
+function TabLink({
+  href,
   active,
-  onClick,
   children,
 }: {
+  href: string;
   active: boolean;
-  onClick: () => void;
   children: React.ReactNode;
 }) {
   return (
-    <button
-      onClick={onClick}
+    <a
+      href={href}
       className={`whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold transition ${
         active
           ? 'border-paroki-600 text-paroki-700'
@@ -108,25 +107,27 @@ function TabButton({
       }`}
     >
       {children}
-    </button>
+    </a>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
-export default function DashboardApp() {
+interface DashboardAppProps {
+  initialTab?: 'usaha' | 'produk' | 'verifikasi' | 'favorit';
+}
+
+export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps) {
+  const activeTab: TabKey = initialTab;
+
   const [profile, setProfile] = useState<Profile | null>(null);
   const [businesses, setBusinesses] = useState<BusinessRow[]>([]);
   const [products, setProducts] = useState<Record<string, ProductRow[]>>({});
   const [favorites, setFavorites] = useState<{ businesses: FavoriteBusinessRow[]; products: FavoriteProductRow[] }>({ businesses: [], products: [] });
-  const [activeTab, setActiveTab] = useState<TabKey>('usaha');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
-
-  // Track which tabs have been loaded (lazy loading)
-  const [loadedTabs, setLoadedTabs] = useState<Set<TabKey>>(new Set(['usaha']));
 
   // Product tab state
   const [productsLoading, setProductsLoading] = useState(false);
@@ -283,26 +284,19 @@ export default function DashboardApp() {
   }, []);
 
   // ─────────────────────────────────────────────
-  // Tab switching with lazy loading
+  // Lazy-load tab data based on initialTab prop
   // ─────────────────────────────────────────────
-  const handleTabChange = useCallback(
-    (tab: TabKey) => {
-      setActiveTab(tab);
+  useEffect(() => {
+    if (activeTab === 'favorit') {
+      fetchFavorites();
+    }
+  }, [activeTab, fetchFavorites]);
 
-      // Lazy load data when tab is first activated
-      if (!loadedTabs.has(tab)) {
-        setLoadedTabs((prev) => new Set(prev).add(tab));
-
-        if (tab === 'produk') {
-          fetchProducts();
-        }
-        if (tab === 'favorit') {
-          fetchFavorites();
-        }
-      }
-    },
-    [loadedTabs, fetchProducts, fetchFavorites],
-  );
+  useEffect(() => {
+    if (activeTab === 'produk') {
+      fetchProducts();
+    }
+  }, [activeTab, fetchProducts]);
 
   // ─────────────────────────────────────────────
   // Business handlers (preserved from original)
@@ -444,25 +438,6 @@ export default function DashboardApp() {
     [],
   );
 
-  // ─────────────────────────────────────────────
-  // Verification request submitted callback
-  // ─────────────────────────────────────────────
-  const handleVerificationSubmitted = useCallback(() => {
-    // Reload profile to reflect pending status
-    (async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) return;
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-      if (data) setProfile(data as Profile);
-    })();
-  }, []);
-
   // Derived values
   const isUmkmVerified =
     profile?.verification_status === 'verified' && profile?.verification_type === 'umkm';
@@ -530,18 +505,18 @@ export default function DashboardApp() {
       {/* ── Tab Bar ── */}
       <div className="mb-6 overflow-x-auto border-b border-paroki-200">
         <div className="flex">
-          <TabButton active={activeTab === 'usaha'} onClick={() => handleTabChange('usaha')}>
+          <TabLink href="/dashboard" active={activeTab === 'usaha'}>
             Usaha Saya
-          </TabButton>
-          <TabButton active={activeTab === 'produk'} onClick={() => handleTabChange('produk')}>
+          </TabLink>
+          <TabLink href="/dashboard/produk" active={activeTab === 'produk'}>
             Produk Saya
-          </TabButton>
-          <TabButton active={activeTab === 'verifikasi'} onClick={() => handleTabChange('verifikasi')}>
+          </TabLink>
+          <TabLink href="/dashboard/verifikasi" active={activeTab === 'verifikasi'}>
             Verifikasi
-          </TabButton>
-          <TabButton active={activeTab === 'favorit'} onClick={() => handleTabChange('favorit')}>
+          </TabLink>
+          <TabLink href="/dashboard/favorit" active={activeTab === 'favorit'}>
             Favorit Saya
-          </TabButton>
+          </TabLink>
         </div>
       </div>
 
@@ -709,12 +684,12 @@ export default function DashboardApp() {
               <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
               <p className="text-sm text-amber-800">
                 Anda perlu verifikasi UMKM untuk menambah produk.{' '}
-                <button
-                  onClick={() => handleTabChange('verifikasi')}
+                <a
+                  href="/dashboard/verifikasi"
                   className="font-semibold underline underline-offset-2 hover:text-amber-900"
                 >
                   Lihat tab Verifikasi.
-                </button>
+                </a>
               </p>
             </div>
           )}
@@ -885,15 +860,16 @@ export default function DashboardApp() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════
-          TAB 3: VERIFIKASI
+          TAB 3: VERIFIKASI — redirect to dedicated page
       ═══════════════════════════════════════════════════════════ */}
       {activeTab === 'verifikasi' && (
-        <div className="overflow-hidden">
-          <VerificationForm
-            currentStatus={profile?.verification_status || 'unverified'}
-            currentType={profile?.verification_type || ''}
-            onRequestSubmitted={handleVerificationSubmitted}
-          />
+        <div className="py-10 text-center">
+          <a
+            href="/dashboard/verifikasi"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-paroki-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-paroki-700"
+          >
+            Ke Halaman Verifikasi →
+          </a>
         </div>
       )}
 
