@@ -84,9 +84,9 @@ const ASSIGN_LABELS: Record<AssignmentStatus, string> = {
 
 const ARAH_ORDER: TableArah[] = ["selatan", "timur", "utara"];
 const ARAH_LABELS: Record<TableArah, string> = {
-  selatan: "Selatan",
-  timur: "Timur",
-  utara: "Utara",
+  selatan: "Menghadap Selatan",
+  timur: "Menghadap Timur",
+  utara: "Menghadap Utara",
   barat: "Barat",
 };
 
@@ -230,9 +230,9 @@ export default function BazarManager() {
     setForm({
       nama: "",
       tanggal: new Date().toISOString().slice(0, 10),
-      jam_mulai: "08:00",
-      jam_selesai: "16:00",
-      lokasi: "",
+      jam_mulai: "06:00",
+      jam_selesai: "10:00",
+      lokasi: "Halaman parkiran Utara Gereja.",
       deskripsi: "",
       regulasi_url: "",
       banner_pesan: "",
@@ -1331,6 +1331,28 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
     "cancelled",
   ];
 
+  const [pdfList, setPdfList] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadErr, setUploadErr] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase.storage
+        .from("bazar-files")
+        .list("", { sortBy: { column: "created_at", order: "desc" } });
+      if (error || !data) return;
+      const urls = data
+        .filter((f) => f.name.toLowerCase().endsWith(".pdf"))
+        .map((f) => {
+          const { data: pub } = supabase.storage
+            .from("bazar-files")
+            .getPublicUrl(f.name);
+          return pub.publicUrl;
+        });
+      setPdfList(urls);
+    })();
+  }, []);
+
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {/* Nama */}
@@ -1419,7 +1441,7 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
           type="text"
           value={form.lokasi}
           onChange={(e) => setForm((p) => ({ ...p, lokasi: e.target.value }))}
-          placeholder="Halaman Gereja St. Servatius"
+          placeholder="Halaman parkiran Utara Gereja"
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
         />
       </div>
@@ -1440,20 +1462,94 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
         />
       </div>
 
-      {/* Regulasi URL (PDF) */}
+      {/* Regulasi PDF */}
       <div className="sm:col-span-2">
         <label className="mb-1 block text-sm font-medium text-gray-600">
-          📄 Link Regulasi Bazar (PDF)
+          📄 Regulasi Bazar (PDF)
         </label>
-        <input
-          type="url"
-          value={form.regulasi_url}
-          onChange={(e) =>
-            setForm((p) => ({ ...p, regulasi_url: e.target.value }))
-          }
-          placeholder="https://contoh.com/regulasi-bazar.pdf"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
-        />
+
+        {/* Select existing PDF */}
+        {pdfList.length > 0 && (
+          <select
+            value=""
+            onChange={(e) => {
+              if (e.target.value) {
+                setForm((p) => ({ ...p, regulasi_url: e.target.value }));
+              }
+            }}
+            className="mb-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
+          >
+            <option value="">— Pilih dari PDF yang sudah diunggah —</option>
+            {pdfList.map((p) => {
+              const name = p.split("/").pop() || p;
+              return (
+                <option key={p} value={p}>
+                  {decodeURIComponent(name)}
+                </option>
+              );
+            })}
+          </select>
+        )}
+
+        <div className="flex gap-2">
+          {/* Upload button */}
+          <label className="cursor-pointer whitespace-nowrap rounded-lg bg-paroki-50 px-3 py-2 text-sm font-medium text-paroki-700 transition hover:bg-paroki-100">
+            {uploading ? "Mengunggah..." : "⬆ Upload PDF"}
+            <input
+              type="file"
+              accept="application/pdf"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setUploading(true);
+                const fname = `${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
+                const { error: ulErr } = await supabase.storage
+                  .from("bazar-files")
+                  .upload(fname, file, { contentType: "application/pdf" });
+                setUploading(false);
+                if (ulErr) {
+                  setUploadErr("Gagal mengunggah: " + ulErr.message);
+                  return;
+                }
+                const { data: pub } = supabase.storage
+                  .from("bazar-files")
+                  .getPublicUrl(fname);
+                const url = pub.publicUrl;
+                setPdfList((prev) => [...prev, url]);
+                setForm((p) => ({ ...p, regulasi_url: url }));
+              }}
+            />
+          </label>
+
+          {/* Current URL / manual input */}
+          <input
+            type="url"
+            value={form.regulasi_url}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, regulasi_url: e.target.value }))
+            }
+            placeholder="Atau tempel link PDF eksternal..."
+            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
+          />
+        </div>
+
+        {/* Preview link */}
+        {form.regulasi_url && (
+          <a
+            href={form.regulasi_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-paroki-600 hover:underline"
+          >
+            👁 Lihat PDF yang dipilih
+          </a>
+        )}
+
+        {uploadErr && (
+          <p className="mt-1 text-xs text-red-500">{uploadErr}</p>
+        )}
+
         <p className="mt-1 text-xs text-gray-400">
           Peserta wajib membaca dan menyetujui regulasi ini sebelum konfirmasi ikut bazar.
         </p>

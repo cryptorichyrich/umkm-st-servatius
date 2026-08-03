@@ -45,9 +45,9 @@ function formatJam(jam: string | null): string {
 
 const ARAH_ORDER: TableArah[] = ["selatan", "timur", "utara"];
 const ARAH_LABELS: Record<string, string> = {
-  selatan: "Selatan",
-  timur: "Timur",
-  utara: "Utara",
+  selatan: "Menghadap Selatan",
+  timur: "Menghadap Timur",
+  utara: "Menghadap Utara",
   barat: "Barat",
 };
 
