@@ -422,8 +422,8 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
                 className="h-20 w-20 rounded-xl border border-paroki-200 object-cover"
               />
             ) : (
-              <div className="flex h-20 w-20 items-center justify-center rounded-xl border border-dashed border-paroki-300 bg-paroki-50 text-2xl text-paroki-300">
-                📷
+              <div className="flex h-20 w-20 items-center justify-center rounded-lg border border-dashed border-paroki-300 bg-paroki-50 text-paroki-300">
+                <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/></svg>
               </div>
             )}
             <div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase, type Business } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured, type Business, type Product } from '../../lib/supabase';
+import { IconSearch, IconPin, IconStar, IconPhone, IconClock, IconStore, IconPackage, IconArrowLeft, IconArrowRight } from './icons';
 
 interface Props {
   slug: string;
@@ -61,15 +62,34 @@ const demoBusinesses: Record<string, Business> = {
   },
 };
 
+const IG = ({ className = 'h-4 w-4' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+    <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+    <circle cx="12" cy="12" r="4" />
+    <circle cx="17" cy="7" r="0.6" fill="currentColor" />
+  </svg>
+);
+const FB = ({ className = 'h-4 w-4' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M13.5 21v-7h2.3l.4-2.8h-2.7V9.4c0-.8.3-1.3 1.4-1.3h1.4V5.6c-.7-.1-1.4-.1-2.1-.1-2.1 0-3.5 1.2-3.5 3.6v2.1H8.3V14h2.3v7h2.9Z" />
+  </svg>
+);
+const TT = ({ className = 'h-4 w-4' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M14 3h2.6c.3 1.7 1.3 3.2 3.4 3.5v2.6c-1.3 0-2.5-.3-3.5-1v6.2a5.6 5.6 0 1 1-5.6-5.6c.3 0 .6 0 .9.1v2.7a2.9 2.9 0 1 0 2 2.8V3H14Z" />
+  </svg>
+);
+
 export default function BusinessDetail({ slug }: Props) {
   const [business, setBusiness] = useState<Business | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
 
   useEffect(() => {
     (async () => {
-      // Check demo data first
-      if (demoBusinesses[slug]) {
+      // Check demo data first (only when Supabase not configured)
+      if (!isSupabaseConfigured && demoBusinesses[slug]) {
         setBusiness(demoBusinesses[slug]);
         setLoading(false);
         return;
@@ -91,6 +111,15 @@ export default function BusinessDetail({ slug }: Props) {
 
       if (!error && data) {
         setBusiness(data);
+        // Fetch products for this business
+        const { data: prods } = await supabase
+          .from('products')
+          .select('*')
+          .eq('business_id', data.id)
+          .eq('is_available', true)
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: false });
+        setProducts(prods || []);
       }
       setLoading(false);
     })();
@@ -100,7 +129,7 @@ export default function BusinessDetail({ slug }: Props) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-16">
         <div className="animate-pulse space-y-4">
-          <div className="aspect-[16/9] rounded-2xl bg-paroki-100"></div>
+          <div className="aspect-[16/9] rounded-lg bg-paroki-100"></div>
           <div className="h-8 w-2/3 rounded bg-paroki-100"></div>
           <div className="h-4 w-full rounded bg-paroki-100"></div>
           <div className="h-4 w-5/6 rounded bg-paroki-100"></div>
@@ -112,16 +141,19 @@ export default function BusinessDetail({ slug }: Props) {
   if (!business) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-16 text-center">
-        <div className="mb-4 text-6xl">🔍</div>
-        <h2 className="font-serif text-2xl font-bold text-paroki-900">Usaha Tidak Ditemukan</h2>
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-paroki-50 text-paroki-400">
+          <IconSearch className="h-7 w-7" />
+        </div>
+        <h1 className="font-display text-2xl font-bold text-paroki-900">Usaha Tidak Ditemukan</h1>
         <p className="mt-2 text-paroki-600">
           Usaha yang Anda cari mungkin belum terdaftar atau sudah dihapus.
         </p>
         <a
           href="/direktori"
-          className="mt-6 inline-block rounded-lg bg-paroki-600 px-6 py-2.5 font-semibold text-white hover:bg-paroki-700"
+          className="mt-6 inline-flex items-center gap-1.5 rounded-lg bg-paroki-600 px-5 py-2.5 font-semibold text-white transition hover:bg-paroki-700 active:translate-y-px"
         >
-          ← Kembali ke Direktori
+          <IconArrowLeft className="h-4 w-4" />
+          Kembali ke Direktori
         </a>
       </div>
     );
@@ -136,25 +168,25 @@ export default function BusinessDetail({ slug }: Props) {
   );
 
   const socials = [
-    { label: 'Instagram', value: business.instagram, url: business.instagram ? `https://instagram.com/${business.instagram.replace('@', '')}` : null, icon: '📷' },
-    { label: 'Facebook', value: business.facebook, url: business.facebook ? `https://facebook.com/${business.facebook}` : null, icon: '👤' },
-    { label: 'TikTok', value: business.tiktok, url: business.tiktok ? `https://tiktok.com/@${business.tiktok}` : null, icon: '🎵' },
-  ].filter((s) => s.value);
+    { label: 'Instagram', value: business.instagram, url: business.instagram ? `https://instagram.com/${business.instagram.replace('@', '')}` : null, Glyph: IG },
+    { label: 'Facebook', value: business.facebook, url: business.facebook ? `https://facebook.com/${business.facebook}` : null, Glyph: FB },
+    { label: 'TikTok', value: business.tiktok, url: business.tiktok ? `https://tiktok.com/@${business.tiktok}` : null, Glyph: TT },
+  ].filter((s) => s.value) as { label: string; value: string; url: string; Glyph: (p: { className?: string }) => JSX.Element }[];
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       {/* Breadcrumb */}
-      <nav className="mb-4 text-sm text-paroki-500">
-        <a href="/" className="hover:text-paroki-700">Home</a>
-        <span className="mx-2">/</span>
-        <a href="/direktori" className="hover:text-paroki-700">Direktori</a>
-        <span className="mx-2">/</span>
-        <span className="text-paroki-700">{business.name}</span>
+      <nav className="mb-4 flex items-center gap-1.5 text-sm text-paroki-500">
+        <a href="/" className="transition hover:text-paroki-700">Beranda</a>
+        <span>/</span>
+        <a href="/direktori" className="transition hover:text-paroki-700">Direktori</a>
+        <span>/</span>
+        <span className="font-medium text-paroki-700">{business.name}</span>
       </nav>
 
       {/* Hero Image */}
       {allImages.length > 0 ? (
-        <div className="mb-6 overflow-hidden rounded-2xl bg-paroki-100">
+        <div className="mb-6 overflow-hidden rounded-xl bg-paroki-100 shadow-soft">
           <img
             src={allImages[activeImage]}
             alt={business.name}
@@ -162,8 +194,8 @@ export default function BusinessDetail({ slug }: Props) {
           />
         </div>
       ) : (
-        <div className="mb-6 flex aspect-[16/9] items-center justify-center rounded-2xl bg-paroki-100 text-7xl">
-          {business.category?.icon || '📦'}
+        <div className="mb-6 flex aspect-[16/9] items-center justify-center rounded-xl bg-paroki-100 text-paroki-300">
+          <IconStore className="h-20 w-20" />
         </div>
       )}
 
@@ -174,8 +206,8 @@ export default function BusinessDetail({ slug }: Props) {
             <button
               key={i}
               onClick={() => setActiveImage(i)}
-              className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 ${
-                activeImage === i ? 'border-paroki-600' : 'border-transparent'
+              className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition ${
+                activeImage === i ? 'border-paroki-600' : 'border-transparent hover:border-paroki-300'
               }`}
             >
               <img src={img} alt="" className="h-full w-full object-cover" />
@@ -187,27 +219,29 @@ export default function BusinessDetail({ slug }: Props) {
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div className="flex-1">
-          <div className="mb-2 flex flex-wrap items-center gap-2">
+          <div className="mb-2.5 flex flex-wrap items-center gap-2">
             {business.category && (
               <a
                 href={`/kategori/${business.category.slug}`}
-                className="inline-flex items-center gap-1 rounded-full bg-paroki-100 px-3 py-1 text-sm font-medium text-paroki-700"
+                className="inline-flex items-center rounded-full bg-paroki-100 px-3 py-1 text-xs font-semibold text-paroki-700 transition hover:bg-paroki-200"
               >
-                {business.category.icon} {business.category.name}
+                {business.category.name}
               </a>
             )}
             {business.area && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-600">
-                📍 {business.area}
+              <span className="inline-flex items-center gap-1 rounded-full bg-paroki-50 px-3 py-1 text-xs font-medium text-paroki-600 ring-1 ring-paroki-200">
+                <IconPin className="h-3.5 w-3.5" />
+                {business.area}
               </span>
             )}
             {business.is_featured && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-700">
-                ⭐ Pilihan
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent-400/20 px-3 py-1 text-xs font-semibold text-accent-600">
+                <IconStar className="h-3.5 w-3.5" />
+                Pilihan
               </span>
             )}
           </div>
-          <h1 className="font-serif text-3xl font-bold text-paroki-900 break-words">{business.name}</h1>
+          <h1 className="font-display text-3xl font-extrabold tracking-tight text-paroki-900 break-words">{business.name}</h1>
         </div>
 
         {/* WhatsApp CTA */}
@@ -216,10 +250,10 @@ export default function BusinessDetail({ slug }: Props) {
             href={waLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-xl bg-green-600 px-5 py-3 font-semibold text-white shadow-md transition hover:bg-green-700"
+            className="inline-flex items-center gap-2 rounded-lg bg-paroki-600 px-5 py-3 font-semibold text-white transition hover:bg-paroki-700 active:translate-y-px"
           >
-            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.967-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M17.5 14.4c-.3-.1-1.8-.9-2-.9-.3-.1-.5-.2-.7.1-.2.3-.7 1-.9 1.1-.2.2-.3.2-.6.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2-.2-.3 0-.5.1-.6l.4-.5c.2-.2.2-.3.3-.5.1-.2 0-.4-.1-.5-.1-.2-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.1-.2-.2-.5-.3M12 2a10 10 0 0 0-8.6 15l-1.4 5 5.1-1.3A10 10 0 1 0 12 2" />
             </svg>
             Hubungi via WhatsApp
           </a>
@@ -229,52 +263,58 @@ export default function BusinessDetail({ slug }: Props) {
       {/* Description */}
       {business.description && (
         <div className="mb-6">
-          <h2 className="mb-2 font-serif text-lg font-semibold text-paroki-900">Tentang Usaha</h2>
-          <p className="whitespace-pre-wrap leading-relaxed text-paroki-700">{business.description}</p>
+          <h2 className="mb-2 font-display text-lg font-bold text-paroki-900">Tentang Usaha</h2>
+          <p className="max-w-[65ch] whitespace-pre-wrap leading-relaxed text-paroki-700">{business.description}</p>
         </div>
       )}
 
       {/* Contact Info */}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {/* Contact card */}
-        <div className="rounded-2xl border border-paroki-200 bg-white p-5">
-          <h3 className="mb-3 font-semibold text-paroki-900">📞 Kontak</h3>
+        <div className="rounded-lg border border-paroki-200 bg-white p-5">
+          <h3 className="mb-3 flex items-center gap-2 font-display font-bold text-paroki-900">
+            <IconPhone className="h-4.5 w-4.5 text-paroki-500" />
+            Kontak
+          </h3>
           <div className="space-y-2 text-sm">
             {business.phone && (
               <div className="flex items-center gap-2 text-paroki-700">
-                <span className="text-paroki-400">Telepon:</span>
-                <a href={`tel:${business.phone}`} className="font-medium hover:underline">
+                <span className="w-16 shrink-0 text-paroki-500">Telepon</span>
+                <a href={`tel:${business.phone}`} className="font-medium hover:text-paroki-900 hover:underline">
                   {business.phone}
                 </a>
               </div>
             )}
             {business.email && (
               <div className="flex items-center gap-2 text-paroki-700">
-                <span className="text-paroki-400">Email:</span>
-                <a href={`mailto:${business.email}`} className="font-medium hover:underline">
+                <span className="w-16 shrink-0 text-paroki-500">Email</span>
+                <a href={`mailto:${business.email}`} className="font-medium hover:text-paroki-900 hover:underline">
                   {business.email}
                 </a>
               </div>
             )}
             {business.address && (
               <div className="flex items-start gap-2 text-paroki-700">
-                <span className="text-paroki-400">Alamat:</span>
-                <span>{business.address}</span>
+                <span className="w-16 shrink-0 text-paroki-500">Alamat</span>
+                <span className="leading-relaxed">{business.address}</span>
               </div>
             )}
           </div>
         </div>
 
         {/* Hours / Socials */}
-        <div className="rounded-2xl border border-paroki-200 bg-white p-5">
+        <div className="rounded-lg border border-paroki-200 bg-white p-5">
           {Object.keys(business.operating_hours || {}).length > 0 && (
             <>
-              <h3 className="mb-3 font-semibold text-paroki-900">🕐 Jam Operasional</h3>
-              <div className="mb-3 space-y-1 text-sm text-paroki-700">
+              <h3 className="mb-3 flex items-center gap-2 font-display font-bold text-paroki-900">
+                <IconClock className="h-4.5 w-4.5 text-paroki-500" />
+                Jam Operasional
+              </h3>
+              <div className="mb-4 space-y-1.5 text-sm">
                 {Object.entries(business.operating_hours).map(([day, hours]) => (
-                  <div key={day} className="flex justify-between">
+                  <div key={day} className="flex justify-between border-b border-paroki-100 pb-1.5 last:border-0">
                     <span className="capitalize text-paroki-500">{day}</span>
-                    <span>{hours}</span>
+                    <span className="font-medium text-paroki-800">{hours}</span>
                   </div>
                 ))}
               </div>
@@ -282,17 +322,18 @@ export default function BusinessDetail({ slug }: Props) {
           )}
           {socials.length > 0 && (
             <>
-              <h3 className="mb-2 font-semibold text-paroki-900">🌐 Social Media</h3>
+              <h3 className="mb-2 font-display font-bold text-paroki-900">Media Sosial</h3>
               <div className="flex flex-wrap gap-2">
                 {socials.map((s) => (
                   <a
                     key={s.label}
-                    href={s.url!}
+                    href={s.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded-lg bg-paroki-50 px-3 py-1.5 text-sm text-paroki-700 hover:bg-paroki-100"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-paroki-50 px-3 py-1.5 text-sm font-medium text-paroki-700 transition hover:bg-paroki-100"
                   >
-                    {s.icon} {s.label}
+                    <s.Glyph />
+                    {s.label}
                   </a>
                 ))}
               </div>
@@ -301,15 +342,89 @@ export default function BusinessDetail({ slug }: Props) {
         </div>
       </div>
 
+      {/* Products Section */}
+      {products.length > 0 && (
+        <div className="mt-8">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 font-display text-xl font-bold text-paroki-900">
+              <IconPackage className="h-5 w-5 text-paroki-500" />
+              Produk Kami
+            </h2>
+            {(() => {
+              const waAll = business.whatsapp
+                ? `https://wa.me/${business.whatsapp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                    `Halo ${business.name}, saya melihat produk-produk di profil Anda. Boleh info lebih lanjut?`,
+                  )}`
+                : null;
+              if (!waAll) return null;
+              return (
+                <a
+                  href={waAll}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-paroki-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-paroki-700 active:translate-y-px"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-.9-.3-.1-.5-.2-.7.1-.2.3-.7 1-.9 1.1-.2.2-.3.2-.6.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2-.2-.3 0-.5.1-.6l.4-.5c.2-.2.2-.3.3-.5.1-.2 0-.4-.1-.5-.1-.2-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.1-.2-.2-.5-.3M12 2a10 10 0 0 0-8.6 15l-1.4 5 5.1-1.3A10 10 0 1 0 12 2"/></svg>
+                  Tanya Produk
+                </a>
+              );
+            })()}
+          </div>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {products.map((p) => {
+              const pwa = business.whatsapp
+                ? `https://wa.me/${business.whatsapp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                    `Halo, saya tertarik dengan *${p.name}* dari *${business.name}* yang saya lihat di Direktori UMKM St. Servatius. Apakah masih tersedia?`,
+                  )}`
+                : null;
+              const priceStr = p.price
+                ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(p.price)
+                : p.price_note || 'Hubungi untuk harga';
+              return (
+                <div key={p.id} className="group flex flex-col overflow-hidden rounded-lg border border-paroki-200 bg-white transition hover:border-paroki-300 hover:shadow-soft">
+                  <a href={`/produk/${p.slug}`} className="block">
+                    <div className="relative aspect-square overflow-hidden bg-paroki-100">
+                      {p.image_url ? (
+                        <img src={p.image_url} alt={p.name} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" loading="lazy" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-paroki-300"><IconPackage className="h-10 w-10" /></div>
+                      )}
+                    </div>
+                  </a>
+                  <div className="flex flex-1 flex-col p-3">
+                    <a href={`/produk/${p.slug}`}>
+                      <h3 className="font-display text-sm font-bold leading-snug text-paroki-900 break-words hover:text-paroki-700">{p.name}</h3>
+                    </a>
+                    {p.description && <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-paroki-600">{p.description}</p>}
+                    <div className="mt-1 text-sm font-bold text-paroki-700">{priceStr}</div>
+                    <div className="mt-auto pt-2">
+                      {pwa && (
+                        <a href={pwa} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1 rounded-md bg-paroki-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-paroki-700">
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-.9-.3-.1-.5-.2-.7.1-.2.3-.7 1-.9 1.1-.2.2-.3.2-.6.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2-.2-.3 0-.5.1-.6l.4-.5c.2-.2.2-.3.3-.5.1-.2 0-.4-.1-.5-.1-.2-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.1-.2-.2-.5-.3M12 2a10 10 0 0 0-8.6 15l-1.4 5 5.1-1.3A10 10 0 1 0 12 2"/></svg>
+                          WhatsApp
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* CTA */}
-      <div className="mt-8 rounded-2xl bg-paroki-50 p-6 text-center">
-        <p className="text-paroki-700">Punya usaha juga? Daftarkan di Direktori UMKM St. Servatius!</p>
-        <a
-          href="/daftar"
-          className="mt-3 inline-block rounded-lg bg-paroki-600 px-6 py-2.5 font-semibold text-white hover:bg-paroki-700"
-        >
-          Daftarkan Usaha Saya →
-        </a>
+      <div className="mt-10 rounded-xl border border-paroki-200 bg-paroki-50 p-6 md:p-8">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <p className="font-medium text-paroki-800">Punya usaha juga? Daftarkan di Direktori UMKM St. Servatius.</p>
+          <a
+            href="/daftar"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-paroki-600 px-5 py-2.5 font-semibold text-white transition hover:bg-paroki-700 active:translate-y-px"
+          >
+            Daftarkan Usaha Saya
+            <IconArrowRight className="h-4 w-4" />
+          </a>
+        </div>
       </div>
     </div>
   );

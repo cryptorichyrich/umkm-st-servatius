@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BusinessGrid from '../../components/react/BusinessGrid.tsx';
+import CategoryIcon from '../../components/CategoryIcon.astro';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
 export async function getStaticPaths() {
@@ -40,22 +41,24 @@ const { category } = Astro.props;
 ---
 
 <BaseLayout
-  title={`${category.icon} ${category.name}`}
+  title={category.name}
   description={`Usaha ${category.name} dari umat paroki.`}
 >
   <section class="mx-auto max-w-6xl px-4 py-8">
-    <nav class="mb-4 text-sm text-paroki-500">
-      <a href="/" class="hover:text-paroki-700">Home</a>
-      <span class="mx-2">/</span>
-      <a href="/direktori" class="hover:text-paroki-700">Direktori</a>
-      <span class="mx-2">/</span>
-      <span class="text-paroki-700">{category.name}</span>
+    <nav class="mb-4 flex items-center gap-1.5 text-sm text-paroki-500">
+      <a href="/" class="transition hover:text-paroki-700">Beranda</a>
+      <span>/</span>
+      <a href="/direktori" class="transition hover:text-paroki-700">Direktori</a>
+      <span>/</span>
+      <span class="font-medium text-paroki-700">{category.name}</span>
     </nav>
 
     <div class="mb-8 flex items-center gap-3">
-      <span class="text-4xl">{category.icon}</span>
+      <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-paroki-600 text-paroki-50">
+        <CategoryIcon slug={category.slug} class="h-6 w-6" />
+      </span>
       <div>
-        <h1 class="font-serif text-3xl font-bold text-paroki-900">{category.name}</h1>
+        <h1 class="font-display text-3xl font-bold tracking-tight text-paroki-900">{category.name}</h1>
         <p class="mt-1 text-paroki-600">Jelajahi usaha dalam kategori ini.</p>
       </div>
     </div>

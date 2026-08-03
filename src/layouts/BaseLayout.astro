@@ -13,6 +13,7 @@ const {
 
 const siteName = 'UMKM St. Servatius';
 const fullTitle = title === siteName ? title : `${title} — ${siteName}`;
+const year = new Date().getFullYear();
 ---
 
 <!doctype html>
@@ -29,11 +30,11 @@ const fullTitle = title === siteName ? title : `${title} — ${siteName}`;
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
 
-    <!-- Fonts -->
+    <!-- Fonts: Plus Jakarta Sans (display) + Inter (body) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
 
@@ -41,21 +42,32 @@ const fullTitle = title === siteName ? title : `${title} — ${siteName}`;
   </head>
   <body>
     <!-- Header -->
-    <header class="sticky top-0 z-50 border-b border-paroki-200/60 bg-paroki-50/90 backdrop-blur-md">
+    <header class="sticky top-0 z-50 border-b border-paroki-200/70 bg-paroki-50/90 backdrop-blur-md">
       <nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <a href="/" class="flex items-center gap-2 font-bold text-paroki-800">
-          <span class="text-2xl">⛪</span>
-          <span class="text-lg font-serif">{siteName}</span>
+        <a href="/" class="flex items-center gap-2.5">
+          <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-paroki-600 text-paroki-50">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 3v2M11 4h2" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+              <path d="M12 6 6.5 9.5V19h11V9.5L12 6Z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
+              <path d="M10 19v-3.5a2 2 0 0 1 4 0V19" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
+              <path d="M4.5 19h15" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="flex flex-col leading-none">
+            <span class="font-display text-[15px] font-extrabold tracking-tight text-paroki-900">UMKM St. Servatius</span>
+            <span class="text-[11px] font-medium text-paroki-500">Paroki Kampung Sawah</span>
+          </span>
         </a>
 
         <!-- Desktop nav -->
-        <div class="hidden items-center gap-6 md:flex">
-          <a href="/direktori" class="text-sm font-medium text-paroki-700 hover:text-paroki-900">Direktori</a>
-          <a href="/#kategori" class="text-sm font-medium text-paroki-700 hover:text-paroki-900">Kategori</a>
-          <a href="/dashboard" class="text-sm font-medium text-paroki-700 hover:text-paroki-900">Dashboard</a>
+        <div class="hidden items-center gap-1 md:flex">
+          <a href="/direktori" class="rounded-lg px-3 py-2 text-sm font-medium text-paroki-700 transition hover:bg-paroki-100 hover:text-paroki-900">Direktori</a>
+          <a href="/produk" class="rounded-lg px-3 py-2 text-sm font-medium text-paroki-700 transition hover:bg-paroki-100 hover:text-paroki-900">Produk</a>
+          <a href="/#kategori" class="rounded-lg px-3 py-2 text-sm font-medium text-paroki-700 transition hover:bg-paroki-100 hover:text-paroki-900">Kategori</a>
+          <a href="/dashboard" class="rounded-lg px-3 py-2 text-sm font-medium text-paroki-700 transition hover:bg-paroki-100 hover:text-paroki-900">Dashboard</a>
           <a
             href="/daftar"
-            class="rounded-lg bg-paroki-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-paroki-700"
+            class="ml-2 inline-flex items-center gap-1.5 rounded-lg bg-paroki-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-paroki-700 active:translate-y-px"
           >
             Daftarkan Usaha
           </a>
@@ -64,24 +76,23 @@ const fullTitle = title === siteName ? title : `${title} — ${siteName}`;
         <!-- Mobile menu button -->
         <button
           id="mobile-menu-btn"
-          class="rounded-lg p-2 text-paroki-700 hover:bg-paroki-100 md:hidden"
-          aria-label="Menu"
+          class="rounded-lg p-2 text-paroki-700 transition hover:bg-paroki-100 md:hidden"
+          aria-label="Buka menu"
         >
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16" />
           </svg>
         </button>
       </nav>
 
       <!-- Mobile menu -->
       <div id="mobile-menu" class="hidden border-t border-paroki-200 bg-paroki-50 px-4 py-3 md:hidden">
-        <div class="flex flex-col gap-3">
-          <a href="/direktori" class="text-sm font-medium text-paroki-700">Direktori</a>
-          <a href="/#kategori" class="text-sm font-medium text-paroki-700">Kategori</a>
-          <a href="/dashboard" class="text-sm font-medium text-paroki-700">Dashboard</a>
-          <a href="/daftar" class="rounded-lg bg-paroki-600 px-4 py-2 text-center text-sm font-semibold text-white">
-            Daftarkan Usaha
-          </a>
+        <div class="flex flex-col gap-1">
+          <a href="/direktori" class="rounded-lg px-3 py-2.5 text-sm font-medium text-paroki-700 hover:bg-paroki-100">Direktori</a>
+          <a href="/produk" class="rounded-lg px-3 py-2.5 text-sm font-medium text-paroki-700 hover:bg-paroki-100">Produk</a>
+          <a href="/#kategori" class="rounded-lg px-3 py-2.5 text-sm font-medium text-paroki-700 hover:bg-paroki-100">Kategori</a>
+          <a href="/dashboard" class="rounded-lg px-3 py-2.5 text-sm font-medium text-paroki-700 hover:bg-paroki-100">Dashboard</a>
+          <a href="/daftar" class="mt-1 rounded-lg bg-paroki-600 px-3 py-2.5 text-center text-sm font-semibold text-white">Daftarkan Usaha</a>
         </div>
       </div>
     </header>
@@ -92,16 +103,35 @@ const fullTitle = title === siteName ? title : `${title} — ${siteName}`;
     </main>
 
     <!-- Footer -->
-    <footer class="border-t border-paroki-200 bg-paroki-100/50">
-      <div class="mx-auto max-w-6xl px-4 py-8">
-        <div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
-          <div class="flex items-center gap-2 text-paroki-700">
-            <span class="text-xl">⛪</span>
-            <span class="font-serif font-semibold">{siteName}</span>
+    <footer class="border-t border-paroki-200 bg-paroki-100/60">
+      <div class="mx-auto max-w-6xl px-4 py-10">
+        <div class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+          <div class="max-w-xs">
+            <div class="flex items-center gap-2.5">
+              <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-paroki-700 text-paroki-50">
+                <svg class="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 3v2M11 4h2" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                  <path d="M12 6 6.5 9.5V19h11V9.5L12 6Z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
+                  <path d="M4.5 19h15" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="font-display text-sm font-bold text-paroki-900">{siteName}</span>
+            </div>
+            <p class="mt-3 text-sm leading-relaxed text-paroki-600">
+              Direktori usaha dan jasa dari umat Paroki St. Servatius, Kampung Sawah. Saling mendukung ekonomi komunitas paroki.
+            </p>
           </div>
-          <p class="text-center text-xs text-paroki-600 sm:text-right">
-            Mendukung ekonomi umat paroki.<br />
-            © {new Date().getFullYear()} {siteName}. Dibuat dengan ❤️ untuk komunitas.
+          <div class="flex flex-col gap-2 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-wider text-paroki-400">Jelajahi</span>
+            <a href="/direktori" class="text-paroki-700 transition hover:text-paroki-900">Direktori Usaha</a>
+            <a href="/produk" class="text-paroki-700 transition hover:text-paroki-900">Produk</a>
+            <a href="/daftar" class="text-paroki-700 transition hover:text-paroki-900">Daftarkan Usaha</a>
+            <a href="/dashboard" class="text-paroki-700 transition hover:text-paroki-900">Dashboard</a>
+          </div>
+        </div>
+        <div class="mt-8 border-t border-paroki-200 pt-5">
+          <p class="text-xs text-paroki-500">
+            © {year} {siteName} · Paroki Santo Servatius, Kampung Sawah
           </p>
         </div>
       </div>

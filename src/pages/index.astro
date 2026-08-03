@@ -1,94 +1,114 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BusinessGrid from '../components/react/BusinessGrid.tsx';
+import CategoryIcon from '../components/CategoryIcon.astro';
 
-// Default categories for static render (will also be fetched client-side)
+// Category metadata — icon is rendered by slug via <CategoryIcon>, never the DB emoji.
 const defaultCategories = [
-  { name: 'Kuliner & Minuman', slug: 'kuliner-minuman', icon: '🍜' },
-  { name: 'Jasa & Service', slug: 'jasa-service', icon: '🔧' },
-  { name: 'Kerajinan Tangan', slug: 'kerajinan-tangan', icon: '✂️' },
-  { name: 'Fashion & Pakaian', slug: 'fashion-pakaian', icon: '👕' },
-  { name: 'Kecantikan & Kesehatan', slug: 'kecantikan-kesehatan', icon: '💄' },
-  { name: 'Elektronik & Gadget', slug: 'elektronik-gadget', icon: '📱' },
-  { name: 'Pendidikan & Les', slug: 'pendidikan-les', icon: '📚' },
-  { name: 'Pertanian & Peternakan', slug: 'pertanian-peternakan', icon: '🌱' },
-  { name: 'Otomotif', slug: 'otomotif', icon: '🚗' },
-  { name: 'Lainnya', slug: 'lainnya', icon: '📦' },
+  { name: 'Kuliner & Minuman', slug: 'kuliner-minuman' },
+  { name: 'Jasa & Service', slug: 'jasa-service' },
+  { name: 'Kerajinan Tangan', slug: 'kerajinan-tangan' },
+  { name: 'Fashion & Pakaian', slug: 'fashion-pakaian' },
+  { name: 'Kecantikan & Kesehatan', slug: 'kecantikan-kesehatan' },
+  { name: 'Elektronik & Gadget', slug: 'elektronik-gadget' },
+  { name: 'Pendidikan & Les', slug: 'pendidikan-les' },
+  { name: 'Pertanian & Peternakan', slug: 'pertanian-peternakan' },
+  { name: 'Otomotif', slug: 'otomotif' },
+  { name: 'Lainnya', slug: 'lainnya' },
 ];
 ---
 
 <BaseLayout>
-  <!-- Hero -->
-  <section class="relative overflow-hidden bg-gradient-to-br from-paroki-100 via-paroki-50 to-white py-16 md:py-24">
-    <div class="mx-auto max-w-6xl px-4 text-center">
-      <div class="mb-4 text-5xl">⛪</div>
-      <h1 class="font-serif text-3xl font-bold text-paroki-900 md:text-5xl">
-        Direktori UMKM St. Servatius
-      </h1>
-      <p class="mx-auto mt-4 max-w-2xl text-base text-paroki-600 md:text-lg">
-        Temukan usaha dan jasa dari sesama umat paroki. Dari kuliner, kerajinan,
-        hingga jasa service — semuanya ada di sini. Mari saling mendukung!
-      </p>
-      <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-        <a
-          href="/direktori"
-          class="w-full rounded-xl bg-paroki-600 px-6 py-3 text-center font-semibold text-white shadow-md transition hover:bg-paroki-700 sm:w-auto"
-        >
-          🔍 Jelajahi Direktori
-        </a>
-        <a
-          href="/daftar"
-          class="w-full rounded-xl border border-paroki-300 bg-white px-6 py-3 text-center font-semibold text-paroki-700 transition hover:bg-paroki-50 sm:w-auto"
-        >
-          📝 Daftarkan Usaha Anda
-        </a>
+  <!-- Hero — solid deep-green block, left-aligned, no gradient, no emoji -->
+  <section class="bg-paroki-900 text-paroki-50">
+    <div class="mx-auto max-w-6xl px-4 py-16 md:py-20">
+      <div class="max-w-2xl">
+        <div class="mb-5 flex items-center gap-2.5">
+          <span class="h-px w-8 bg-accent-400"></span>
+          <span class="text-xs font-semibold uppercase tracking-[0.18em] text-accent-300">Paroki Kampung Sawah</span>
+        </div>
+        <h1 class="font-display text-3xl font-extrabold leading-[1.12] tracking-tight md:text-[2.6rem]">
+          Usaha umat, saling mendukung.
+        </h1>
+        <p class="mt-4 max-w-xl text-base leading-relaxed text-paroki-200 md:text-lg">
+          Temukan kuliner, jasa, dan kerajinan dari sesama umat paroki. Belanja dari tetangga, bertumbuh bersama.
+        </p>
+        <div class="mt-7 flex flex-col gap-3 sm:flex-row">
+          <a
+            href="/direktori"
+            class="inline-flex items-center justify-center gap-2 rounded-lg bg-accent-400 px-6 py-3 font-semibold text-paroki-900 transition hover:bg-accent-300 active:translate-y-px"
+          >
+            Jelajahi Direktori
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a
+            href="/daftar"
+            class="inline-flex items-center justify-center rounded-lg border border-paroki-600 px-6 py-3 font-semibold text-paroki-50 transition hover:border-paroki-400 hover:bg-paroki-800 active:translate-y-px"
+          >
+            Daftarkan Usaha Anda
+          </a>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- Categories -->
-  <section id="kategori" class="mx-auto max-w-6xl px-4 py-12">
-    <h2 class="mb-6 font-serif text-2xl font-bold text-paroki-900">Kategori Usaha</h2>
+  <section id="kategori" class="mx-auto max-w-6xl px-4 py-14 md:py-16">
+    <div class="mb-7 flex items-end justify-between">
+      <div>
+        <h2 class="font-display text-2xl font-bold text-paroki-900">Kategori Usaha</h2>
+        <p class="mt-1 text-sm text-paroki-600">Pilih kategori untuk mulai menjelajah.</p>
+      </div>
+    </div>
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
       {defaultCategories.map((cat) => (
         <a
           href={`/kategori/${cat.slug}`}
-          class="flex flex-col items-center gap-2 rounded-xl border border-paroki-200 bg-white p-4 text-center shadow-sm transition hover:border-paroki-300 hover:shadow-md"
+          class="group flex flex-col items-center gap-3 rounded-lg border border-paroki-200 bg-white p-5 text-center transition hover:border-paroki-300 hover:shadow-soft"
         >
-          <span class="text-3xl">{cat.icon}</span>
-          <span class="text-xs font-medium text-paroki-700">{cat.name}</span>
+          <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-paroki-50 text-paroki-600 transition group-hover:bg-paroki-600 group-hover:text-white">
+            <CategoryIcon slug={cat.slug} class="h-6 w-6" />
+          </span>
+          <span class="text-[13px] font-semibold leading-tight text-paroki-800">{cat.name}</span>
         </a>
       ))}
     </div>
   </section>
 
   <!-- Featured UMKM -->
-  <section class="mx-auto max-w-6xl px-4 py-12">
-    <div class="mb-6 flex items-center justify-between">
-      <h2 class="font-serif text-2xl font-bold text-paroki-900">UMKM Pilihan</h2>
-      <a href="/direktori" class="text-sm font-medium text-paroki-600 hover:text-paroki-800">
-        Lihat semua →
+  <section class="mx-auto max-w-6xl px-4 pb-14 md:pb-16">
+    <div class="mb-7 flex items-end justify-between">
+      <h2 class="font-display text-2xl font-bold text-paroki-900">UMKM Pilihan</h2>
+      <a href="/direktori" class="inline-flex items-center gap-1 text-sm font-semibold text-paroki-600 transition hover:text-paroki-900">
+        Lihat semua
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
       </a>
     </div>
     <BusinessGrid client:load mode="featured" limit={8} />
   </section>
 
-  <!-- CTA -->
-  <section class="mx-auto max-w-6xl px-4 py-12">
-    <div class="overflow-hidden rounded-3xl bg-gradient-to-r from-paroki-600 to-paroki-800 px-6 py-12 text-center md:px-12">
-      <h2 class="font-serif text-2xl font-bold text-white md:text-3xl">
-        Punya Usaha? Daftarkan Sekarang!
-      </h2>
-      <p class="mx-auto mt-3 max-w-xl text-paroki-100">
-        Gratis selamanya. Promosikan usaha Anda kepada ratusan keluarga di paroki kita.
-        Daftar, upload foto, dan mulai dapat pelanggan baru.
-      </p>
-      <a
-        href="/daftar"
-        class="mt-6 inline-block rounded-xl bg-white px-8 py-3 font-semibold text-paroki-700 shadow-lg transition hover:bg-paroki-50"
-      >
-        Daftar Gratis →
-      </a>
+  <!-- CTA — solid bordered card, no gradient -->
+  <section class="mx-auto max-w-6xl px-4 pb-16">
+    <div class="overflow-hidden rounded-xl border border-paroki-200 bg-white">
+      <div class="grid items-center gap-6 p-8 md:grid-cols-[1.4fr_1fr] md:p-12">
+        <div>
+          <h2 class="font-display text-2xl font-bold text-paroki-900 md:text-3xl">
+            Punya usaha? Mari bergabung.
+          </h2>
+          <p class="mt-3 max-w-lg text-[15px] leading-relaxed text-paroki-600">
+            Gratis selamanya. Promosikan usaha Anda kepada ratusan keluarga di paroki kita — daftar, unggah foto, dan mulai dapat pelanggan baru.
+          </p>
+        </div>
+        <div class="md:justify-self-end">
+          <a
+            href="/daftar"
+            class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-paroki-600 px-7 py-3.5 font-semibold text-white transition hover:bg-paroki-700 active:translate-y-px md:w-auto"
+          >
+            Daftar Gratis
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
+      </div>
     </div>
   </section>
 </BaseLayout>

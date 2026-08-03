@@ -161,9 +161,11 @@ export default function DashboardApp() {
 
       {/* Businesses list */}
       {businesses.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-paroki-300 bg-white py-16 text-center">
-          <div className="mb-3 text-5xl">🏪</div>
-          <p className="text-paroki-600">Belum ada usaha terdaftar</p>
+        <div className="rounded-lg border border-dashed border-paroki-300 bg-white py-16 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-paroki-50 text-paroki-400">
+            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9.5 5.5 5h13L20 9.5M4 9.5h16M4 9.5V19a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9.5M9.5 20v-4.5h5V20"/></svg>
+          </div>
+          <p className="font-medium text-paroki-700">Belum ada usaha terdaftar</p>
           <p className="mt-1 text-sm text-paroki-400">
             Klik "Tambah Usaha Baru" untuk mulai mendaftarkan usaha Anda.
           </p>

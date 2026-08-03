@@ -1,0 +1,31 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ProductDetail from '../../components/react/ProductDetail.tsx';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+
+export async function getStaticPaths() {
+  if (!isSupabaseConfigured) {
+    return [{ params: { slug: 'dummy' }, props: { slug: 'dummy' } }];
+  }
+
+  const { data } = await supabase.from('products').select('slug').eq('is_available', true);
+
+  const slugs = (data || []).map((p) => p.slug);
+
+  // Fallback so build doesn't fail with zero products
+  if (slugs.length === 0) {
+    return [{ params: { slug: 'dummy' }, props: { slug: 'dummy' } }];
+  }
+
+  return slugs.map((slug) => ({
+    params: { slug },
+    props: { slug },
+  }));
+}
+
+const { slug } = Astro.props;
+---
+
+<BaseLayout>
+  <ProductDetail client:load slug={slug} />
+</BaseLayout>

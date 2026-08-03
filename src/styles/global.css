@@ -1,24 +1,39 @@
 @import "tailwindcss";
 
-/* Custom theme tokens */
+/*
+  UMKM St. Servatius — design tokens
+  Palette: deep liturgical green (ordinary time / growth) + refined gold (celebration / dignity).
+  Deliberately NOT the AI-default clay-orange or purple. One accent, locked.
+  Type: Plus Jakarta Sans (display — Indonesian-designed, characterful) + Inter (body — accessible).
+  Shape lock: rounded-lg (8px) for all structural surfaces; rounded-full only for inline chips.
+*/
 @theme {
-  --color-paroki-50: #fdf8f3;
-  --color-paroki-100: #f9ecd9;
-  --color-paroki-200: #f2d4ad;
-  --color-paroki-300: #e9b67d;
-  --color-paroki-400: #df944a;
-  --color-paroki-500: #d97a2c;
-  --color-paroki-600: #c76223;
-  --color-paroki-700: #a54a1f;
-  --color-paroki-800: #843c20;
-  --color-paroki-900: #6b3320;
-  --color-paroki-950: #3b1910;
+  /* Green — primary */
+  --color-paroki-50: #f2f7f4;
+  --color-paroki-100: #d8e6dd;
+  --color-paroki-200: #adccb7;
+  --color-paroki-300: #7caa8d;
+  --color-paroki-400: #4f8567;
+  --color-paroki-500: #346a4f;
+  --color-paroki-600: #275440;
+  --color-paroki-700: #204335;
+  --color-paroki-800: #19332b;
+  --color-paroki-900: #122620;
+  --color-paroki-950: #0a1714;
+
+  /* Gold — accent (sparingly: stars, dark-section highlights, wordmark dot) */
+  --color-accent-300: #e0bd63;
+  --color-accent-400: #d0a63e;
+  --color-accent-500: #bd8f2c;
+  --color-accent-600: #9c7320;
 
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-serif: 'Lora', Georgia, serif;
+  /* Map the legacy `font-serif` utility to the display sans so existing
+     headings pick up Plus Jakarta Sans without touching every file. */
+  --font-serif: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
 }
 
-/* Base styles */
 html {
   scroll-behavior: smooth;
 }
@@ -26,6 +41,13 @@ html {
 body {
   @apply bg-paroki-50 text-paroki-950 antialiased;
   font-family: var(--font-sans);
+  font-feature-settings: 'cv11', 'ss01';
+}
+
+/* Display headings use Plus Jakarta Sans with tight, confident tracking */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.018em;
 }
 
 /* Smooth fade-in for dynamic content */
@@ -36,4 +58,12 @@ body {
 
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
+}
+
+/* Tinted soft shadow — never pure black on this warm-green base */
+@utility shadow-soft {
+  box-shadow: 0 1px 2px rgba(20, 60, 45, 0.04), 0 4px 12px rgba(20, 60, 45, 0.06);
+}
+@utility shadow-soft-lg {
+  box-shadow: 0 2px 4px rgba(20, 60, 45, 0.05), 0 12px 28px rgba(20, 60, 45, 0.10);
 }

@@ -5,24 +5,19 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | und
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-// Lazy-init: only create client when env vars exist.
-// This allows `astro build` to work without Supabase configured.
-let _client: SupabaseClient | null = null;
-
-export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
-  get(_, prop) {
-    if (!isSupabaseConfigured) {
-      // Return a no-op for any property access when not configured
-      return () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } });
-    }
-    if (!_client) {
-      _client = createClient(supabaseUrl!, supabaseAnonKey!, {
-        auth: { persistSession: true, autoRefreshToken: true },
-      });
-    }
-    return (_client as any)[prop];
+// Always create a REAL client so method chaining (.from().select().eq()) works
+// even when env vars are missing at build time. With placeholder creds, queries
+// fail gracefully with a network/auth error instead of crashing the page with
+// "TypeError: ...select is not a function".
+// ponytail: ceiling — if Supabase adds a createClient() that throws on bad URL,
+// we'd need a try/catch; v2 tolerates placeholder hosts.
+export const supabase: SupabaseClient = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'public-anon-key-placeholder',
+  {
+    auth: { persistSession: true, autoRefreshToken: true },
   },
-});
+);
 
 // Database types
 export type BusinessStatus = 'draft' | 'pending' | 'approved' | 'rejected';
@@ -77,4 +72,22 @@ export interface BusinessImage {
   image_url: string;
   caption: string;
   sort_order: number;
+}
+
+export interface Product {
+  id: string;
+  business_id: string;
+  name: string;
+  slug: string;
+  description: string;
+  price: number | null;
+  price_note: string;
+  image_url: string;
+  product_type: string;
+  is_available: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  // Joined fields
+  business?: Business;
 }
