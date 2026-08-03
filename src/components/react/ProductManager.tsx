@@ -22,7 +22,16 @@ const idrFormatter = new Intl.NumberFormat('id-ID');
 // ═══════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
-export default function ProductManager({ businessId }: ProductManagerProps) {
+export default function ProductManager({ businessId: propBusinessId }: ProductManagerProps) {
+  // On SSG builds, the prop is empty (query params not available at build time)
+  // So also check window.location at runtime
+  const [businessId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const urlId = new URLSearchParams(window.location.search).get('id');
+      return urlId || propBusinessId;
+    }
+    return propBusinessId;
+  });
   const [businessStatus, setBusinessStatus] = useState<BusinessStatus | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);

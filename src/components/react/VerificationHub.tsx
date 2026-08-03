@@ -167,7 +167,7 @@ export default function VerificationHub({
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // VERIFIED — MEMBER (can upgrade to UMKM)
+  // VERIFIED — MEMBER
   // ═══════════════════════════════════════════════════════════════
   if (currentStatus === 'verified' && currentType === 'member') {
     return (
@@ -187,28 +187,14 @@ export default function VerificationHub({
             </div>
           </div>
 
-          <div className="mt-6 border-t border-green-200 pt-6">
-            <div className="rounded-xl bg-white/70 p-4">
-              <div className="flex items-start gap-3">
-                <Store className="mt-0.5 h-5 w-5 flex-shrink-0 text-paroki-600" />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-paroki-900">
-                    Ingin mendaftarkan usaha?
-                  </p>
-                  <p className="mt-1 text-sm text-paroki-700">
-                    Anda dapat upgrade ke verifikasi UMKM untuk mendaftarkan dan
-                    menampilkan usaha Anda di direktori Paroki UMKM.
-                  </p>
-                  <a
-                    href="/dashboard/verifikasi/umkm"
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-paroki-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-paroki-700"
-                  >
-                    <Store className="h-4 w-4" />
-                    Upgrade ke Verifikasi UMKM
-                    <ArrowRight className="h-4 w-4" />
-                  </a>
-                </div>
-              </div>
+          <div className="mt-6 space-y-3 border-t border-green-200 pt-6">
+            <div className="flex items-start gap-2 text-sm text-green-800">
+              <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <span>Bisa memberikan review pada usaha di direktori</span>
+            </div>
+            <div className="flex items-start gap-2 text-sm text-green-800">
+              <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <span>Bisa menyimpan usaha dan produk ke favorit</span>
             </div>
           </div>
         </div>

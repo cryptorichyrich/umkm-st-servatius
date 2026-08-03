@@ -1,5 +1,6 @@
 import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
 import { supabase, type Category, type Wilayah, type Lingkungan } from '../../lib/supabase';
+import { CheckCircle, Clock, XCircle } from 'lucide-react';
 
 interface Props {
   businessId?: string;
@@ -58,6 +59,7 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>('draft');
+  const [rejectionNote, setRejectionNote] = useState<string>('');
   const [uploadingKtp, setUploadingKtp] = useState(false);
   const [uploadingCatalog, setUploadingCatalog] = useState(false);
 
@@ -134,6 +136,7 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
           catalog_url: biz.catalog_url || '',
         });
         setCurrentStatus(biz.status || 'draft');
+        setRejectionNote(biz.rejection_note || '');
       }
 
       setLoading(false);
@@ -742,115 +745,171 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
           <h2 className="mb-2 font-serif text-sm font-semibold text-paroki-800">
             Dokumen Verifikasi UMKM
           </h2>
-          <p className="mb-4 text-xs text-paroki-500">
-            Dokumen ini diperlukan untuk verifikasi usaha Anda oleh admin paroki.
-          </p>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {/* KTP upload */}
-            <div>
-              <label className={labelClass}>
-                Foto KTP Pemilik <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="upload-ktp"
-                type="file"
-                accept="image/*"
-                onChange={handleKtpUpload}
-                disabled={uploadingKtp}
-                className="hidden"
-              />
-              {form.ktp_url ? (
-                <div className="flex items-center gap-3 rounded-lg border border-paroki-200 bg-white p-3">
-                  <img
-                    src={form.ktp_url}
-                    alt="KTP"
-                    className="h-16 w-16 rounded-lg border border-paroki-200 object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const el = document.getElementById('upload-ktp') as HTMLInputElement;
-                      el?.click();
-                    }}
-                    className="text-sm font-medium text-paroki-600 hover:text-paroki-800"
-                  >
-                    Ganti Foto
-                  </button>
+          {/* Status-based messaging */}
+          {currentStatus === 'approved' && (
+            <div className="mb-4 flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2.5">
+              <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
+              <p className="text-xs text-green-700">
+                Dokumen terverifikasi. Dokumen tidak dapat diubah demi keamanan.
+              </p>
+            </div>
+          )}
+          {currentStatus === 'pending' && (
+            <div className="mb-4 flex items-start gap-2 rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2.5">
+              <Clock className="mt-0.5 h-4 w-4 flex-shrink-0 text-yellow-600" />
+              <p className="text-xs text-yellow-700">
+                Dokumen sedang direview admin. Tidak dapat diubah sampai proses selesai.
+              </p>
+            </div>
+          )}
+          {currentStatus === 'rejected' && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-3">
+              <div className="flex items-start gap-2">
+                <XCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-600" />
+                <div>
+                  <p className="text-sm font-medium text-red-800">
+                    Verifikasi UMKM ditolak
+                  </p>
+                  {rejectionNote && (
+                    <p className="mt-1 text-sm text-red-600">
+                      <span className="font-medium">Catatan admin:</span> {rejectionNote}
+                    </p>
+                  )}
+                  <p className="mt-2 text-xs text-red-500">
+                    Silakan perbaiki dokumen dan kirim ulang untuk review.
+                  </p>
                 </div>
-              ) : (
-                <div
-                  onClick={() => {
-                    const el = document.getElementById('upload-ktp') as HTMLInputElement;
-                    el?.click();
-                  }}
-                  className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-paroki-300 bg-white px-4 py-6 text-center transition hover:bg-paroki-50"
-                >
-                  {uploadingKtp ? (
-                    <span className="text-sm text-paroki-500">Mengupload...</span>
+              </div>
+            </div>
+          )}
+          {(currentStatus === 'draft' || currentStatus === 'rejected') && (
+            <p className="mb-4 text-xs text-paroki-500">
+              Dokumen ini diperlukan untuk verifikasi usaha Anda oleh admin paroki.
+            </p>
+          )}
+
+          {/* Whether documents can be edited */}
+          {(() => {
+            const locked = currentStatus === 'approved' || currentStatus === 'pending';
+            return (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* KTP */}
+                <div>
+                  <label className={labelClass}>
+                    Foto KTP Pemilik {currentStatus !== 'approved' && <span className="text-red-500">*</span>}
+                  </label>
+                  {form.ktp_url ? (
+                    <div className="flex items-center gap-3 rounded-lg border border-paroki-200 bg-white p-3">
+                      <img src={form.ktp_url} alt="KTP" className="h-16 w-16 rounded-lg border border-paroki-200 object-cover" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-paroki-700">KTP terupload</p>
+                        {locked ? (
+                          <p className="text-xs text-paroki-400">🔒 Terkunci</p>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const el = document.getElementById('upload-ktp') as HTMLInputElement;
+                              el?.click();
+                            }}
+                            className="text-sm font-medium text-paroki-600 hover:text-paroki-800"
+                          >
+                            Ganti Foto
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ) : locked ? (
+                    <div className="flex items-center gap-3 rounded-lg border border-paroki-200 bg-white p-3">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-paroki-200 bg-paroki-50 text-paroki-300">
+                        <XCircle className="h-6 w-6" />
+                      </div>
+                      <p className="text-sm text-paroki-400">Belum ada KTP</p>
+                    </div>
                   ) : (
-                    <>
-                      <svg className="mb-2 h-8 w-8 text-paroki-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                      <span className="text-sm text-paroki-500">Klik untuk upload foto KTP</span>
-                      <span className="mt-1 text-xs text-paroki-400">JPG, PNG. Maks 2MB.</span>
-                    </>
+                    <div
+                      onClick={() => {
+                        const el = document.getElementById('upload-ktp') as HTMLInputElement;
+                        el?.click();
+                      }}
+                      className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-paroki-300 bg-white px-4 py-6 text-center transition hover:bg-paroki-50"
+                    >
+                      {uploadingKtp ? (
+                        <span className="text-sm text-paroki-500">Mengupload...</span>
+                      ) : (
+                        <>
+                          <svg className="mb-2 h-8 w-8 text-paroki-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                          <span className="text-sm text-paroki-500">Klik untuk upload foto KTP</span>
+                          <span className="mt-1 text-xs text-paroki-400">JPG, PNG. Maks 2MB.</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {!locked && (
+                    <input id="upload-ktp" type="file" accept="image/*" onChange={handleKtpUpload} disabled={uploadingKtp} className="hidden" />
                   )}
                 </div>
-              )}
-            </div>
 
-            {/* Catalog upload */}
-            <div>
-              <label className={labelClass}>
-                Foto Katalog Produk <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="upload-catalog"
-                type="file"
-                accept="image/*"
-                onChange={handleCatalogUpload}
-                disabled={uploadingCatalog}
-                className="hidden"
-              />
-              {form.catalog_url ? (
-                <div className="flex items-center gap-3 rounded-lg border border-paroki-200 bg-white p-3">
-                  <img
-                    src={form.catalog_url}
-                    alt="Katalog"
-                    className="h-16 w-16 rounded-lg border border-paroki-200 object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const el = document.getElementById('upload-catalog') as HTMLInputElement;
-                      el?.click();
-                    }}
-                    className="text-sm font-medium text-paroki-600 hover:text-paroki-800"
-                  >
-                    Ganti Foto
-                  </button>
-                </div>
-              ) : (
-                <div
-                  onClick={() => {
-                    const el = document.getElementById('upload-catalog') as HTMLInputElement;
-                    el?.click();
-                  }}
-                  className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-paroki-300 bg-white px-4 py-6 text-center transition hover:bg-paroki-50"
-                >
-                  {uploadingCatalog ? (
-                    <span className="text-sm text-paroki-500">Mengupload...</span>
+                {/* Catalog */}
+                <div>
+                  <label className={labelClass}>
+                    Foto Katalog Produk {currentStatus !== 'approved' && <span className="text-red-500">*</span>}
+                  </label>
+                  {form.catalog_url ? (
+                    <div className="flex items-center gap-3 rounded-lg border border-paroki-200 bg-white p-3">
+                      <img src={form.catalog_url} alt="Katalog" className="h-16 w-16 rounded-lg border border-paroki-200 object-cover" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-paroki-700">Katalog terupload</p>
+                        {locked ? (
+                          <p className="text-xs text-paroki-400">🔒 Terkunci</p>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const el = document.getElementById('upload-catalog') as HTMLInputElement;
+                              el?.click();
+                            }}
+                            className="text-sm font-medium text-paroki-600 hover:text-paroki-800"
+                          >
+                            Ganti Foto
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ) : locked ? (
+                    <div className="flex items-center gap-3 rounded-lg border border-paroki-200 bg-white p-3">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-paroki-200 bg-paroki-50 text-paroki-300">
+                        <XCircle className="h-6 w-6" />
+                      </div>
+                      <p className="text-sm text-paroki-400">Belum ada katalog</p>
+                    </div>
                   ) : (
-                    <>
-                      <svg className="mb-2 h-8 w-8 text-paroki-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                      <span className="text-sm text-paroki-500">Klik untuk upload foto katalog</span>
-                      <span className="mt-1 text-xs text-paroki-400">JPG, PNG. Maks 2MB.</span>
-                    </>
+                    <div
+                      onClick={() => {
+                        const el = document.getElementById('upload-catalog') as HTMLInputElement;
+                        el?.click();
+                      }}
+                      className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-paroki-300 bg-white px-4 py-6 text-center transition hover:bg-paroki-50"
+                    >
+                      {uploadingCatalog ? (
+                        <span className="text-sm text-paroki-500">Mengupload...</span>
+                      ) : (
+                        <>
+                          <svg className="mb-2 h-8 w-8 text-paroki-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                          <span className="text-sm text-paroki-500">Klik untuk upload foto katalog</span>
+                          <span className="mt-1 text-xs text-paroki-400">JPG, PNG. Maks 2MB.</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {!locked && (
+                    <input id="upload-catalog" type="file" accept="image/*" onChange={handleCatalogUpload} disabled={uploadingCatalog} className="hidden" />
                   )}
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Action buttons */}
