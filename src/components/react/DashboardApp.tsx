@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, type Business, type Profile, type BusinessStatus, type Product, type Favorite } from '../../lib/supabase';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Tent } from 'lucide-react';
 import FavoriteButton from './FavoriteButton';
+import BazarSchedule from './BazarSchedule';
 
 // ─────────────────────────────────────────────
 // Types
@@ -18,7 +19,7 @@ interface FavoriteProductRow extends Favorite {
   product?: Product & { business?: { id: string; name: string; slug: string } };
 }
 
-type TabKey = 'usaha' | 'verifikasi' | 'favorit';
+type TabKey = 'usaha' | 'verifikasi' | 'favorit' | 'pengaturan' | 'bazar';
 
 // ─────────────────────────────────────────────
 // Status badge helper (preserved from original)
@@ -119,7 +120,7 @@ function TabLink({
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
 interface DashboardAppProps {
-  initialTab?: 'usaha' | 'verifikasi' | 'favorit' | 'pengaturan';
+  initialTab?: 'usaha' | 'verifikasi' | 'favorit' | 'pengaturan' | 'bazar';
 }
 
 export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps) {
@@ -460,6 +461,11 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
           <TabLink href="/dashboard/pengaturan" active={activeTab === 'pengaturan'}>
             Pengaturan
           </TabLink>
+          {businesses.length > 0 && (
+            <TabLink href="/dashboard/bazar" active={activeTab === 'bazar'}>
+              🎪 Bazar
+            </TabLink>
+          )}
         </div>
       </div>
 
@@ -880,6 +886,13 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
             </form>
           </div>
         </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════
+          TAB 5: BAZAR (Jadwal & Konfirmasi)
+      ═══════════════════════════════════════════════════════════ */}
+      {activeTab === 'bazar' && businesses.length > 0 && (
+        <BazarSchedule businessId={businesses[0].id} businessName={businesses[0].name} />
       )}
     </div>
   );

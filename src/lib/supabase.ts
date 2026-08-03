@@ -205,6 +205,72 @@ export interface VerificationRequest {
   updated_at: string;
 }
 
+// ─────────────────────────────────────────────
+// Bazar types
+// ─────────────────────────────────────────────
+export type BazarStatus = 'draft' | 'published' | 'completed' | 'cancelled';
+export type AssignmentStatus = 'assigned' | 'confirmed' | 'absent' | 'completed';
+export type TableArah = 'selatan' | 'utara' | 'timur';
+
+export interface Bazar {
+  id: string;
+  nama: string;
+  tanggal: string;
+  jam_mulai: string;
+  jam_selesai: string;
+  lokasi: string;
+  deskripsi: string;
+  banner_pesan: string;
+  banner_aktif: boolean;
+  status: BazarStatus;
+  confirm_deadline: string | null;
+  payment_deadline: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BazarTable {
+  id: string;
+  bazar_id: string;
+  nomor: number;
+  label: string;
+  arah: TableArah;
+  sort_order: number;
+}
+
+export interface BazarAssignment {
+  id: string;
+  bazar_id: string;
+  table_id: string;
+  business_id: string;
+  status: AssignmentStatus;
+  omset: number | null;
+  catatan: string;
+  assigned_by: string | null;
+  assigned_at: string;
+  confirmed_at: string | null;
+  omset_reported_at: string | null;
+  payment_proof_url: string | null;
+  payment_status: string | null;
+  payment_uploaded_at: string | null;
+  payment_approved_at: string | null;
+  payment_approved_by: string | null;
+  payment_reject_note: string;
+  business?: Business;
+  table?: BazarTable;
+}
+
+export interface BazarWaitlist {
+  id: string;
+  bazar_id: string;
+  business_id: string;
+  status: 'waiting' | 'promoted' | 'cancelled';
+  catatan: string;
+  created_at: string;
+  business?: Business;
+}
+
 export const ECOMMERCE_PLATFORMS = [
   { key: 'tokopedia', label: 'Tokopedia', color: '#03A9F4', icon: '🛒', iconUrl: '/icons/tokopedia.webp' },
   { key: 'shopee', label: 'Shopee', color: '#EE4D2D', icon: '🛍️', iconUrl: '/icons/shopee.png' },

@@ -120,17 +120,27 @@ export default {
         );
         return new Response(html, { status: 200, headers: HTML_HEADERS });
       }
+      // Try specific dashboard subpage
+      const subRes = await fetchAsset(`/dashboard/${segments[1]}/index.html`);
+      if (subRes.ok) {
+        return new Response(subRes.body, { status: 200, headers: HTML_HEADERS });
+      }
     }
 
     // ── Everything else: try static asset ──
     const assetRes = await env.ASSETS.fetch(request);
     if (assetRes.status === 200) return assetRes;
 
-    // Try /path/index.html
+    // Try /path/index.html (handles trailing slash inconsistency)
     const cleanPath = path.endsWith('/') ? path.slice(0, -1) : path;
     const idxRes = await fetchAsset(`${cleanPath}/index.html`);
     if (idxRes.ok) {
       return new Response(idxRes.body, { status: 200, headers: HTML_HEADERS });
+    }
+    // Also try path/index.html (for trailing slash URLs)
+    const idxRes2 = await fetchAsset(`${path}/index.html`);
+    if (idxRes2.ok) {
+      return new Response(idxRes2.body, { status: 200, headers: HTML_HEADERS });
     }
 
     return new Response('Not found', { status: 404, headers: { 'Content-Type': 'text/plain' } });

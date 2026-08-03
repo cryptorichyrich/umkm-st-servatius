@@ -1,0 +1,649 @@
+import { useEffect, useState, useCallback } from "react";
+import {
+  Tent,
+  Megaphone,
+  Calendar,
+  Clock,
+  MapPin,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  DollarSign,
+  Users,
+  AlertCircle,
+} from "lucide-react";
+import {
+  supabase,
+  type Bazar,
+  type BazarAssignment,
+  type AssignmentStatus,
+} from "../../lib/supabase";
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
+
+interface BazarScheduleProps {
+  businessId: string;
+  businessName: string;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function formatTanggal(tanggal: string): string {
+  try {
+    return new Intl.DateTimeFormat("id-ID", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(new Date(tanggal));
+  } catch {
+    return tanggal;
+  }
+}
+
+function formatJam(jam: string | null): string {
+  if (!jam) return "--:--";
+  return jam.slice(0, 5);
+}
+
+function formatIDR(n: number): string {
+  return "Rp" + new Intl.NumberFormat("id-ID").format(n ?? 0);
+}
+
+/** Parse an IDR-formatted string (e.g. "Rp1.500.000") back to a number. */
+function parseIDR(str: string): number {
+  return parseInt(str.replace(/[^\d]/g, ""), 10) || 0;
+}
+
+/** Live-format user keystrokes into IDR display. */
+function formatIDRInput(str: string): string {
+  const num = parseIDR(str);
+  if (num === 0) return "";
+  return new Intl.NumberFormat("id-ID").format(num);
+}
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const ASSIGN_STYLES: Record<AssignmentStatus, string> = {
+  assigned: "bg-yellow-50 text-yellow-700 border-yellow-200",
+  confirmed: "bg-green-50 text-green-700 border-green-200",
+  absent: "bg-red-50 text-red-700 border-red-200",
+  completed: "bg-blue-50 text-blue-700 border-blue-200",
+};
+
+const ASSIGN_LABELS: Record<AssignmentStatus, string> = {
+  assigned: "Menunggu Konfirmasi",
+  confirmed: "Dikonfirmasi",
+  absent: "Tidak Hadir",
+  completed: "Selesai",
+};
+
+// ---------------------------------------------------------------------------
+// Assignment with nested bazar/table data (from joined query)
+// ---------------------------------------------------------------------------
+
+type AssignmentWithRelations = BazarAssignment & {
+  bazar?: Bazar;
+  table?: {
+    id: string;
+    nomor: number;
+    label: string;
+    arah: string;
+  };
+};
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export default function BazarSchedule({
+  businessId,
+  businessName,
+}: BazarScheduleProps) {
+  const [assignments, setAssignments] = useState<AssignmentWithRelations[]>([]);
+  const [waitlistBazars, setWaitlistBazars] = useState<Bazar[]>([]);
+  const [waitlistIds, setWaitlistIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // action loading per assignment id
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  // omset input per assignment id
+  const [omsetInputs, setOmsetInputs] = useState<Record<string, string>>({});
+  const [omsetSubmitting, setOmsetSubmitting] = useState<string | null>(null);
+
+  // -------------------------------------------------------------------------
+  // Fetch assignments
+  // -------------------------------------------------------------------------
+
+  const fetchAssignments = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: err } = await supabase
+        .from("bazar_assignments")
+        .select("*, bazar:bazars(*), table:bazar_tables(*)")
+        .eq("business_id", businessId)
+        .order("tanggal", { referencedTable: "bazar", ascending: false });
+
+      if (err) throw err;
+
+      setAssignments((data ?? []) as unknown as AssignmentWithRelations[]);
+    } catch (e: unknown) {
+      setError(
+        e instanceof Error ? e.message : "Gagal memuat jadwal bazar Anda"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [businessId]);
+
+  // -------------------------------------------------------------------------
+  // Fetch upcoming bazars for waitlist + existing waitlist entries
+  // -------------------------------------------------------------------------
+
+  const fetchWaitlistData = useCallback(async () => {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+
+      const [bazarsRes, waitlistRes] = await Promise.all([
+        supabase
+          .from("bazars")
+          .select("*")
+          .eq("status", "published")
+          .gt("tanggal", today)
+          .order("tanggal"),
+        supabase
+          .from("bazar_waitlist")
+          .select("bazar_id")
+          .eq("business_id", businessId)
+          .eq("status", "waiting"),
+      ]);
+
+      if (bazarsRes.error) throw bazarsRes.error;
+      if (waitlistRes.error) throw waitlistRes.error;
+
+      setWaitlistBazars((bazarsRes.data ?? []) as unknown as Bazar[]);
+
+      const wlSet = new Set(
+        ((waitlistRes.data ?? []) as { bazar_id: string }[]).map(
+          (w) => w.bazar_id
+        )
+      );
+      setWaitlistIds(wlSet);
+    } catch {
+      // non-fatal — don't override the main error
+    }
+  }, [businessId]);
+
+  useEffect(() => {
+    void fetchAssignments();
+    void fetchWaitlistData();
+  }, [fetchAssignments, fetchWaitlistData]);
+
+  // -------------------------------------------------------------------------
+  // Derived: active banner (from the most recent bazar with active banner)
+  // -------------------------------------------------------------------------
+
+  const activeBanner = assignments
+    .map((a) => a.bazar)
+    .find((b) => b?.banner_aktif && b?.banner_pesan);
+
+  // -------------------------------------------------------------------------
+  // Actions: confirm / decline
+  // -------------------------------------------------------------------------
+
+  async function handleConfirm(a: AssignmentWithRelations) {
+    setActionLoading(a.id);
+    setError(null);
+    try {
+      const { error: err } = await supabase
+        .from("bazar_assignments")
+        .update({
+          status: "confirmed",
+          confirmed_at: new Date().toISOString(),
+        })
+        .eq("id", a.id);
+      if (err) throw err;
+
+      setAssignments((prev) =>
+        prev.map((x) =>
+          x.id === a.id
+            ? { ...x, status: "confirmed", confirmed_at: new Date().toISOString() }
+            : x
+        )
+      );
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Gagal mengonfirmasi kehadiran");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleDecline(a: AssignmentWithRelations) {
+    setActionLoading(a.id);
+    setError(null);
+    try {
+      const { error: err } = await supabase
+        .from("bazar_assignments")
+        .update({ status: "absent" })
+        .eq("id", a.id);
+      if (err) throw err;
+
+      setAssignments((prev) =>
+        prev.map((x) => (x.id === a.id ? { ...x, status: "absent" } : x))
+      );
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Gagal memperbarui status");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Actions: omset reporting
+  // -------------------------------------------------------------------------
+
+  async function handleOmsetSubmit(a: AssignmentWithRelations) {
+    const raw = omsetInputs[a.id] ?? "";
+    const omset = parseIDR(raw);
+    if (omset <= 0) {
+      setError("Masukkan jumlah omset yang valid");
+      return;
+    }
+    setOmsetSubmitting(a.id);
+    setError(null);
+    try {
+      const { error: err } = await supabase
+        .from("bazar_assignments")
+        .update({
+          omset,
+          omset_reported_at: new Date().toISOString(),
+        })
+        .eq("id", a.id);
+      if (err) throw err;
+
+      setAssignments((prev) =>
+        prev.map((x) =>
+          x.id === a.id
+            ? {
+                ...x,
+                omset,
+                omset_reported_at: new Date().toISOString(),
+              }
+            : x
+        )
+      );
+      setOmsetInputs((prev) => {
+        const next = { ...prev };
+        delete next[a.id];
+        return next;
+      });
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Gagal menyimpan laporan omset");
+    } finally {
+      setOmsetSubmitting(null);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Actions: join waitlist
+  // -------------------------------------------------------------------------
+
+  async function handleJoinWaitlist(bazarId: string) {
+    setError(null);
+    try {
+      const { error: err } = await supabase
+        .from("bazar_waitlist")
+        .insert({
+          bazar_id: bazarId,
+          business_id: businessId,
+          status: "waiting",
+        });
+      if (err) throw err;
+
+      setWaitlistIds((prev) => new Set(prev).add(bazarId));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Gagal bergabung daftar tunggu");
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Render helpers
+  // -------------------------------------------------------------------------
+
+  function renderStatusBadge(status: AssignmentStatus) {
+    return (
+      <span
+        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+          ASSIGN_STYLES[status] ?? ASSIGN_STYLES.assigned
+        }`}
+      >
+        {status === "confirmed" && <CheckCircle className="h-3 w-3" />}
+        {status === "absent" && <XCircle className="h-3 w-3" />}
+        {ASSIGN_LABELS[status] ?? status}
+      </span>
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Loading state
+  // -------------------------------------------------------------------------
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-12">
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-gold-500" />
+          <span className="ml-2 font-display text-gray-500">
+            Memuat jadwal bazar...
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Render
+  // -------------------------------------------------------------------------
+
+  return (
+    <div className="mx-auto max-w-4xl px-4 py-8">
+      {/* Header */}
+      <div className="mb-6 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-paroki-900 text-gold-500">
+          <Tent className="h-5 w-5" />
+        </div>
+        <div>
+          <h1 className="font-display text-2xl font-bold text-paroki-900">
+            Jadwal Bazar
+          </h1>
+          <p className="text-sm text-gray-500">
+            {businessName} — jadwal dan penugasan meja Anda
+          </p>
+        </div>
+      </div>
+
+      {/* Active banner */}
+      {activeBanner?.banner_pesan && (
+        <div className="sticky top-0 z-10 mb-6 flex items-start gap-3 rounded-lg border border-gold-500 bg-gradient-to-r from-gold-50 to-gold-100 px-4 py-3 shadow-sm">
+          <Megaphone className="mt-0.5 h-5 w-5 shrink-0 text-gold-600" />
+          <div>
+            <p className="font-display text-sm font-semibold text-gold-700">
+              Pengumuman Bazar {activeBanner.nama}
+            </p>
+            <p className="mt-0.5 text-sm text-gold-800">
+              {activeBanner.banner_pesan}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div className="mb-6 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            className="ml-auto text-red-400 hover:text-red-600"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Schedule list */}
+      {assignments.length === 0 ? (
+        <div className="mb-8 rounded-lg border-2 border-dashed border-gray-200 py-20 text-center">
+          <Calendar className="mx-auto mb-3 h-10 w-10 text-gray-300" />
+          <p className="font-display text-gray-500">
+            Belum ada jadwal bazar untuk Anda
+          </p>
+          <p className="mt-1 text-sm text-gray-400">
+            Cek bazar mendatang di bawah dan gabung daftar tunggu
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {assignments.map((a) => {
+            const bazar = a.bazar;
+            if (!bazar) return null;
+
+            const isCompletedBazar = bazar.status === "completed";
+            const omsetReported = a.omset != null && a.omset > 0;
+            const showOmsetForm = isCompletedBazar && !omsetReported;
+            const showConfirmButtons = a.status === "assigned";
+
+            return (
+              <div
+                key={a.id}
+                className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition hover:shadow-md"
+              >
+                {/* Card header */}
+                <div className="border-b border-gray-100 bg-gray-50/50 px-5 py-4">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <h3 className="font-display text-lg font-bold text-paroki-900">
+                      {bazar.nama}
+                    </h3>
+                    {a.status && renderStatusBadge(a.status)}
+                  </div>
+                </div>
+
+                {/* Card body */}
+                <div className="px-5 py-4">
+                  {/* Info grid */}
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <p className="flex items-center gap-2 text-sm text-gray-600">
+                      <Calendar className="h-4 w-4 shrink-0 text-gold-500" />
+                      {formatTanggal(bazar.tanggal ?? "")}
+                    </p>
+                    <p className="flex items-center gap-2 text-sm text-gray-600">
+                      <Clock className="h-4 w-4 shrink-0 text-gold-500" />
+                      {formatJam(bazar.jam_mulai)} – {formatJam(bazar.jam_selesai)}
+                    </p>
+                    {bazar.lokasi && (
+                      <p className="flex items-center gap-2 text-sm text-gray-600">
+                        <MapPin className="h-4 w-4 shrink-0 text-gold-500" />
+                        {bazar.lokasi}
+                      </p>
+                    )}
+                    {a.table && (
+                      <p className="flex items-center gap-2 text-sm text-gray-600">
+                        <Tent className="h-4 w-4 shrink-0 text-gold-500" />
+                        Meja {a.table.nomor}
+                        {a.table.arah && ` · ${capitalize(a.table.arah)}`}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Deskripsi */}
+                  {bazar.deskripsi && (
+                    <p className="mt-3 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-500">
+                      {bazar.deskripsi}
+                    </p>
+                  )}
+
+                  {/* Confirm / Decline buttons */}
+                  {showConfirmButtons && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        disabled={actionLoading === a.id}
+                        onClick={() => handleConfirm(a)}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        Saya Hadir
+                      </button>
+                      <button
+                        disabled={actionLoading === a.id}
+                        onClick={() => handleDecline(a)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                      >
+                        <XCircle className="h-4 w-4" />
+                        Tidak Bisa
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Omset reporting */}
+                  {isCompletedBazar && (
+                    <div className="mt-4 border-t border-gray-100 pt-4">
+                      {omsetReported ? (
+                        <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+                          <CheckCircle className="h-5 w-5 shrink-0 text-green-600" />
+                          <div>
+                            <p className="text-xs font-medium text-green-600">
+                              Omset Dilaporkan
+                            </p>
+                            <p className="font-display text-lg font-bold text-green-700">
+                              {formatIDR(a.omset ?? 0)}
+                            </p>
+                          </div>
+                        </div>
+                      ) : showOmsetForm ? (
+                        <div className="rounded-lg border border-gold-300 bg-gold-50/50 p-4">
+                          <label className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-paroki-900">
+                            <DollarSign className="h-4 w-4 text-gold-600" />
+                            Laporan Omset (Wajib)
+                          </label>
+                          <div className="flex flex-col gap-2 sm:flex-row">
+                            <div className="relative flex-1">
+                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                                Rp
+                              </span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={formatIDRInput(omsetInputs[a.id] ?? "")}
+                                onChange={(e) =>
+                                  setOmsetInputs((prev) => ({
+                                    ...prev,
+                                    [a.id]: e.target.value,
+                                  }))
+                                }
+                                placeholder="0"
+                                className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm focus:border-paroki-700 focus:outline-none focus:ring-1 focus:ring-paroki-700"
+                              />
+                            </div>
+                            <button
+                              disabled={omsetSubmitting === a.id}
+                              onClick={() => handleOmsetSubmit(a)}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gold-500 px-5 py-2 text-sm font-semibold text-paroki-900 transition hover:bg-gold-600 disabled:opacity-50"
+                            >
+                              {omsetSubmitting === a.id ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  Menyimpan...
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="h-4 w-4" />
+                                  Laporkan
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          <p className="mt-1.5 text-xs text-gray-400">
+                            Masukkan total penjualan kotor Anda selama bazar ini.
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Waitlist section */}
+      {waitlistBazars.length > 0 && (
+        <section className="mt-8">
+          <div className="mb-4 flex items-center gap-2">
+            <Users className="h-5 w-5 text-gold-500" />
+            <h2 className="font-display text-lg font-bold text-paroki-900">
+              Bazar Mendatang
+            </h2>
+          </div>
+
+          <div className="space-y-3">
+            {waitlistBazars.map((b) => {
+              const alreadyAssigned = assignments.some(
+                (a) => a.bazar_id === b.id
+              );
+              const onWaitlist = waitlistIds.has(b.id);
+
+              return (
+                <div
+                  key={b.id}
+                  className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <h3 className="font-display font-bold text-paroki-900">
+                      {b.nama}
+                    </h3>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3.5 w-3.5" />
+                        {formatTanggal(b.tanggal ?? "")}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5" />
+                        {formatJam(b.jam_mulai)}–{formatJam(b.jam_selesai)}
+                      </span>
+                      {b.lokasi && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5" />
+                          {b.lokasi}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="shrink-0">
+                    {alreadyAssigned ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700">
+                        <CheckCircle className="h-4 w-4" />
+                        Sudah ditugaskan
+                      </span>
+                    ) : onWaitlist ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-1.5 text-sm font-medium text-yellow-700">
+                        <Clock className="h-4 w-4" />
+                        Di daftar tunggu
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleJoinWaitlist(b.id)}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-paroki-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-paroki-800"
+                      >
+                        <Users className="h-4 w-4" />
+                        Gabung Daftar Tunggu
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Utilities
+// ---------------------------------------------------------------------------
+
+function capitalize(s: string): string {
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}

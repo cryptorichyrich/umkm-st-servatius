@@ -15,6 +15,7 @@ import {
   Inbox,
   AlertCircle,
   Flag,
+  Tent,
 } from 'lucide-react';
 import {
   supabase,
@@ -26,6 +27,7 @@ import {
   type Report,
   type ReportStatus,
 } from '../../lib/supabase';
+import BazarManager from './BazarManager';
 
 // ─────────────────────────────────────────────
 // Status badge
@@ -129,7 +131,8 @@ type TabKey =
   | 'wilayah'
   | 'users'
   | 'reviews'
-  | 'laporan';
+  | 'laporan'
+  | 'bazar';
 
 const VALID_TABS: TabKey[] = [
   'moderasi',
@@ -140,6 +143,7 @@ const VALID_TABS: TabKey[] = [
   'users',
   'reviews',
   'laporan',
+  'bazar',
 ];
 
 function getTabFromURL(): TabKey {
@@ -1441,6 +1445,7 @@ export default function AdminPanel() {
     { key: 'users', label: 'Pengguna', icon: Users },
     { key: 'reviews', label: 'Ulasan', icon: Star },
     { key: 'laporan', label: 'Laporan', icon: Flag },
+    { key: 'bazar', label: 'Bazar', icon: Tent },
   ];
 
   // ───────────────────────────────────────────
@@ -3207,6 +3212,13 @@ export default function AdminPanel() {
             </div>
           )}
         </div>
+      )}
+
+      {/* ─────────────────────────────────────────── */}
+      {/* BAZAR TAB */}
+      {/* ─────────────────────────────────────────── */}
+      {activeTab === 'bazar' && (
+        <BazarManager />
       )}
 
       {/* ─────────────────────────────────────────── */}
