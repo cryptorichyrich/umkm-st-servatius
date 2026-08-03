@@ -112,6 +112,11 @@ export default function DashboardApp() {
     }
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/';
+  };
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('id-ID', {
       day: 'numeric',
@@ -145,12 +150,20 @@ export default function DashboardApp() {
               : 'Kelola usaha Anda di sini.'}
           </p>
         </div>
-        <a
-          href="/dashboard/baru"
-          className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-paroki-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-paroki-700"
-        >
-          <span>+</span> Tambah Usaha Baru
-        </a>
+        <div className="flex items-center gap-2">
+          <a
+            href="/dashboard/baru"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-paroki-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-paroki-700"
+          >
+            <span>+</span> Tambah Usaha Baru
+          </a>
+          <button
+            onClick={handleLogout}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
+          >
+            Keluar
+          </button>
+        </div>
       </div>
 
       {error && (
