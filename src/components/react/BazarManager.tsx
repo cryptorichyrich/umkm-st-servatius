@@ -197,6 +197,31 @@ export default function BazarManager() {
     void fetchBusinesses();
   }, [fetchBazars, fetchBusinesses]);
 
+  // Deep-link: if URL is /admin/bazar/{id}, auto-open that bazar
+  useEffect(() => {
+    if (loading || bazars.length === 0) return;
+    const match = window.location.pathname.match(/\/admin\/bazar\/(.+)/);
+    if (match) {
+      const target = bazars.find((b) => b.id === match[1]);
+      if (target && view === "list") {
+        openEdit(target);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, bazars]);
+
+  // Handle browser back button
+  useEffect(() => {
+    const onPop = () => {
+      if (!window.location.pathname.match(/\/admin\/bazar\/.+/)) {
+        setView("list");
+        setEditingBazar(null);
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   const fetchEditData = useCallback(async (bazarId: string) => {
     try {
       const [tablesRes, assignmentsRes, waitlistRes] = await Promise.all([
@@ -313,6 +338,8 @@ export default function BazarManager() {
   function openEdit(b: Bazar) {
     setEditingBazar(b);
     setView("edit");
+    // Update URL to reflect bazar being edited
+    window.history.pushState({}, "", `/admin/bazar/${b.id}`);
     setForm({
       nama: b.nama ?? "",
       tanggal: b.tanggal ?? "",
@@ -944,6 +971,7 @@ export default function BazarManager() {
             onClick={() => {
               setView("list");
               setEditingBazar(null);
+              window.history.pushState({}, "", "/admin/bazar");
             }}
             className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
           >
