@@ -4,31 +4,71 @@ import '../styles/global.css';
 interface Props {
   title?: string;
   description?: string;
+  image?: string;
+  canonical?: string;
+  type?: 'website' | 'article' | 'product';
+  noindex?: boolean;
+  jsonLd?: object | object[];
 }
 
 const {
-  title = 'Direktori UMKM St. Servatius',
+  title,
   description = 'Direktori usaha dan jasa UMKM umat Paroki St. Servatius. Saling mendukung ekonomi komunitas paroki.',
+  image,
+  canonical,
+  type = 'website',
+  noindex = false,
+  jsonLd,
 } = Astro.props;
 
 const siteName = 'UMKM St. Servatius';
-const fullTitle = title === siteName ? title : `${title} — ${siteName}`;
+const baseUrl = 'https://umkm-st-servatius.fxwisdom1.workers.dev';
+const isHomepage = !title || title === siteName;
+const fullTitle = isHomepage ? siteName : `${title} | ${siteName}`;
+const canonicalUrl = canonical || Astro.url.href;
+const ogImage = image || `${baseUrl}/og-default.jpg`;
 const year = new Date().getFullYear();
 ---
 
 <!doctype html>
 <html lang="id">
   <head>
+    <!-- Basic meta -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
+
+    <!-- Canonical -->
+    <link rel="canonical" href={canonicalUrl} />
+
+    <!-- Robots -->
+    <meta name="robots" content={noindex ? 'noindex,nofollow' : 'index,follow'} />
+
+    <!-- Theme color -->
+    <meta name="theme-color" content="#15803d" />
+
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Sitemap -->
+    <link rel="sitemap" href="/sitemap.xml" />
 
     <!-- Open Graph -->
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
-    <meta property="og:type" content="website" />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:type" content={type} />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:locale" content="id_ID" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
 
     <!-- Fonts: Plus Jakarta Sans (display) + Source Sans 3 (body) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -38,7 +78,10 @@ const year = new Date().getFullYear();
       rel="stylesheet"
     />
 
-    <title>{fullTitle}</title>
+    <!-- JSON-LD structured data -->
+    {jsonLd && (
+      <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    )}
 
     <!-- Load Supabase config from Worker runtime env (dynamic, not baked at build) -->
     <script is:inline src="/__env.js"></script>

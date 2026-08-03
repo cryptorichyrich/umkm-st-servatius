@@ -88,6 +88,7 @@ export interface Business {
   logo_url: string;
   status: BusinessStatus;
   is_featured: boolean;
+  view_count: number;
   rejection_note: string;
   created_at: string;
   updated_at: string;
@@ -115,6 +116,11 @@ export interface Product {
   image_url: string;
   product_type: string;
   is_available: boolean;
+  view_count: number;
+  ecommerce_links: Record<string, string>;
+  rich_description: string;
+  seo_title: string;
+  seo_description: string;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -133,3 +139,42 @@ export interface Review {
   updated_at: string;
   reviewer?: Pick<Profile, 'id' | 'full_name' | 'verification_status'>;
 }
+
+export interface Favorite {
+  id: string;
+  user_id: string;
+  business_id: string | null;
+  product_id: string | null;
+  created_at: string;
+}
+
+export interface VerificationRequest {
+  id: string;
+  user_id: string;
+  request_type: 'member' | 'umkm';
+  status: 'pending' | 'approved' | 'rejected';
+  kk_gereja_url: string;
+  ktp_url: string;
+  catalog_url: string;
+  owner_name: string;
+  business_name: string;
+  business_address: string;
+  business_phone: string;
+  category_id: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  review_note: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const ECOMMERCE_PLATFORMS = [
+  { key: 'tokopedia', label: 'Tokopedia', color: '#03A9F4', icon: '🛒' },
+  { key: 'shopee', label: 'Shopee', color: '#EE4D2D', icon: '🛍️' },
+  { key: 'lazada', label: 'Lazada', color: '#0F146D', icon: '🏷️' },
+  { key: 'blibli', label: 'Blibli', color: '#0095DA', icon: '📦' },
+  { key: 'tiktok_shop', label: 'TikTok Shop', color: '#000000', icon: '🎵' },
+  { key: 'bukalapak', label: 'Bukalapak', color: '#E31D33', icon: '📄' },
+  { key: 'website', label: 'Website Sendiri', color: '#10B981', icon: '🌐' },
+  { key: 'whatsapp', label: 'WhatsApp', color: '#25D366', icon: '💬' },
+] as const;

@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured, type Business, type Product, type Review } from '../../lib/supabase';
 import { Search, MapPin, Star, Phone, Clock, Store, Package, ArrowLeft, ArrowRight, MessageCircle } from 'lucide-react';
+import FavoriteButton from './FavoriteButton';
+import ViewCounter from './ViewCounter';
+import PageViewTracker from './PageViewTracker';
 
 interface Props { slug: string; }
 
@@ -12,6 +15,7 @@ const demoBusinesses: Record<string, Business> = {
     instagram: '@kateringbumaria', facebook: '', tiktok: '', operating_hours: { weekdays: '08:00 - 17:00', weekend: '07:00 - 14:00' },
     logo_url: '', status: 'approved', is_featured: true, rejection_note: '',
     created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+    view_count: 42,
     category: { id: '1', name: 'Kuliner & Minuman', slug: 'kuliner-minuman', icon: '', sort_order: 1 }, images: [],
   },
 };
@@ -168,6 +172,7 @@ export default function BusinessDetail({ slug }: Props) {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
+      <PageViewTracker type="business" slug={slug} />
       <nav className="mb-4 flex items-center gap-1.5 text-sm text-gray-400">
         <a href="/" className="transition hover:text-paroki-700">Beranda</a><span>/</span>
         <a href="/direktori" className="transition hover:text-paroki-700">Direktori</a><span>/</span>
@@ -200,12 +205,18 @@ export default function BusinessDetail({ slug }: Props) {
             {business.is_featured && <span className="inline-flex items-center gap-1 rounded-full bg-gold-100 px-3 py-1 text-xs font-bold text-gold-700"><Star className="h-3.5 w-3.5" />Pilihan</span>}
           </div>
           <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink break-words">{business.name}</h1>
+          <div className="mt-2 flex items-center gap-3">
+            <ViewCounter count={business.view_count || 0} />
+          </div>
         </div>
-        {waLink && (
-          <a href={waLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-gold-500 px-5 py-3 font-bold text-white transition hover:bg-gold-600 active:translate-y-px">
-            <MessageCircle className="h-5 w-5" />Hubungi via WhatsApp
-          </a>
-        )}
+        <div className="flex items-center gap-2">
+          <FavoriteButton targetType="business" targetId={business.id} variant="button" />
+          {waLink && (
+            <a href={waLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-gold-500 px-5 py-3 font-bold text-white transition hover:bg-gold-600 active:translate-y-px">
+              <MessageCircle className="h-5 w-5" />Hubungi via WhatsApp
+            </a>
+          )}
+        </div>
       </div>
 
       {business.description && (

@@ -3,29 +3,61 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import ProductDetail from '../../components/react/ProductDetail.tsx';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
+const baseUrl = 'https://umkm-st-servatius.fxwisdom1.workers.dev';
+
 export async function getStaticPaths() {
   if (!isSupabaseConfigured) {
-    return [{ params: { slug: 'dummy' }, props: { slug: 'dummy' } }];
+    return [{ params: { slug: 'dummy' }, props: { slug: 'dummy', product: null } }];
   }
 
-  const { data } = await supabase.from('products').select('slug').eq('is_available', true);
+  const { data } = await supabase
+    .from('products')
+    .select('slug,name,description,price,image_url,updated_at,business:businesses(name)')
+    .eq('is_available', true);
 
-  const slugs = (data || []).map((p) => p.slug);
+  const products = data || [];
 
   // Fallback so build doesn't fail with zero products
-  if (slugs.length === 0) {
-    return [{ params: { slug: 'dummy' }, props: { slug: 'dummy' } }];
+  if (products.length === 0) {
+    return [{ params: { slug: 'dummy' }, props: { slug: 'dummy', product: null } }];
   }
 
-  return slugs.map((slug) => ({
-    params: { slug },
-    props: { slug },
+  return products.map((p) => ({
+    params: { slug: p.slug },
+    props: { slug: p.slug, product: p },
   }));
 }
 
-const { slug } = Astro.props;
+const { slug, product } = Astro.props;
+
+  const businessName = product?.business?.[0]?.name;
+
+// Build Product JSON-LD from server-side data
+const jsonLd = product ? {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: product.name,
+  description: product.description || '',
+  url: `${baseUrl}/produk/${product.slug}`,
+  ...(product.image_url ? { image: product.image_url } : {}),
+  ...(businessName ? { brand: { '@type': 'Brand', name: businessName } } : {}),
+  ...(product.price ? {
+    offers: {
+      '@type': 'Offer',
+      price: product.price,
+      priceCurrency: 'IDR',
+      availability: 'https://schema.org/InStock',
+    },
+  } : {}),
+} : undefined;
 ---
 
-<BaseLayout>
+<BaseLayout
+  title={product?.name}
+  description={product?.description || `Produk UMKM Paroki St. Servatius.`}
+  image={product?.image_url}
+  type="product"
+  jsonLd={jsonLd}
+>
   <ProductDetail client:load slug={slug} />
 </BaseLayout>

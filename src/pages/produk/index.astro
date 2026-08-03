@@ -3,7 +3,26 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import ProductGrid from '../../components/react/ProductGrid.tsx';
 ---
 
-<BaseLayout title="Produk UMKM" description="Jelajahi produk dari UMKM Paroki St. Servatius.">
+<BaseLayout
+  title="Produk UMKM"
+  description="Jelajahi produk dari UMKM Paroki St. Servatius."
+  jsonLd={{
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Produk UMKM St. Servatius',
+    description: 'Jelajahi produk dari UMKM Paroki St. Servatius.',
+    url: 'https://umkm-st-servatius.fxwisdom1.workers.dev/produk',
+    isPartOf: {
+      '@type': 'WebSite',
+      name: 'UMKM St. Servatius',
+      url: 'https://umkm-st-servatius.fxwisdom1.workers.dev',
+    },
+    mainEntity: {
+      '@type': 'ItemList',
+      name: 'Produk UMKM Paroki St. Servatius',
+    },
+  }}
+>
   <section class="mx-auto max-w-6xl px-4 py-8">
     <nav class="mb-4 text-sm text-paroki-500">
       <a href="/" class="hover:text-paroki-700">Home</a>

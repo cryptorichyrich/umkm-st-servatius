@@ -1,12 +1,34 @@
-import { useState, useEffect } from 'react';
-import {
-  supabase,
-  type Business,
-  type Profile,
-  type BusinessStatus,
-} from '../../lib/supabase';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase, type Business, type Profile, type BusinessStatus, type Product, type Favorite } from '../../lib/supabase';
+import ProductForm from './ProductForm';
+import VerificationForm from './VerificationForm';
+import FavoriteButton from './FavoriteButton';
+import ViewCounter from './ViewCounter';
 
-// ----- Status badge helper -----
+// ─────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────
+interface BusinessRow extends Business {
+  category?: { id: string; name: string; slug: string; icon: string; sort_order: number };
+}
+
+type ProductRow = Omit<Product, 'business'> & {
+  business?: { id: string; name: string; slug: string };
+};
+
+interface FavoriteBusinessRow extends Favorite {
+  business?: Business;
+}
+
+interface FavoriteProductRow extends Favorite {
+  product?: Product & { business?: { id: string; name: string; slug: string } };
+}
+
+type TabKey = 'usaha' | 'produk' | 'verifikasi' | 'favorit';
+
+// ─────────────────────────────────────────────
+// Status badge helper (preserved from original)
+// ─────────────────────────────────────────────
 function StatusBadge({ status }: { status: BusinessStatus }) {
   const styles: Record<BusinessStatus, string> = {
     draft: 'bg-gray-100 text-gray-700',
@@ -29,17 +51,94 @@ function StatusBadge({ status }: { status: BusinessStatus }) {
   );
 }
 
-interface BusinessRow extends Business {
-  category?: { id: string; name: string; slug: string; icon: string; sort_order: number };
+// ─────────────────────────────────────────────
+// Verification badge helper (for header)
+// ─────────────────────────────────────────────
+function VerificationBadge({ type, status }: { type: string; status: string }) {
+  if (status === 'verified' && type === 'umkm') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-300">
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5L18.2 22 12 17.5 5.8 22l2.4-8.1L2 9.4h7.6z"/></svg>
+        UMKM
+      </span>
+    );
+  }
+  if (status === 'verified' && type === 'member') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800 ring-1 ring-green-300">
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+        Member
+      </span>
+    );
+  }
+  if (status === 'pending') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-semibold text-yellow-800 ring-1 ring-yellow-300">
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Verifikasi Pending
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-500 ring-1 ring-gray-300">
+      Belum terverifikasi
+    </span>
+  );
 }
 
+// ─────────────────────────────────────────────
+// Tab button
+// ─────────────────────────────────────────────
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold transition ${
+        active
+          ? 'border-paroki-600 text-paroki-700'
+          : 'border-transparent text-paroki-500 hover:text-paroki-700'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════
 export default function DashboardApp() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [businesses, setBusinesses] = useState<BusinessRow[]>([]);
+  const [products, setProducts] = useState<Record<string, ProductRow[]>>({});
+  const [favorites, setFavorites] = useState<{ businesses: FavoriteBusinessRow[]; products: FavoriteProductRow[] }>({ businesses: [], products: [] });
+  const [activeTab, setActiveTab] = useState<TabKey>('usaha');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
 
+  // Track which tabs have been loaded (lazy loading)
+  const [loadedTabs, setLoadedTabs] = useState<Set<TabKey>>(new Set(['usaha']));
+
+  // Product tab state
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productForm, setProductForm] = useState<{ businessId: string; productId?: string } | null>(null);
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
+
+  // Favorites tab state
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
+
+  // ─────────────────────────────────────────────
+  // Initial load: session + profile + businesses
+  // ─────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       const {
@@ -89,7 +188,126 @@ export default function DashboardApp() {
     })();
   }, []);
 
-  const handleSubmitForReview = async (businessId: string) => {
+  // ─────────────────────────────────────────────
+  // Fetch products for all businesses
+  // ─────────────────────────────────────────────
+  const fetchProducts = useCallback(async () => {
+    if (businesses.length === 0) {
+      setProductsLoading(false);
+      return;
+    }
+
+    setProductsLoading(true);
+    try {
+      const businessIds = businesses.map((b) => b.id);
+      const { data, error: prodErr } = await supabase
+        .from('products')
+        .select(
+          `
+          *,
+          business:businesses(id, name, slug)
+        `,
+        )
+        .in('business_id', businessIds)
+        .order('created_at', { ascending: false });
+
+      if (prodErr) throw prodErr;
+
+      // Group by business_id
+      const grouped: Record<string, ProductRow[]> = {};
+      for (const prod of (data || []) as ProductRow[]) {
+        if (!grouped[prod.business_id]) grouped[prod.business_id] = [];
+        grouped[prod.business_id].push(prod);
+      }
+      setProducts(grouped);
+    } catch (err) {
+      console.error('Products fetch error:', err);
+    } finally {
+      setProductsLoading(false);
+    }
+  }, [businesses]);
+
+  // ─────────────────────────────────────────────
+  // Fetch favorites
+  // ─────────────────────────────────────────────
+  const fetchFavorites = useCallback(async () => {
+    setFavoritesLoading(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // Fetch business favorites with business details
+      const { data: bizFavs, error: bizFavErr } = await supabase
+        .from('favorites')
+        .select(
+          `
+          *,
+          business:businesses(*)
+        `,
+        )
+        .eq('user_id', session.user.id)
+        .not('business_id', 'is', null)
+        .order('created_at', { ascending: false });
+
+      if (bizFavErr) throw bizFavErr;
+
+      // Fetch product favorites with product + business details
+      const { data: prodFavs, error: prodFavErr } = await supabase
+        .from('favorites')
+        .select(
+          `
+          *,
+          product:products(
+            *,
+            business:businesses(id, name, slug)
+          )
+        `,
+        )
+        .eq('user_id', session.user.id)
+        .not('product_id', 'is', null)
+        .order('created_at', { ascending: false });
+
+      if (prodFavErr) throw prodFavErr;
+
+      setFavorites({
+        businesses: (bizFavs || []) as FavoriteBusinessRow[],
+        products: (prodFavs || []) as FavoriteProductRow[],
+      });
+    } catch (err) {
+      console.error('Favorites fetch error:', err);
+    } finally {
+      setFavoritesLoading(false);
+    }
+  }, []);
+
+  // ─────────────────────────────────────────────
+  // Tab switching with lazy loading
+  // ─────────────────────────────────────────────
+  const handleTabChange = useCallback(
+    (tab: TabKey) => {
+      setActiveTab(tab);
+
+      // Lazy load data when tab is first activated
+      if (!loadedTabs.has(tab)) {
+        setLoadedTabs((prev) => new Set(prev).add(tab));
+
+        if (tab === 'produk') {
+          fetchProducts();
+        }
+        if (tab === 'favorit') {
+          fetchFavorites();
+        }
+      }
+    },
+    [loadedTabs, fetchProducts, fetchFavorites],
+  );
+
+  // ─────────────────────────────────────────────
+  // Business handlers (preserved from original)
+  // ─────────────────────────────────────────────
+  const handleSubmitForReview = useCallback(async (businessId: string) => {
     setSubmittingId(businessId);
     try {
       const { error: rpcErr } = await supabase.rpc('submit_for_review', {
@@ -110,22 +328,148 @@ export default function DashboardApp() {
     } finally {
       setSubmittingId(null);
     }
-  };
+  }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await supabase.auth.signOut();
     window.location.href = '/';
-  };
+  }, []);
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = useCallback((dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('id-ID', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
     });
-  };
+  }, []);
 
-  // ---- Loading state ----
+  // ─────────────────────────────────────────────
+  // Product handlers
+  // ─────────────────────────────────────────────
+  const handleProductSaved = useCallback(() => {
+    setProductForm(null);
+    fetchProducts();
+  }, [fetchProducts]);
+
+  const handleProductDelete = useCallback(
+    async (productId: string, businessId: string) => {
+      if (!confirm('Yakin ingin menghapus produk ini? Tindakan ini tidak dapat dibatalkan.')) return;
+
+      setDeletingProductId(productId);
+      try {
+        const { error: delErr } = await supabase
+          .from('products')
+          .delete()
+          .eq('id', productId);
+
+        if (delErr) throw delErr;
+
+        // Update local state
+        setProducts((prev) => ({
+          ...prev,
+          [businessId]: (prev[businessId] || []).filter((p) => p.id !== productId),
+        }));
+      } catch (err) {
+        alert(
+          err instanceof Error
+            ? `Gagal menghapus produk: ${err.message}`
+            : 'Gagal menghapus produk.',
+        );
+      } finally {
+        setDeletingProductId(null);
+      }
+    },
+    [],
+  );
+
+  const handleProductToggleAvailable = useCallback(
+    async (productId: string, businessId: string, currentAvailable: boolean) => {
+      try {
+        const { error: updErr } = await supabase
+          .from('products')
+          .update({ is_available: !currentAvailable })
+          .eq('id', productId);
+
+        if (updErr) throw updErr;
+
+        setProducts((prev) => ({
+          ...prev,
+          [businessId]: (prev[businessId] || []).map((p) =>
+            p.id === productId ? { ...p, is_available: !currentAvailable } : p,
+          ),
+        }));
+      } catch (err) {
+        alert(
+          err instanceof Error
+            ? `Gagal mengubah status: ${err.message}`
+            : 'Gagal mengubah status.',
+        );
+      }
+    },
+    [],
+  );
+
+  // ─────────────────────────────────────────────
+  // Favorite removal
+  // ─────────────────────────────────────────────
+  const handleRemoveFavorite = useCallback(
+    async (favId: string, type: 'business' | 'product') => {
+      try {
+        const { error: delErr } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('id', favId);
+
+        if (delErr) throw delErr;
+
+        if (type === 'business') {
+          setFavorites((prev) => ({
+            ...prev,
+            businesses: prev.businesses.filter((f) => f.id !== favId),
+          }));
+        } else {
+          setFavorites((prev) => ({
+            ...prev,
+            products: prev.products.filter((f) => f.id !== favId),
+          }));
+        }
+      } catch (err) {
+        alert(
+          err instanceof Error
+            ? `Gagal menghapus favorit: ${err.message}`
+            : 'Gagal menghapus favorit.',
+        );
+      }
+    },
+    [],
+  );
+
+  // ─────────────────────────────────────────────
+  // Verification request submitted callback
+  // ─────────────────────────────────────────────
+  const handleVerificationSubmitted = useCallback(() => {
+    // Reload profile to reflect pending status
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+      if (data) setProfile(data as Profile);
+    })();
+  }, []);
+
+  // Derived values
+  const isUmkmVerified =
+    profile?.verification_status === 'verified' && profile?.verification_type === 'umkm';
+
+  // ─────────────────────────────────────────────
+  // Loading state
+  // ─────────────────────────────────────────────
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-10">
@@ -138,9 +482,12 @@ export default function DashboardApp() {
     );
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // RENDER
+  // ═══════════════════════════════════════════════════════════════
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-bold text-paroki-900">Dashboard</h1>
@@ -149,6 +496,14 @@ export default function DashboardApp() {
               ? `Selamat datang, ${profile.full_name}!`
               : 'Kelola usaha Anda di sini.'}
           </p>
+          {profile && (
+            <div className="mt-2">
+              <VerificationBadge
+                type={profile.verification_type}
+                status={profile.verification_status}
+              />
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <a
@@ -172,150 +527,511 @@ export default function DashboardApp() {
         </div>
       )}
 
-      {/* Businesses list */}
-      {businesses.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-paroki-300 bg-white py-16 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-paroki-50 text-paroki-400">
-            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9.5 5.5 5h13L20 9.5M4 9.5h16M4 9.5V19a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9.5M9.5 20v-4.5h5V20"/></svg>
-          </div>
-          <p className="font-medium text-paroki-700">Belum ada usaha terdaftar</p>
-          <p className="mt-1 text-sm text-paroki-400">
-            Klik "Tambah Usaha Baru" untuk mulai mendaftarkan usaha Anda.
-          </p>
+      {/* ── Tab Bar ── */}
+      <div className="mb-6 overflow-x-auto border-b border-paroki-200">
+        <div className="flex">
+          <TabButton active={activeTab === 'usaha'} onClick={() => handleTabChange('usaha')}>
+            Usaha Saya
+          </TabButton>
+          <TabButton active={activeTab === 'produk'} onClick={() => handleTabChange('produk')}>
+            Produk Saya
+          </TabButton>
+          <TabButton active={activeTab === 'verifikasi'} onClick={() => handleTabChange('verifikasi')}>
+            Verifikasi
+          </TabButton>
+          <TabButton active={activeTab === 'favorit'} onClick={() => handleTabChange('favorit')}>
+            Favorit Saya
+          </TabButton>
         </div>
-      ) : (
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════
+          TAB 1: USAHA SAYA (Business Management — preserved)
+      ═══════════════════════════════════════════════════════════ */}
+      {activeTab === 'usaha' && (
         <>
-          {/* Desktop table */}
-          <div className="hidden overflow-hidden rounded-2xl border border-paroki-200 bg-white shadow-sm md:block">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-paroki-200 bg-paroki-50 text-paroki-700">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">Nama Usaha</th>
-                  <th className="px-4 py-3 font-semibold">Kategori</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold">Dibuat</th>
-                  <th className="px-4 py-3 text-right font-semibold">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-paroki-100">
+          {businesses.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-paroki-300 bg-white py-16 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-paroki-50 text-paroki-400">
+                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9.5 5.5 5h13L20 9.5M4 9.5h16M4 9.5V19a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9.5M9.5 20v-4.5h5V20"/></svg>
+              </div>
+              <p className="font-medium text-paroki-700">Belum ada usaha terdaftar</p>
+              <p className="mt-1 text-sm text-paroki-400">
+                Klik "Tambah Usaha Baru" untuk mulai mendaftarkan usaha Anda.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Desktop table */}
+              <div className="hidden overflow-hidden rounded-2xl border border-paroki-200 bg-white shadow-sm md:block">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-paroki-200 bg-paroki-50 text-paroki-700">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold">Nama Usaha</th>
+                      <th className="px-4 py-3 font-semibold">Kategori</th>
+                      <th className="px-4 py-3 font-semibold">Status</th>
+                      <th className="px-4 py-3 font-semibold">Dibuat</th>
+                      <th className="px-4 py-3 text-right font-semibold">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-paroki-100">
+                    {businesses.map((b) => (
+                      <tr key={b.id} className="hover:bg-paroki-50/50">
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-paroki-900">{b.name}</div>
+                          {b.status === 'rejected' && b.rejection_note && (
+                            <div className="mt-1 max-w-xs text-xs text-red-600">
+                              Catatan: {b.rejection_note}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-paroki-600">
+                          {b.category ? `${b.category.icon} ${b.category.name}` : '-'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusBadge status={b.status} />
+                        </td>
+                        <td className="px-4 py-3 text-paroki-500">
+                          {formatDate(b.created_at)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex justify-end gap-1.5">
+                            {b.status === 'approved' && (
+                              <a
+                                href={`/umkm/${b.slug}`}
+                                className="rounded-md border border-paroki-200 px-3 py-1.5 text-xs font-medium text-paroki-700 hover:bg-paroki-50"
+                              >
+                                Lihat
+                              </a>
+                            )}
+                            <a
+                              href={`/dashboard/edit?id=${b.id}`}
+                              className="rounded-md border border-paroki-200 px-3 py-1.5 text-xs font-medium text-paroki-700 hover:bg-paroki-50"
+                            >
+                              Edit
+                            </a>
+                            {b.status === 'draft' && (
+                              <button
+                                onClick={() => handleSubmitForReview(b.id)}
+                                disabled={submittingId === b.id}
+                                className="rounded-md bg-paroki-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-paroki-700 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {submittingId === b.id ? 'Mengirim...' : 'Kirim untuk Review'}
+                              </button>
+                            )}
+                            {b.status === 'rejected' && (
+                              <button
+                                onClick={() => handleSubmitForReview(b.id)}
+                                disabled={submittingId === b.id}
+                                className="rounded-md bg-paroki-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-paroki-700 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {submittingId === b.id ? 'Mengirim...' : 'Kirim Ulang'}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="space-y-3 md:hidden">
                 {businesses.map((b) => (
-                  <tr key={b.id} className="hover:bg-paroki-50/50">
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-paroki-900">{b.name}</div>
-                      {b.status === 'rejected' && b.rejection_note && (
-                        <div className="mt-1 max-w-xs text-xs text-red-600">
-                          Catatan: {b.rejection_note}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-paroki-600">
-                      {b.category ? `${b.category.icon} ${b.category.name}` : '-'}
-                    </td>
-                    <td className="px-4 py-3">
+                  <div
+                    key={b.id}
+                    className="rounded-xl border border-paroki-200 bg-white p-4 shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="font-medium text-paroki-900">{b.name}</h3>
+                        <p className="mt-0.5 text-xs text-paroki-500">
+                          {b.category ? `${b.category.icon} ${b.category.name}` : 'Tanpa kategori'}
+                          {' · '}
+                          {formatDate(b.created_at)}
+                        </p>
+                      </div>
                       <StatusBadge status={b.status} />
-                    </td>
-                    <td className="px-4 py-3 text-paroki-500">
-                      {formatDate(b.created_at)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end gap-1.5">
-                        {b.status === 'approved' && (
-                          <a
-                            href={`/umkm/${b.slug}`}
-                            className="rounded-md border border-paroki-200 px-3 py-1.5 text-xs font-medium text-paroki-700 hover:bg-paroki-50"
-                          >
-                            Lihat
-                          </a>
-                        )}
+                    </div>
+
+                    {b.status === 'rejected' && b.rejection_note && (
+                      <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">
+                        Catatan penolakan: {b.rejection_note}
+                      </p>
+                    )}
+
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {b.status === 'approved' && (
                         <a
-                          href={`/dashboard/edit?id=${b.id}`}
+                          href={`/umkm/${b.slug}`}
                           className="rounded-md border border-paroki-200 px-3 py-1.5 text-xs font-medium text-paroki-700 hover:bg-paroki-50"
                         >
-                          Edit
+                          Lihat
                         </a>
-                        {b.status === 'draft' && (
+                      )}
+                      <a
+                        href={`/dashboard/edit?id=${b.id}`}
+                        className="rounded-md border border-paroki-200 px-3 py-1.5 text-xs font-medium text-paroki-700 hover:bg-paroki-50"
+                      >
+                        Edit
+                      </a>
+                      {(b.status === 'draft' || b.status === 'rejected') && (
+                        <button
+                          onClick={() => handleSubmitForReview(b.id)}
+                          disabled={submittingId === b.id}
+                          className="rounded-md bg-paroki-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-paroki-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {submittingId === b.id
+                            ? 'Mengirim...'
+                            : b.status === 'rejected'
+                              ? 'Kirim Ulang'
+                              : 'Kirim untuk Review'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════
+          TAB 2: PRODUK SAYA (Product Management)
+      ═══════════════════════════════════════════════════════════ */}
+      {activeTab === 'produk' && (
+        <>
+          {/* Not UMKM-verified warning */}
+          {!isUmkmVerified && (
+            <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+              <p className="text-sm text-amber-800">
+                Anda perlu verifikasi UMKM untuk menambah produk.{' '}
+                <button
+                  onClick={() => handleTabChange('verifikasi')}
+                  className="font-semibold underline underline-offset-2 hover:text-amber-900"
+                >
+                  Lihat tab Verifikasi.
+                </button>
+              </p>
+            </div>
+          )}
+
+          {/* Inline ProductForm view */}
+          {productForm ? (
+            <div>
+              <button
+                onClick={() => setProductForm(null)}
+                className="mb-3 inline-flex items-center gap-1 text-sm text-paroki-500 hover:text-paroki-700"
+              >
+                ← Kembali
+              </button>
+              <ProductForm
+                key={`${productForm.businessId}-${productForm.productId || 'new'}`}
+                businessId={productForm.businessId}
+                productId={productForm.productId}
+                onSaved={handleProductSaved}
+                onCancel={() => setProductForm(null)}
+              />
+            </div>
+          ) : isUmkmVerified ? (
+            <>
+              {productsLoading ? (
+                <div className="animate-pulse space-y-4">
+                  <div className="h-12 w-full rounded-lg bg-paroki-100" />
+                  <div className="h-12 w-full rounded-lg bg-paroki-100" />
+                  <div className="h-12 w-full rounded-lg bg-paroki-100" />
+                </div>
+              ) : businesses.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-paroki-300 bg-white py-16 text-center">
+                  <p className="font-medium text-paroki-700">Belum ada usaha terdaftar</p>
+                  <p className="mt-1 text-sm text-paroki-400">
+                    Tambahkan usaha terlebih dahulu sebelum menambahkan produk.
+                  </p>
+                </div>
+              ) : businesses.every((b) => (products[b.id] || []).length === 0) ? (
+                /* All businesses have no products → show grouped empty states with add buttons */
+                <div className="space-y-6">
+                  {businesses.map((b) => (
+                    <div key={b.id} className="rounded-xl border border-paroki-200 bg-white p-4 shadow-sm">
+                      <div className="mb-3 flex items-center justify-between">
+                        <h3 className="font-semibold text-paroki-900">{b.name}</h3>
+                        <button
+                          onClick={() => setProductForm({ businessId: b.id })}
+                          className="rounded-md bg-paroki-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-paroki-700"
+                        >
+                          + Tambah Produk
+                        </button>
+                      </div>
+                      <div className="py-8 text-center">
+                        <p className="text-sm text-paroki-400">Belum ada produk. Tambahkan produk pertama Anda!</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                /* Products grouped by business */
+                <div className="space-y-6">
+                  {businesses.map((b) => {
+                    const bizProducts = products[b.id] || [];
+                    return (
+                      <div key={b.id} className="rounded-xl border border-paroki-200 bg-white shadow-sm">
+                        {/* Business header */}
+                        <div className="flex items-center justify-between border-b border-paroki-100 px-4 py-3">
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-paroki-900">{b.name}</h3>
+                            <p className="text-xs text-paroki-400">
+                              {bizProducts.length} produk
+                            </p>
+                          </div>
                           <button
-                            onClick={() => handleSubmitForReview(b.id)}
-                            disabled={submittingId === b.id}
-                            className="rounded-md bg-paroki-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-paroki-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            onClick={() => setProductForm({ businessId: b.id })}
+                            className="flex-shrink-0 rounded-md bg-paroki-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-paroki-700"
                           >
-                            {submittingId === b.id ? 'Mengirim...' : 'Kirim untuk Review'}
+                            + Tambah Produk
                           </button>
-                        )}
-                        {b.status === 'rejected' && (
-                          <button
-                            onClick={() => handleSubmitForReview(b.id)}
-                            disabled={submittingId === b.id}
-                            className="rounded-md bg-paroki-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-paroki-700 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {submittingId === b.id ? 'Mengirim...' : 'Kirim Ulang'}
-                          </button>
+                        </div>
+
+                        {/* Products list */}
+                        {bizProducts.length === 0 ? (
+                          <div className="px-4 py-8 text-center">
+                            <p className="text-sm text-paroki-400">Belum ada produk. Tambahkan produk pertama Anda!</p>
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-paroki-50">
+                            {bizProducts.map((p) => (
+                              <div key={p.id} className="flex items-center gap-3 px-4 py-3 hover:bg-paroki-50/40">
+                                {/* Thumbnail */}
+                                <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-paroki-50">
+                                  {p.image_url ? (
+                                    <img
+                                      src={p.image_url}
+                                      alt={p.name}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-paroki-300">
+                                      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.5-3.5L9 20"/></svg>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Product info */}
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="truncate font-medium text-paroki-900">{p.name}</span>
+                                    <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
+                                      p.product_type === 'jasa'
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : 'bg-paroki-100 text-paroki-700'
+                                    }`}>
+                                      {p.product_type}
+                                    </span>
+                                  </div>
+                                  <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-paroki-500">
+                                    <span>
+                                      {p.price != null
+                                        ? `Rp ${new Intl.NumberFormat('id-ID').format(p.price)}`
+                                        : 'Harga nego'}
+                                      {p.price_note ? ` ${p.price_note}` : ''}
+                                    </span>
+                                    <ViewCounter count={p.view_count} label="dilihat" />
+                                  </div>
+                                </div>
+
+                                {/* Available toggle */}
+                                <button
+                                  onClick={() => handleProductToggleAvailable(p.id, b.id, p.is_available)}
+                                  className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${
+                                    p.is_available
+                                      ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                  }`}
+                                  title={p.is_available ? 'Tersedia (klik untuk nonaktifkan)' : 'Tidak tersedia (klik untuk aktifkan)'}
+                                >
+                                  {p.is_available ? 'Tersedia' : 'Nonaktif'}
+                                </button>
+
+                                {/* Actions */}
+                                <div className="flex flex-shrink-0 items-center gap-1">
+                                  <button
+                                    onClick={() => setProductForm({ businessId: b.id, productId: p.id })}
+                                    className="rounded-md border border-paroki-200 px-2.5 py-1 text-xs font-medium text-paroki-700 hover:bg-paroki-50"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleProductDelete(p.id, b.id)}
+                                    disabled={deletingProductId === p.id}
+                                    className="rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                  >
+                                    {deletingProductId === p.id ? '...' : 'Hapus'}
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile cards */}
-          <div className="space-y-3 md:hidden">
-            {businesses.map((b) => (
-              <div
-                key={b.id}
-                className="rounded-xl border border-paroki-200 bg-white p-4 shadow-sm"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h3 className="font-medium text-paroki-900">{b.name}</h3>
-                    <p className="mt-0.5 text-xs text-paroki-500">
-                      {b.category ? `${b.category.icon} ${b.category.name}` : 'Tanpa kategori'}
-                      {' · '}
-                      {formatDate(b.created_at)}
-                    </p>
-                  </div>
-                  <StatusBadge status={b.status} />
+                    );
+                  })}
                 </div>
+              )}
+            </>
+          ) : null}
+        </>
+      )}
 
-                {b.status === 'rejected' && b.rejection_note && (
-                  <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">
-                    Catatan penolakan: {b.rejection_note}
-                  </p>
-                )}
+      {/* ═══════════════════════════════════════════════════════════
+          TAB 3: VERIFIKASI
+      ═══════════════════════════════════════════════════════════ */}
+      {activeTab === 'verifikasi' && (
+        <div className="overflow-hidden">
+          <VerificationForm
+            currentStatus={profile?.verification_status || 'unverified'}
+            currentType={profile?.verification_type || ''}
+            onRequestSubmitted={handleVerificationSubmitted}
+          />
+        </div>
+      )}
 
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {b.status === 'approved' && (
-                    <a
-                      href={`/umkm/${b.slug}`}
-                      className="rounded-md border border-paroki-200 px-3 py-1.5 text-xs font-medium text-paroki-700 hover:bg-paroki-50"
-                    >
-                      Lihat
-                    </a>
-                  )}
-                  <a
-                    href={`/dashboard/edit?id=${b.id}`}
-                    className="rounded-md border border-paroki-200 px-3 py-1.5 text-xs font-medium text-paroki-700 hover:bg-paroki-50"
-                  >
-                    Edit
-                  </a>
-                  {(b.status === 'draft' || b.status === 'rejected') && (
-                    <button
-                      onClick={() => handleSubmitForReview(b.id)}
-                      disabled={submittingId === b.id}
-                      className="rounded-md bg-paroki-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-paroki-700 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {submittingId === b.id
-                        ? 'Mengirim...'
-                        : b.status === 'rejected'
-                          ? 'Kirim Ulang'
-                          : 'Kirim untuk Review'}
-                    </button>
-                  )}
-                </div>
+      {/* ═══════════════════════════════════════════════════════════
+          TAB 4: FAVORIT SAYA
+      ═══════════════════════════════════════════════════════════ */}
+      {activeTab === 'favorit' && (
+        <>
+          {favoritesLoading ? (
+            <div className="animate-pulse space-y-4">
+              <div className="h-20 w-full rounded-lg bg-paroki-100" />
+              <div className="h-20 w-full rounded-lg bg-paroki-100" />
+            </div>
+          ) : favorites.businesses.length === 0 && favorites.products.length === 0 ? (
+            /* Empty state */
+            <div className="rounded-lg border border-dashed border-paroki-300 bg-white py-16 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-paroki-50 text-paroki-400">
+                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/></svg>
               </div>
-            ))}
-          </div>
+              <p className="font-medium text-paroki-700">Belum ada favorit</p>
+              <p className="mt-1 text-sm text-paroki-400">
+                Anda belum memiliki favorit. Jelajahi direktori untuk menyimpan usaha/produk favorit Anda!
+              </p>
+              <a
+                href="/direktori"
+                className="mt-4 inline-flex items-center rounded-lg bg-paroki-600 px-4 py-2 text-sm font-semibold text-white hover:bg-paroki-700"
+              >
+                Jelajahi Direktori
+              </a>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {/* Usaha Favorit */}
+              {favorites.businesses.length > 0 && (
+                <div>
+                  <h3 className="mb-3 font-serif text-lg font-bold text-paroki-900">
+                    Usaha Favorit
+                  </h3>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {favorites.businesses.map((fav) => {
+                      const biz = fav.business;
+                      if (!biz) return null;
+                      return (
+                        <div
+                          key={fav.id}
+                          className="flex items-center gap-3 rounded-xl border border-paroki-200 bg-white p-3 shadow-sm"
+                        >
+                          {/* Thumbnail / Logo */}
+                          <a href={`/umkm/${biz.slug}`} className="flex-shrink-0">
+                            <div className="h-14 w-14 overflow-hidden rounded-lg bg-paroki-50">
+                              {biz.logo_url ? (
+                                <img src={biz.logo_url} alt={biz.name} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-paroki-300">
+                                  <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 9.5 5.5 5h13L20 9.5M4 9.5h16M4 9.5V19a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9.5M9.5 20v-4.5h5V20"/></svg>
+                                </div>
+                              )}
+                            </div>
+                          </a>
+
+                          {/* Info */}
+                          <a href={`/umkm/${biz.slug}`} className="min-w-0 flex-1">
+                            <h4 className="truncate font-medium text-paroki-900 hover:text-paroki-700">{biz.name}</h4>
+                            <p className="truncate text-xs text-paroki-500">
+                              {biz.area || 'Lokasi tidak tersedia'}
+                            </p>
+                          </a>
+
+                          {/* Remove */}
+                          <button
+                            onClick={() => handleRemoveFavorite(fav.id, 'business')}
+                            className="flex-shrink-0 rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
+                            title="Hapus dari favorit"
+                          >
+                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Produk Favorit */}
+              {favorites.products.length > 0 && (
+                <div>
+                  <h3 className="mb-3 font-serif text-lg font-bold text-paroki-900">
+                    Produk Favorit
+                  </h3>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {favorites.products.map((fav) => {
+                      const prod = fav.product;
+                      if (!prod) return null;
+                      return (
+                        <div
+                          key={fav.id}
+                          className="flex items-center gap-3 rounded-xl border border-paroki-200 bg-white p-3 shadow-sm"
+                        >
+                          {/* Thumbnail */}
+                          <a href={`/produk/${prod.slug}`} className="flex-shrink-0">
+                            <div className="h-14 w-14 overflow-hidden rounded-lg bg-paroki-50">
+                              {prod.image_url ? (
+                                <img src={prod.image_url} alt={prod.name} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-paroki-300">
+                                  <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.5-3.5L9 20"/></svg>
+                                </div>
+                              )}
+                            </div>
+                          </a>
+
+                          {/* Info */}
+                          <a href={`/produk/${prod.slug}`} className="min-w-0 flex-1">
+                            <h4 className="truncate font-medium text-paroki-900 hover:text-paroki-700">{prod.name}</h4>
+                            <p className="truncate text-xs text-paroki-500">
+                              {prod.business?.name || ''}
+                              {prod.price != null
+                                ? ` · Rp ${new Intl.NumberFormat('id-ID').format(prod.price)}`
+                                : ''}
+                            </p>
+                          </a>
+
+                          {/* Remove */}
+                          <button
+                            onClick={() => handleRemoveFavorite(fav.id, 'product')}
+                            className="flex-shrink-0 rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
+                            title="Hapus dari favorit"
+                          >
+                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>

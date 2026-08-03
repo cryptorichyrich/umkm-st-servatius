@@ -17,7 +17,26 @@ const defaultCategories = [
 ];
 ---
 
-<BaseLayout>
+<BaseLayout
+  description="Direktori UMKM Paroki St. Servatius — Temukan usaha dan jasa umat paroki. Kuliner, jasa, kerajinan, dan lainnya dari sesama umat."
+  jsonLd={[
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'UMKM St. Servatius',
+      url: 'https://umkm-st-servatius.fxwisdom1.workers.dev',
+      description: 'Direktori UMKM Paroki St. Servatius — Temukan usaha dan jasa umat paroki',
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: 'UMKM St. Servatius',
+      url: 'https://umkm-st-servatius.fxwisdom1.workers.dev',
+      description: 'Direktori usaha dan jasa UMKM umat Paroki St. Servatius, Kampung Sawah.',
+      areaServed: 'Paroki Santo Servatius, Kampung Sawah',
+    },
+  ]}
+>
   <!-- Hero — light, clean, with green accent stripe -->
   <section class="border-b border-gray-100 bg-paroki-50">
     <div class="mx-auto max-w-6xl px-4 py-16 md:py-20">

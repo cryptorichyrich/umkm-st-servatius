@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, type Business, type Category } from '../../lib/supabase';
 import { Search, MapPin, Store, MessageCircle, ChevronRight } from 'lucide-react';
+import FavoriteButton from './FavoriteButton';
 
 interface Props {
   mode?: 'featured' | 'full' | 'category';
@@ -142,6 +143,9 @@ export default function BusinessGrid({
                       {b.category.name}
                     </span>
                   )}
+                  <div className="absolute right-2 top-2">
+                    <FavoriteButton targetType="business" targetId={b.id} variant="icon" />
+                  </div>
                 </div>
                 <div className="flex flex-1 flex-col p-4">
                   <h3 className="font-display text-base font-bold leading-snug text-ink break-words">{b.name}</h3>

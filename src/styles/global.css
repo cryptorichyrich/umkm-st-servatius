@@ -69,3 +69,70 @@ h1, h2, h3 {
 @utility shadow-soft-lg {
   box-shadow: 0 2px 6px rgba(0, 50, 25, 0.07), 0 12px 28px rgba(0, 50, 25, 0.09);
 }
+
+/* WYSIWYG editor content styling — prose-like for rich_description display */
+.wysiwyg-content {
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+.wysiwyg-content h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.6rem;
+  color: var(--color-ink);
+}
+.wysiwyg-content h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-top: 1.2rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-ink);
+}
+.wysiwyg-content p {
+  margin-bottom: 0.8rem;
+}
+.wysiwyg-content ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 0.8rem;
+}
+.wysiwyg-content ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 0.8rem;
+}
+.wysiwyg-content li {
+  margin-bottom: 0.3rem;
+}
+.wysiwyg-content a {
+  color: var(--color-paroki-600);
+  text-decoration: underline;
+  font-weight: 500;
+}
+.wysiwyg-content a:hover {
+  color: var(--color-paroki-800);
+}
+.wysiwyg-content strong {
+  font-weight: 700;
+  color: var(--color-ink);
+}
+.wysiwyg-content img {
+  max-width: 100%;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+.wysiwyg-content blockquote {
+  border-left: 3px solid var(--color-paroki-300);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  color: var(--color-ink-soft);
+}
+
+/* WYSIWYG editable area (editor mode) */
+.wysiwyg-content[contenteditable]:empty::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}

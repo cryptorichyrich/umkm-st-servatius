@@ -3,6 +3,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import BusinessDetail from '../../components/react/BusinessDetail.tsx';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
+const baseUrl = 'https://umkm-st-servatius.fxwisdom1.workers.dev';
+
 export async function getStaticPaths() {
   // Demo slugs for when Supabase is not configured
   const demoSlugs = ['katering-bu-maria', 'tailor-pak-budi'];
@@ -10,28 +12,54 @@ export async function getStaticPaths() {
   if (!isSupabaseConfigured) {
     return demoSlugs.map((slug) => ({
       params: { slug },
-      props: { slug },
+      props: { slug, business: null },
     }));
   }
 
   const { data } = await supabase
     .from('businesses')
-    .select('slug')
+    .select('slug,name,description,address,phone,whatsapp,logo_url,updated_at,category:categories(name)')
     .eq('status', 'approved');
 
-  const slugs = (data || []).map((b) => b.slug);
+  const bySlug: Record<string, any> = {};
+  for (const b of data || []) {
+    bySlug[b.slug] = b;
+  }
+
   // Include demo slugs so they always work
-  const allSlugs = [...new Set([...slugs, ...demoSlugs])];
+  const allSlugs = [...new Set([...Object.keys(bySlug), ...demoSlugs])];
 
   return allSlugs.map((slug) => ({
     params: { slug },
-    props: { slug },
+    props: { slug, business: bySlug[slug] || null },
   }));
 }
 
-const { slug } = Astro.props;
+const { slug, business } = Astro.props;
+
+const categoryName = business?.category?.[0]?.name;
+
+// Build LocalBusiness JSON-LD from server-side data
+const jsonLd = business ? {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  name: business.name,
+  description: business.description,
+  url: `${baseUrl}/umkm/${business.slug}`,
+  ...(business.address ? { address: { '@type': 'PostalAddress', streetAddress: business.address } } : {}),
+  ...(business.phone ? { telephone: business.phone } : {}),
+  ...(business.whatsapp ? { contactPoint: { '@type': 'ContactPoint', contactType: 'customer service', telephone: business.whatsapp } } : {}),
+  ...(business.logo_url ? { image: business.logo_url } : {}),
+  ...(categoryName ? { additionalType: categoryName } : {}),
+} : undefined;
 ---
 
-<BaseLayout>
+<BaseLayout
+  title={business?.name}
+  description={business?.description || `Detail usaha UMKM Paroki St. Servatius.`}
+  image={business?.logo_url}
+  type="website"
+  jsonLd={jsonLd}
+>
   <BusinessDetail client:load slug={slug} />
 </BaseLayout>

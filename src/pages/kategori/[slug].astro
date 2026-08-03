@@ -43,6 +43,22 @@ const { category } = Astro.props;
 <BaseLayout
   title={category.name}
   description={`Usaha ${category.name} dari umat paroki.`}
+  jsonLd={{
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: `${category.name} — UMKM Paroki St. Servatius`,
+    description: `Usaha ${category.name} dari umat paroki.`,
+    url: `https://umkm-st-servatius.fxwisdom1.workers.dev/kategori/${category.slug}`,
+    isPartOf: {
+      '@type': 'WebSite',
+      name: 'UMKM St. Servatius',
+      url: 'https://umkm-st-servatius.fxwisdom1.workers.dev',
+    },
+    mainEntity: {
+      '@type': 'ItemList',
+      name: `Usaha Kategori ${category.name}`,
+    },
+  }}
 >
   <section class="mx-auto max-w-6xl px-4 py-8">
     <nav class="mb-4 flex items-center gap-1.5 text-sm text-paroki-500">
