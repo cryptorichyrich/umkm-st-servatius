@@ -227,6 +227,12 @@ export interface Bazar {
   confirm_deadline: string | null;
   payment_deadline: string | null;
   created_by: string | null;
+  biaya_partisipasi: number | null;
+  bank_nama: string;
+  bank_rekening: string;
+  bank_atas_nama: string;
+  pembayaran_pesan: string;
+  anti_scam_pesan: string;
   created_at: string;
   updated_at: string;
 }

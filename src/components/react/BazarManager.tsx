@@ -145,6 +145,12 @@ export default function BazarManager() {
     banner_pesan: "",
     banner_aktif: false,
     status: "draft" as BazarStatus,
+    biaya_partisipasi: "50000",
+    bank_nama: "",
+    bank_rekening: "",
+    bank_atas_nama: "",
+    pembayaran_pesan: "",
+    anti_scam_pesan: "",
   });
 
   const [newTableArah, setNewTableArah] = useState<TableArah>("selatan");
@@ -232,12 +238,18 @@ export default function BazarManager() {
       tanggal: new Date().toISOString().slice(0, 10),
       jam_mulai: "06:00",
       jam_selesai: "10:00",
-      lokasi: "Halaman parkiran Utara Gereja.",
+      lokasi: "Halaman parkiran Utama Gereja.",
       deskripsi: "",
       regulasi_url: "",
       banner_pesan: "",
       banner_aktif: false,
       status: "draft",
+      biaya_partisipasi: "50000",
+      bank_nama: "",
+      bank_rekening: "",
+      bank_atas_nama: "",
+      pembayaran_pesan: "",
+      anti_scam_pesan: "",
     });
     setShowCreateForm(true);
   }
@@ -263,6 +275,12 @@ export default function BazarManager() {
           banner_pesan: form.banner_pesan.trim(),
           banner_aktif: form.banner_aktif,
           status: form.status,
+          biaya_partisipasi: form.biaya_partisipasi ? parseInt(form.biaya_partisipasi) : null,
+          bank_nama: form.bank_nama.trim(),
+          bank_rekening: form.bank_rekening.trim(),
+          bank_atas_nama: form.bank_atas_nama.trim(),
+          pembayaran_pesan: form.pembayaran_pesan.trim(),
+          anti_scam_pesan: form.anti_scam_pesan.trim(),
         })
         .select()
         .single();
@@ -304,6 +322,12 @@ export default function BazarManager() {
       banner_pesan: b.banner_pesan ?? "",
       banner_aktif: b.banner_aktif ?? false,
       status: b.status ?? "draft",
+      biaya_partisipasi: b.biaya_partisipasi?.toString() ?? "50000",
+      bank_nama: b.bank_nama ?? "",
+      bank_rekening: b.bank_rekening ?? "",
+      bank_atas_nama: b.bank_atas_nama ?? "",
+      pembayaran_pesan: b.pembayaran_pesan ?? "",
+      anti_scam_pesan: b.anti_scam_pesan ?? "",
     });
     void fetchEditData(b.id);
     setRotation([]);
@@ -328,6 +352,12 @@ export default function BazarManager() {
           banner_pesan: form.banner_pesan.trim(),
           banner_aktif: form.banner_aktif,
           status: form.status,
+          biaya_partisipasi: form.biaya_partisipasi ? parseInt(form.biaya_partisipasi) : null,
+          bank_nama: form.bank_nama.trim(),
+          bank_rekening: form.bank_rekening.trim(),
+          bank_atas_nama: form.bank_atas_nama.trim(),
+          pembayaran_pesan: form.pembayaran_pesan.trim(),
+          anti_scam_pesan: form.anti_scam_pesan.trim(),
         })
         .eq("id", editingBazar.id);
       if (err) throw err;
@@ -1306,6 +1336,12 @@ interface FormFieldsProps {
     banner_pesan: string;
     banner_aktif: boolean;
     status: BazarStatus;
+    biaya_partisipasi: string;
+    bank_nama: string;
+    bank_rekening: string;
+    bank_atas_nama: string;
+    pembayaran_pesan: string;
+    anti_scam_pesan: string;
   };
   setForm: React.Dispatch<
     React.SetStateAction<{
@@ -1319,6 +1355,12 @@ interface FormFieldsProps {
       banner_pesan: string;
       banner_aktif: boolean;
       status: BazarStatus;
+      biaya_partisipasi: string;
+      bank_nama: string;
+      bank_rekening: string;
+      bank_atas_nama: string;
+      pembayaran_pesan: string;
+      anti_scam_pesan: string;
     }>
   >;
 }
@@ -1586,6 +1628,114 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
 
         <p className="mt-1 text-xs text-gray-400">
           Peserta wajib membaca dan menyetujui regulasi ini sebelum konfirmasi ikut bazar.
+        </p>
+      </div>
+
+      {/* ─── Payment Info ─── */}
+      <div className="sm:col-span-2 mt-2">
+        <div className="rounded-lg border border-paroki-200 bg-paroki-50/50 px-4 py-3">
+          <p className="font-display text-sm font-bold text-paroki-800">
+            💳 Informasi Pembayaran Peserta
+          </p>
+        </div>
+      </div>
+
+      {/* Biaya Partisipasi */}
+      <div>
+        <label className="mb-1 block text-sm font-medium text-gray-600">
+          Biaya Partisipasi (Rp)
+        </label>
+        <input
+          type="number"
+          value={form.biaya_partisipasi}
+          onChange={(e) =>
+            setForm((p) => ({ ...p, biaya_partisipasi: e.target.value }))
+          }
+          placeholder="50000"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
+        />
+      </div>
+
+      {/* Nama Bank */}
+      <div>
+        <label className="mb-1 block text-sm font-medium text-gray-600">
+          Nama Bank Tujuan
+        </label>
+        <input
+          type="text"
+          value={form.bank_nama}
+          onChange={(e) =>
+            setForm((p) => ({ ...p, bank_nama: e.target.value }))
+          }
+          placeholder="BCA / Mandiri / BRI"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
+        />
+      </div>
+
+      {/* Nomor Rekening */}
+      <div>
+        <label className="mb-1 block text-sm font-medium text-gray-600">
+          Nomor Rekening Tujuan
+        </label>
+        <input
+          type="text"
+          value={form.bank_rekening}
+          onChange={(e) =>
+            setForm((p) => ({ ...p, bank_rekening: e.target.value }))
+          }
+          placeholder="1234567890"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
+        />
+      </div>
+
+      {/* Atas Nama */}
+      <div>
+        <label className="mb-1 block text-sm font-medium text-gray-600">
+          Atas Nama
+        </label>
+        <input
+          type="text"
+          value={form.bank_atas_nama}
+          onChange={(e) =>
+            setForm((p) => ({ ...p, bank_atas_nama: e.target.value }))
+          }
+          placeholder="Panitia Bazar Paroki"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
+        />
+      </div>
+
+      {/* Pesan Pembayaran Custom */}
+      <div className="sm:col-span-2">
+        <label className="mb-1 block text-sm font-medium text-gray-600">
+          Pesan Pembayaran (tampil setelah konfirmasi hadir)
+        </label>
+        <textarea
+          value={form.pembayaran_pesan}
+          onChange={(e) =>
+            setForm((p) => ({ ...p, pembayaran_pesan: e.target.value }))
+          }
+          rows={3}
+          placeholder="Setelah konfirmasi kehadiran, segera lakukan pembayaran paling lambat hari Jumat. Upload bukti transfer di bawah ini."
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
+        />
+      </div>
+
+      {/* Anti-Scam Warning */}
+      <div className="sm:col-span-2">
+        <label className="mb-1 block text-sm font-medium text-gray-600">
+          ⚠️ Peringatan Keamanan / Anti-Scam
+        </label>
+        <textarea
+          value={form.anti_scam_pesan}
+          onChange={(e) =>
+            setForm((p) => ({ ...p, anti_scam_pesan: e.target.value }))
+          }
+          rows={4}
+          placeholder="PERHATIAN: Keamanan peserta adalah prioritas utama kami. Jangan pernah mentransfer ke nomor rekening selain yang tertera di atas. Kami tidak akan pernah meminta pembayaran via WhatsApp pribadi atau aplikasi lain. Jika ada yang mengaku dari panitia dan meminta transfer ke rekening berbeda, hubungi panitia resmi."
+          className="w-full rounded-lg border border-red-200 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
+        />
+        <p className="mt-1 text-xs text-gray-400">
+          Tampil dengan latar merah di dashboard peserta. Kosongkan untuk disembunyikan.
         </p>
       </div>
 

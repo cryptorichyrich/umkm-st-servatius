@@ -386,22 +386,7 @@ export default function BazarPublic() {
   // -------------------------------------------------------------------------
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      {/* Page header */}
-      <div className="mb-6 flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-paroki-900 text-gold-500">
-          <Store className="h-6 w-6" />
-        </div>
-        <div>
-          <h1 className="font-display text-3xl font-bold text-paroki-900">
-            Bazar UMKM
-          </h1>
-          <p className="text-sm text-gray-500">
-            Jadwal bazar dan denah stand UMKM Paroki St. Servatius
-          </p>
-        </div>
-      </div>
-
+    <div>
       {/* Active banner */}
       {activeBanner?.banner_pesan && (
         <div className="mb-6 flex items-start gap-3 rounded-xl border border-gold-500 bg-gradient-to-r from-gold-50 to-gold-100 px-5 py-4 shadow-sm">

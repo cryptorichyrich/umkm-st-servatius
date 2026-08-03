@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
 import {
-  Tent,
   Megaphone,
   Calendar,
   Clock,
@@ -13,6 +12,10 @@ import {
   AlertCircle,
   FileText,
   ExternalLink,
+  Upload,
+  Copy,
+  ShieldAlert,
+  CreditCard,
 } from "lucide-react";
 import {
   supabase,
@@ -562,6 +565,182 @@ export default function BazarSchedule({
                         <XCircle className="h-4 w-4" />
                         Tidak Bisa
                       </button>
+                    </div>
+                  )}
+
+                  {/* ─── Payment Section (confirmed participants) ─── */}
+                  {a.status === "confirmed" && bazar.bank_rekening && (
+                    <div className="mt-4 border-t border-gray-100 pt-4">
+                      {/* Payment status badge */}
+                      {a.payment_status === "approved" ? (
+                        <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+                          <CheckCircle className="h-5 w-5 shrink-0 text-green-600" />
+                          <div>
+                            <p className="text-xs font-medium text-green-600">
+                              Pembayaran Dikonfirmasi ✓
+                            </p>
+                            <p className="text-xs text-green-500">
+                              Partisipasi Anda lunas. Terima kasih!
+                            </p>
+                          </div>
+                        </div>
+                      ) : a.payment_status === "pending_review" ? (
+                        <div className="flex items-center gap-2 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3">
+                          <Clock className="h-5 w-5 shrink-0 text-yellow-600" />
+                          <div>
+                            <p className="text-xs font-medium text-yellow-700">
+                              Bukti Pembayaran Diterima
+                            </p>
+                            <p className="text-xs text-yellow-500">
+                              Menunggu konfirmasi panitia.
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Custom payment message */}
+                          {bazar.pembayaran_pesan && (
+                            <div className="mb-3 rounded-lg border border-paroki-200 bg-paroki-50/50 px-4 py-3">
+                              <p className="text-sm text-paroki-700">
+                                {bazar.pembayaran_pesan}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Bank details card */}
+                          <div className="rounded-lg border-2 border-paroki-300 bg-white overflow-hidden">
+                            <div className="flex items-center gap-2 bg-paroki-900 px-4 py-2.5">
+                              <CreditCard className="h-4 w-4 text-gold-400" />
+                              <span className="font-display text-sm font-bold text-white">
+                                Transfer Pembayaran
+                              </span>
+                            </div>
+                            <div className="px-4 py-3 space-y-2">
+                              {bazar.biaya_partisipasi != null && bazar.biaya_partisipasi > 0 && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-gray-500">Jumlah</span>
+                                  <span className="font-display font-bold text-paroki-900">
+                                    Rp {bazar.biaya_partisipasi.toLocaleString("id-ID")}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-gray-500">Bank</span>
+                                <span className="text-sm font-medium text-gray-800">{bazar.bank_nama}</span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-gray-500">No. Rekening</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-sm font-bold text-gray-800">{bazar.bank_rekening}</span>
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard?.writeText(bazar.bank_rekening);
+                                    }}
+                                    className="text-gray-400 transition hover:text-paroki-600"
+                                    title="Salin nomor rekening"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-gray-500">Atas Nama</span>
+                                <span className="text-sm font-medium text-gray-800">{bazar.bank_atas_nama}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Anti-scam warning */}
+                          {bazar.anti_scam_pesan && (
+                            <div className="mt-3 flex items-start gap-2.5 rounded-lg border-2 border-red-300 bg-red-50 px-4 py-3">
+                              <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+                              <div>
+                                <p className="text-xs font-bold text-red-800 mb-1">
+                                  ⚠️ PERINGATAN KEAMANAN
+                                </p>
+                                <p className="text-xs leading-relaxed text-red-700">
+                                  {bazar.anti_scam_pesan}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Upload proof */}
+                          <div className="mt-3">
+                            {a.payment_proof_url ? (
+                              <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                                <CheckCircle className="h-4 w-4 shrink-0 text-green-500" />
+                                <a
+                                  href={a.payment_proof_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-paroki-600 hover:underline"
+                                >
+                                  Lihat bukti transfer →
+                                </a>
+                              </div>
+                            ) : (
+                              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-paroki-300 bg-paroki-50/30 px-4 py-3 text-sm font-medium text-paroki-700 transition hover:bg-paroki-50">
+                                <Upload className="h-4 w-4" />
+                                Upload Bukti Transfer
+                                <input
+                                  type="file"
+                                  accept="image/*,application/pdf"
+                                  className="hidden"
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    setActionLoading(a.id);
+                                    const fname = `${a.id}-${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
+                                    const { error: ulErr } = await supabase.storage
+                                      .from("bazar-files")
+                                      .upload(fname, file);
+                                    if (ulErr) {
+                                      setError("Gagal upload: " + ulErr.message);
+                                      setActionLoading(null);
+                                      return;
+                                    }
+                                    const { data: pub } = supabase.storage
+                                      .from("bazar-files")
+                                      .getPublicUrl(fname);
+                                    const { error: updErr } = await supabase
+                                      .from("bazar_assignments")
+                                      .update({
+                                        payment_proof_url: pub.publicUrl,
+                                        payment_status: "pending_review",
+                                        payment_uploaded_at: new Date().toISOString(),
+                                      })
+                                      .eq("id", a.id);
+                                    setActionLoading(null);
+                                    if (updErr) {
+                                      setError("Gagal menyimpan: " + updErr.message);
+                                      return;
+                                    }
+                                    setAssignments((prev) =>
+                                      prev.map((x) =>
+                                        x.id === a.id
+                                          ? {
+                                              ...x,
+                                              payment_proof_url: pub.publicUrl,
+                                              payment_status: "pending_review",
+                                              payment_uploaded_at: new Date().toISOString(),
+                                            }
+                                          : x
+                                      )
+                                    );
+                                  }}
+                                />
+                              </label>
+                            )}
+                            {actionLoading === a.id && (
+                              <p className="mt-1 text-center text-xs text-gray-400">
+                                <Loader2 className="mr-1 inline h-3 w-3 animate-spin" />
+                                Mengunggah...
+                              </p>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
 
