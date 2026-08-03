@@ -16,6 +16,7 @@ import {
   Copy,
   ShieldAlert,
   CreditCard,
+  Store,
 } from "lucide-react";
 import { BazarCardSkeleton } from "./SkeletonLoader";
 import {
@@ -376,7 +377,7 @@ export default function BazarSchedule({
       {/* Header */}
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-paroki-900 text-gold-500">
-          <Tent className="h-5 w-5" />
+          <Store className="h-5 w-5" />
         </div>
         <div>
           <h1 className="font-display text-2xl font-bold text-paroki-900">
@@ -478,7 +479,7 @@ export default function BazarSchedule({
                     )}
                     {a.table && (
                       <p className="flex items-center gap-2 text-sm text-gray-600">
-                        <Tent className="h-4 w-4 shrink-0 text-gold-500" />
+                        <Store className="h-4 w-4 shrink-0 text-gold-500" />
                         Meja {a.table.nomor}
                         {a.table.arah && ` · ${capitalize(a.table.arah)}`}
                       </p>

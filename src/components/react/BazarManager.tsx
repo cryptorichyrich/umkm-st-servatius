@@ -199,16 +199,16 @@ export default function BazarManager() {
 
   // Deep-link: if URL is /admin/bazar/{id}, auto-open that bazar
   useEffect(() => {
-    if (loading || bazars.length === 0) return;
-    const match = window.location.pathname.match(/\/admin\/bazar\/(.+)/);
-    if (match) {
-      const target = bazars.find((b) => b.id === match[1]);
-      if (target && view === "list") {
-        openEdit(target);
-      }
+    const path = window.location.pathname;
+    const match = path.match(/\/admin\/bazar\/([0-9a-f-]+)/);
+    if (!match || loading || bazars.length === 0) return;
+    if (editingBazar?.id === match[1]) return; // already editing this one
+    const target = bazars.find((b) => b.id === match[1]);
+    if (target) {
+      openEdit(target);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, bazars]);
+  }, [loading, bazars, editingBazar]);
 
   // Handle browser back button
   useEffect(() => {
