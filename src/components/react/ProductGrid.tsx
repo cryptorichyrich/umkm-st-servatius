@@ -30,19 +30,32 @@ export default function ProductGrid({
   mode = 'all', businessId, businessSlug, businessName, businessWhatsapp, limit = 12,
 }: Props) {
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const PAGE_SIZE = limit;
 
+  useEffect(() => {
+    if (mode === 'all') {
+      supabase.from('categories').select('*').order('name').then(({ data }) => {
+        if (data) setCategories(data);
+      });
+    }
+  }, [mode]);
+
   const fetchProducts = useCallback(async (reset = false) => {
     setLoading(true);
     const currentPage = reset ? 0 : page;
-    let query = supabase.from('products').select(`*, business:businesses(id, name, slug, whatsapp, category:categories(id, name, slug, icon))`)
+    const bEmbed = selectedCategory
+      ? `business:businesses!inner(id, name, slug, whatsapp, category:categories(id, name, slug, icon))`
+      : `business:businesses(id, name, slug, whatsapp, category:categories(id, name, slug, icon))`;
+    let query = supabase.from('products').select(`*, ${bEmbed}`)
       .eq('is_available', true).order('sort_order', { ascending: true }).order('created_at', { ascending: false });
     if (mode === 'business' && businessId) query = query.eq('business_id', businessId);
+    if (selectedCategory) query = query.eq('business.category_id', selectedCategory);
     if (search.trim()) query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
     if (mode !== 'business') query = query.range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
     const { data, error } = await query;
@@ -51,9 +64,9 @@ export default function ProductGrid({
     else setProducts((prev) => [...prev, ...(data || [])]);
     setHasMore((data?.length || 0) === PAGE_SIZE);
     setLoading(false);
-  }, [mode, businessId, search, page, limit]);
+  }, [mode, businessId, selectedCategory, search, page, limit]);
 
-  useEffect(() => { fetchProducts(true); }, [mode, businessId, search]);
+  useEffect(() => { fetchProducts(true); }, [mode, businessId, selectedCategory, search]);
   useEffect(() => { if (page > 0) fetchProducts(false); }, [page]);
   const handleSearch = (e: React.FormEvent) => { e.preventDefault(); setPage(0); fetchProducts(true); };
   const showFilters = mode === 'all';
@@ -61,7 +74,7 @@ export default function ProductGrid({
   return (
     <div>
       {showFilters && (
-        <div className="mb-6">
+        <div className="mb-6 space-y-3">
           <form onSubmit={handleSearch} className="flex gap-2">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -70,6 +83,15 @@ export default function ProductGrid({
             </div>
             <button type="submit" className="rounded-lg bg-gold-500 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-gold-600 active:translate-y-px">Cari</button>
           </form>
+          {categories.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <select value={selectedCategory} onChange={(e) => { setSelectedCategory(e.target.value); setPage(0); }}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-ink outline-none focus:border-gold-400">
+                <option value="">Semua Kategori</option>
+                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+          )}
         </div>
       )}
 

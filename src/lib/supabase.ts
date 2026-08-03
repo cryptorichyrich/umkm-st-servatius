@@ -125,6 +125,7 @@ export interface Product {
   created_at: string;
   updated_at: string;
   business?: Business;
+  images?: ProductImage[];
 }
 
 export interface Review {
@@ -135,9 +136,45 @@ export interface Review {
   title: string;
   content: string;
   is_visible: boolean;
+  owner_reply: string;
+  owner_reply_at: string | null;
   created_at: string;
   updated_at: string;
   reviewer?: Pick<Profile, 'id' | 'full_name' | 'verification_status'>;
+  images?: ReviewImage[];
+}
+
+export interface ReviewImage {
+  id: string;
+  review_id: string;
+  image_url: string;
+  sort_order: number;
+}
+
+export interface ProductImage {
+  id: string;
+  product_id: string;
+  image_url: string;
+  caption: string;
+  sort_order: number;
+}
+
+export type ReportTarget = 'business' | 'product' | 'review' | 'profile';
+export type ReportReason = 'spam' | 'adult' | 'scam' | 'offensive' | 'false_info' | 'other';
+export type ReportStatus = 'pending' | 'reviewed' | 'actioned' | 'dismissed';
+
+export interface Report {
+  id: string;
+  reporter_id: string | null;
+  target_type: ReportTarget;
+  target_id: string;
+  reason: ReportReason;
+  detail: string;
+  status: ReportStatus;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_note: string;
+  created_at: string;
 }
 
 export interface Favorite {
@@ -169,12 +206,10 @@ export interface VerificationRequest {
 }
 
 export const ECOMMERCE_PLATFORMS = [
-  { key: 'tokopedia', label: 'Tokopedia', color: '#03A9F4', icon: '🛒' },
-  { key: 'shopee', label: 'Shopee', color: '#EE4D2D', icon: '🛍️' },
-  { key: 'lazada', label: 'Lazada', color: '#0F146D', icon: '🏷️' },
-  { key: 'blibli', label: 'Blibli', color: '#0095DA', icon: '📦' },
-  { key: 'tiktok_shop', label: 'TikTok Shop', color: '#000000', icon: '🎵' },
+  { key: 'tokopedia', label: 'Tokopedia', color: '#03A9F4', icon: '🛒', iconUrl: '/icons/tokopedia.webp' },
+  { key: 'shopee', label: 'Shopee', color: '#EE4D2D', icon: '🛍️', iconUrl: '/icons/shopee.png' },
+  { key: 'lazada', label: 'Lazada', color: '#0F146D', icon: '🏷️', iconUrl: '/icons/lazada.webp' },
+  { key: 'blibli', label: 'Blibli', color: '#0095DA', icon: '📦', iconUrl: '/icons/blibli.png' },
   { key: 'bukalapak', label: 'Bukalapak', color: '#E31D33', icon: '📄' },
   { key: 'website', label: 'Website Sendiri', color: '#10B981', icon: '🌐' },
-  { key: 'whatsapp', label: 'WhatsApp', color: '#25D366', icon: '💬' },
 ] as const;

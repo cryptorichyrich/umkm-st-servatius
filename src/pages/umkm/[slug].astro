@@ -5,8 +5,13 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
 const baseUrl = 'https://umkm-st-servatius.fxwisdom1.workers.dev';
 
+// ── SEO helpers ──
+function truncate(s: string, max = 155): string {
+  if (s.length <= max) return s;
+  return s.slice(0, max - 3).trimEnd() + '...';
+}
+
 export async function getStaticPaths() {
-  // Demo slugs for when Supabase is not configured
   const demoSlugs = ['katering-bu-maria', 'tailor-pak-budi'];
 
   if (!isSupabaseConfigured) {
@@ -18,7 +23,9 @@ export async function getStaticPaths() {
 
   const { data } = await supabase
     .from('businesses')
-    .select('slug,name,description,address,phone,whatsapp,logo_url,updated_at,category:categories(name)')
+    .select(`slug,name,description,address,area,phone,whatsapp,
+             instagram,logo_url,updated_at,
+             category:categories(name,slug)`)
     .eq('status', 'approved');
 
   const bySlug: Record<string, any> = {};
@@ -26,7 +33,6 @@ export async function getStaticPaths() {
     bySlug[b.slug] = b;
   }
 
-  // Include demo slugs so they always work
   const allSlugs = [...new Set([...Object.keys(bySlug), ...demoSlugs])];
 
   return allSlugs.map((slug) => ({
@@ -37,26 +43,63 @@ export async function getStaticPaths() {
 
 const { slug, business } = Astro.props;
 
-const categoryName = business?.category?.[0]?.name;
+const catRaw: any = business?.category;
+const categoryName = Array.isArray(catRaw) ? catRaw[0]?.name : catRaw?.name;
 
-// Build LocalBusiness JSON-LD from server-side data
+// ── Auto-generate SEO title ──
+const seoTitle = business
+  ? `${business.name}${categoryName ? ` — ${categoryName}` : ''} | Paroki St. Servatius`
+  : 'UMKM Paroki St. Servatius';
+
+// ── Auto-generate SEO description ──
+let seoDesc: string | undefined;
+if (business) {
+  const parts: string[] = [];
+
+  // Use business description if available
+  if (business.description) parts.push(business.description);
+
+  // Context: category + area
+  if (categoryName) parts.push(`Kategori: ${categoryName}`);
+  if (business.area) parts.push(`Berlokasi di ${business.area}`);
+
+  // Contact info
+  if (business.whatsapp || business.phone) {
+    parts.push('Hubungi via WhatsApp');
+  }
+
+  // Always append site branding
+  parts.push('Direktori UMKM Paroki St. Servatius, Kampung Sawah');
+
+  seoDesc = truncate(parts.join('. '));
+}
+if (!seoDesc) seoDesc = 'Detail usaha UMKM Paroki St. Servatius, Kampung Sawah.';
+
+// ── Enhanced LocalBusiness JSON-LD ──
 const jsonLd = business ? {
   '@context': 'https://schema.org',
   '@type': 'LocalBusiness',
   name: business.name,
-  description: business.description,
+  description: seoDesc,
   url: `${baseUrl}/umkm/${business.slug}`,
   ...(business.address ? { address: { '@type': 'PostalAddress', streetAddress: business.address } } : {}),
+  ...(business.area ? { areaServed: business.area } : {}),
   ...(business.phone ? { telephone: business.phone } : {}),
-  ...(business.whatsapp ? { contactPoint: { '@type': 'ContactPoint', contactType: 'customer service', telephone: business.whatsapp } } : {}),
+  ...(business.whatsapp ? {
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'customer service',
+      telephone: business.whatsapp,
+    },
+  } : {}),
   ...(business.logo_url ? { image: business.logo_url } : {}),
   ...(categoryName ? { additionalType: categoryName } : {}),
 } : undefined;
 ---
 
 <BaseLayout
-  title={business?.name}
-  description={business?.description || `Detail usaha UMKM Paroki St. Servatius.`}
+  title={seoTitle}
+  description={seoDesc}
   image={business?.logo_url}
   type="website"
   jsonLd={jsonLd}

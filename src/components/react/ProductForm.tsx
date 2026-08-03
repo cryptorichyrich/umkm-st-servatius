@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
 import { ChevronDown, ImagePlus, Loader2, Save, X } from 'lucide-react';
 import { supabase, ECOMMERCE_PLATFORMS } from '../../lib/supabase';
 import WysiwygEditor from './WysiwygEditor';
+import PhotoGalleryUploader from './PhotoGalleryUploader';
 
 interface ProductFormProps {
   businessId: string;
@@ -61,6 +62,16 @@ export default function ProductForm({ businessId, productId, onSaved, onCancel }
   const [success, setSuccess] = useState<string | null>(null);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [showSeo, setShowSeo] = useState(false);
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [userId, setUserId] = useState('');
+
+  // ---- Fetch current user ID for storage path ----
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) setUserId(session.user.id);
+    })();
+  }, []);
 
   // ---- Fetch existing product if edit mode ----
   useEffect(() => {
@@ -95,6 +106,15 @@ export default function ProductForm({ businessId, productId, onSaved, onCancel }
         ecommerce_links: prod.ecommerce_links || {},
       });
       setSlugManuallyEdited(true);
+
+      // Fetch gallery images
+      const { data: imgs } = await supabase
+        .from('product_images')
+        .select('image_url')
+        .eq('product_id', productId)
+        .order('sort_order', { ascending: true });
+      setGalleryImages((imgs as { image_url: string }[])?.map((i) => i.image_url) || []);
+
       setLoading(false);
     })();
   }, [productId]);
@@ -259,11 +279,36 @@ export default function ProductForm({ businessId, productId, onSaved, onCancel }
           .update(buildPayload())
           .eq('id', productId);
         if (updateErr) throw updateErr;
+
+        // Sync gallery: delete old, insert new
+        await supabase.from('product_images').delete().eq('product_id', productId);
+        if (galleryImages.length > 0) {
+          await supabase.from('product_images').insert(
+            galleryImages.map((url, i) => ({
+              product_id: productId,
+              image_url: url,
+              sort_order: i,
+            }))
+          );
+        }
       } else {
-        const { error: insertErr } = await supabase
+        const { data: newProd, error: insertErr } = await supabase
           .from('products')
-          .insert(buildPayload());
+          .insert(buildPayload())
+          .select('id')
+          .single();
         if (insertErr) throw insertErr;
+
+        // Insert gallery for new product
+        if (newProd && galleryImages.length > 0) {
+          await supabase.from('product_images').insert(
+            galleryImages.map((url, i) => ({
+              product_id: newProd.id,
+              image_url: url,
+              sort_order: i,
+            }))
+          );
+        }
       }
 
       setSuccess('Produk berhasil disimpan!');
@@ -465,7 +510,7 @@ export default function ProductForm({ businessId, productId, onSaved, onCancel }
 
           {/* Image upload */}
           <div>
-            <label className={labelClass}>Gambar Produk</label>
+            <label className={labelClass}>Gambar Produk Utama</label>
             <div className="flex items-center gap-4">
               {form.image_url ? (
                 <img
@@ -499,6 +544,18 @@ export default function ProductForm({ businessId, productId, onSaved, onCancel }
               </div>
             </div>
           </div>
+
+          {/* Gallery photos */}
+          {userId && (
+            <PhotoGalleryUploader
+              bucket="product-images"
+              folder={userId}
+              images={galleryImages}
+              onChange={setGalleryImages}
+              max={6}
+              label="Galeri Foto Produk"
+            />
+          )}
 
           {/* Short description */}
           <div>
@@ -555,7 +612,11 @@ export default function ProductForm({ businessId, productId, onSaved, onCancel }
                 style={{ borderLeft: `4px solid ${platform.color}` }}
               >
                 <label htmlFor={`ecom-${platform.key}`} className="mb-1.5 flex items-center gap-2 text-sm font-medium text-paroki-700">
-                  <span className="text-base">{platform.icon}</span>
+                  {'iconUrl' in platform && platform.iconUrl ? (
+                    <img src={platform.iconUrl} alt={platform.label} className="h-5 w-5 rounded object-contain" />
+                  ) : (
+                    <span className="text-base">{platform.icon}</span>
+                  )}
                   {platform.label}
                 </label>
                 <input

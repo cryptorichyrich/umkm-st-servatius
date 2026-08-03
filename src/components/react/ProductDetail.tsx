@@ -4,6 +4,7 @@ import { Search, MapPin, Store, Package, ArrowLeft, MessageCircle, ExternalLink,
 import FavoriteButton from './FavoriteButton';
 import ViewCounter from './ViewCounter';
 import PageViewTracker from './PageViewTracker';
+import ReportButton from './ReportButton';
 
 interface Props { slug: string; }
 
@@ -14,6 +15,8 @@ function formatPrice(price: number | null, note: string): string {
 
 export default function ProductDetail({ slug }: Props) {
   const [product, setProduct] = useState<Product | null>(null);
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [activeImage, setActiveImage] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,7 +27,20 @@ export default function ProductDetail({ slug }: Props) {
         .eq('slug', slug)
         .eq('is_available', true)
         .single();
-      if (!error && data) setProduct(data as unknown as Product);
+      if (!error && data) {
+        const p = data as unknown as Product;
+        setProduct(p);
+        // Fetch gallery images
+        const { data: imgs } = await supabase
+          .from('product_images')
+          .select('image_url')
+          .eq('product_id', p.id)
+          .order('sort_order', { ascending: true });
+        const gallery = (imgs as { image_url: string }[])?.map((i) => i.image_url) || [];
+        // Combine: main image first, then gallery
+        const all = [p.image_url, ...gallery].filter(Boolean);
+        setGalleryImages(all);
+      }
       setLoading(false);
     })();
   }, [slug]);
@@ -55,18 +71,33 @@ export default function ProductDetail({ slug }: Props) {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <PageViewTracker type="product" slug={slug} />
-      <nav className="mb-4 flex items-center gap-1.5 text-sm text-gray-400">
+      <nav className="mb-4 flex items-center gap-1.5 text-sm text-gray-500">
         <a href="/" className="transition hover:text-paroki-700">Beranda</a><span>/</span>
         <a href="/produk" className="transition hover:text-paroki-700">Produk</a><span>/</span>
         <span className="font-medium text-gray-700">{product.name}</span>
       </nav>
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-        {/* Image */}
-        <div className="overflow-hidden rounded-xl bg-gray-100 shadow-soft">
-          {product.image_url
-            ? <img src={product.image_url} alt={product.name} className="aspect-square w-full object-cover" />
-            : <div className="flex aspect-square items-center justify-center text-gray-300"><Package className="h-24 w-24" /></div>}
+        {/* Image / Gallery */}
+        <div>
+          <div className="overflow-hidden rounded-xl bg-gray-100 shadow-soft">
+            {galleryImages.length > 0
+              ? <img src={galleryImages[activeImage]} alt={product.name} className="aspect-square w-full object-cover" />
+              : <div className="flex aspect-square items-center justify-center text-gray-300"><Package className="h-24 w-24" /></div>}
+          </div>
+          {galleryImages.length > 1 && (
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+              {galleryImages.map((img, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveImage(i)}
+                  className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition ${activeImage === i ? 'border-gold-500' : 'border-transparent hover:border-gray-300'}`}
+                >
+                  <img src={img} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Info */}
@@ -84,7 +115,10 @@ export default function ProductDetail({ slug }: Props) {
                 </span>
               )}
             </div>
-            <FavoriteButton targetType="product" targetId={product.id} variant="button" />
+            <div className="flex items-center gap-2">
+              <FavoriteButton targetType="product" targetId={product.id} variant="button" />
+              <ReportButton targetType="product" targetId={product.id} variant="full" className="rounded-lg border border-gray-200 px-3 py-2.5" />
+            </div>
           </div>
 
           <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink break-words">{product.name}</h1>
@@ -127,7 +161,11 @@ export default function ProductDetail({ slug }: Props) {
                       className="flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm font-semibold transition hover:shadow-soft active:translate-y-px"
                       style={{ borderColor: platform.color + '40' }}
                     >
-                      <span className="text-lg">{platform.icon}</span>
+                      {'iconUrl' in platform && platform.iconUrl ? (
+                        <img src={platform.iconUrl} alt={platform.label} className="h-6 w-6 rounded object-contain" />
+                      ) : (
+                        <span className="text-lg">{platform.icon}</span>
+                      )}
                       <span className="flex-1 text-ink">{platform.label}</span>
                       <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
                     </a>
@@ -147,7 +185,7 @@ export default function ProductDetail({ slug }: Props) {
                   : <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-50 text-gray-400"><Store className="h-6 w-6" /></div>}
                 <div>
                   <div className="font-display font-bold text-ink">{b.name}</div>
-                  {b.area && <div className="mt-0.5 inline-flex items-center gap-1 text-xs text-gray-400"><MapPin className="h-3.5 w-3.5" />{b.area}</div>}
+                  {b.area && <div className="mt-0.5 inline-flex items-center gap-1 text-xs text-gray-500"><MapPin className="h-3.5 w-3.5" />{b.area}</div>}
                 </div>
               </a>
               {b.description && <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-gray-500">{b.description}</p>}

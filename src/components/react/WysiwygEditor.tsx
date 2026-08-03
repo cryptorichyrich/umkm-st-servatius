@@ -20,8 +20,10 @@ const toolbarButtons: ToolbarButton[] = [
   { label: 'U', title: 'Underline', command: 'underline', className: 'underline' },
   { label: 'H2', title: 'Heading 2', command: 'formatBlock', value: 'h2' },
   { label: 'H3', title: 'Heading 3', command: 'formatBlock', value: 'h3' },
+  { label: '¶', title: 'Paragraph', command: 'formatBlock', value: 'p' },
   { label: '• List', title: 'Bullet List', command: 'insertUnorderedList' },
   { label: '1. List', title: 'Numbered List', command: 'insertOrderedList' },
+  { label: '❝ Quote', title: 'Blockquote', command: 'formatBlock', value: 'blockquote' },
 ];
 
 export default function WysiwygEditor({ value, onChange, placeholder = '' }: WysiwygEditorProps) {
@@ -112,6 +114,18 @@ export default function WysiwygEditor({ value, onChange, placeholder = '' }: Wys
             {btn.label}
           </button>
         ))}
+
+        <button
+          type="button"
+          title="Insert Horizontal Rule"
+          className={`${btnClass} flex items-center gap-1`}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            exec('insertHorizontalRule');
+          }}
+        >
+          ― Garis
+        </button>
 
         <button
           type="button"

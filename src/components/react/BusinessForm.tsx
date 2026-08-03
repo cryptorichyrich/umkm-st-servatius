@@ -1,6 +1,7 @@
 import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
 import { supabase, type Category, type Wilayah, type Lingkungan } from '../../lib/supabase';
 import { CheckCircle, Clock, XCircle } from 'lucide-react';
+import PhotoGalleryUploader from './PhotoGalleryUploader';
 
 interface Props {
   businessId?: string;
@@ -62,6 +63,8 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
   const [rejectionNote, setRejectionNote] = useState<string>('');
   const [uploadingKtp, setUploadingKtp] = useState(false);
   const [uploadingCatalog, setUploadingCatalog] = useState(false);
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [userId, setUserId] = useState('');
 
   // Fetch categories + existing business (if edit mode)
   useEffect(() => {
@@ -74,6 +77,7 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
         window.location.href = '/masuk';
         return;
       }
+      setUserId(session.user.id);
 
       // Fetch categories
       const { data: catData } = await supabase
@@ -137,6 +141,14 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
         });
         setCurrentStatus(biz.status || 'draft');
         setRejectionNote(biz.rejection_note || '');
+
+        // Fetch existing gallery images
+        const { data: bizImgs } = await supabase
+          .from('business_images')
+          .select('image_url')
+          .eq('business_id', businessId)
+          .order('sort_order', { ascending: true });
+        setGalleryImages((bizImgs as { image_url: string }[])?.map((i) => i.image_url) || []);
       }
 
       setLoading(false);
@@ -315,6 +327,7 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
     setError(null);
 
     try {
+      let savedBizId = businessId;
       if (isEdit && businessId) {
         const { error: updateErr } = await supabase
           .from('businesses')
@@ -327,11 +340,26 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
         } = await supabase.auth.getSession();
         if (!session) throw new Error('Sesi berakhir');
 
-        const { error: insertErr } = await supabase.from('businesses').insert({
+        const { data: newBiz, error: insertErr } = await supabase.from('businesses').insert({
           ...buildPayload('draft'),
           owner_id: session.user.id,
-        });
+        }).select('id').single();
         if (insertErr) throw insertErr;
+        savedBizId = newBiz.id;
+      }
+
+      // Sync gallery images
+      if (savedBizId) {
+        await supabase.from('business_images').delete().eq('business_id', savedBizId);
+        if (galleryImages.length > 0) {
+          await supabase.from('business_images').insert(
+            galleryImages.map((url, i) => ({
+              business_id: savedBizId,
+              image_url: url,
+              sort_order: i,
+            }))
+          );
+        }
       }
 
       window.location.href = '/dashboard';
@@ -555,6 +583,18 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
             </div>
           </div>
         </div>
+
+        {/* Gallery photos */}
+        {userId && (
+          <PhotoGalleryUploader
+            bucket="business-images"
+            folder={`${userId}/gallery`}
+            images={galleryImages}
+            onChange={setGalleryImages}
+            max={8}
+            label="Galeri Usaha"
+          />
+        )}
 
         {/* Wilayah + Lingkungan */}
         <div className="grid gap-4 sm:grid-cols-2">

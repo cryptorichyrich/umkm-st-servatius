@@ -112,7 +112,12 @@ export default function AuthForm({ mode }: Props) {
       </div>
 
       <div>
-        <label htmlFor="password" className={labelClass}>Kata Sandi</label>
+        <div className="mb-1.5 flex items-center justify-between">
+          <label htmlFor="password" className={labelClass}>Kata Sandi</label>
+          <a href="/lupa-sandi" className="text-xs font-medium text-paroki-700 hover:text-paroki-900 hover:underline">
+            Lupa kata sandi?
+          </a>
+        </div>
         <div className="relative">
           <input id="password" type={showPassword ? 'text' : 'password'} required minLength={6} value={password}
             onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"

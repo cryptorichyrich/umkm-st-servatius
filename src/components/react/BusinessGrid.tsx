@@ -17,7 +17,7 @@ export default function BusinessGrid({
   limit = 12,
 }: Props) {
   const [businesses, setBusinesses] = useState<Business[]>([]);
-  const [categories] = useState<Category[]>(initialCategories);
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(categoryId || '');
@@ -62,8 +62,12 @@ export default function BusinessGrid({
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('businesses').select('area').eq('status', 'approved').not('area', 'eq', '');
-      setAreas([...new Set((data || []).map((d) => d.area))].sort());
+      const [areaRes, catRes] = await Promise.all([
+        supabase.from('businesses').select('area').eq('status', 'approved').not('area', 'eq', ''),
+        initialCategories.length === 0 ? supabase.from('categories').select('*').order('name') : Promise.resolve({ data: null }),
+      ]);
+      setAreas([...new Set((areaRes.data || []).map((d) => d.area))].sort());
+      if (catRes.data) setCategories(catRes.data);
     })();
   }, []);
 

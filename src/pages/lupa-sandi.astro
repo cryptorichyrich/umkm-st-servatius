@@ -1,0 +1,36 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ForgotPassword from '../components/react/ForgotPassword.tsx';
+
+const title = 'Lupa Kata Sandi';
+---
+
+<BaseLayout title={title} noindex>
+  <section class="flex min-h-[calc(100vh-12rem)] items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md">
+      <div class="rounded-lg border border-gray-200 bg-white p-8 shadow-soft">
+        <div class="mb-6 text-center">
+          <span class="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-paroki-900 text-white">
+            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </span>
+          <h1 class="font-display text-2xl font-bold text-ink">Lupa Kata Sandi?</h1>
+          <p class="mt-1 text-sm text-paroki-600">
+            Masukkan email Anda. Kami akan mengirim tautan untuk mengatur ulang kata sandi.
+          </p>
+        </div>
+
+        <ForgotPassword client:load />
+
+        <p class="mt-6 text-center text-sm text-paroki-600">
+          Ingat kata sandi Anda?
+          <a href="/masuk" class="ml-1 font-semibold text-paroki-700 hover:text-paroki-900 hover:underline">
+            Masuk di sini
+          </a>
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

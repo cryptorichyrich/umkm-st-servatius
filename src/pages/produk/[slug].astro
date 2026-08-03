@@ -5,6 +5,27 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
 const baseUrl = 'https://umkm-st-servatius.fxwisdom1.workers.dev';
 
+// ── SEO helpers (auto-generate, zero user input required) ──
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function truncate(s: string, max = 155): string {
+  if (s.length <= max) return s;
+  return s.slice(0, max - 3).trimEnd() + '...';
+}
+
+function formatIDR(n: number): string {
+  return 'Rp' + new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(n);
+}
+
 export async function getStaticPaths() {
   if (!isSupabaseConfigured) {
     return [{ params: { slug: 'dummy' }, props: { slug: 'dummy', product: null } }];
@@ -12,12 +33,13 @@ export async function getStaticPaths() {
 
   const { data } = await supabase
     .from('products')
-    .select('slug,name,description,price,image_url,updated_at,business:businesses(name)')
+    .select(`slug,name,description,rich_description,seo_title,seo_description,
+             price,price_note,image_url,updated_at,
+             business:businesses(name,slug,category:categories(name,slug))`)
     .eq('is_available', true);
 
   const products = data || [];
 
-  // Fallback so build doesn't fail with zero products
   if (products.length === 0) {
     return [{ params: { slug: 'dummy' }, props: { slug: 'dummy', product: null } }];
   }
@@ -30,32 +52,72 @@ export async function getStaticPaths() {
 
 const { slug, product } = Astro.props;
 
-  const businessName = product?.business?.[0]?.name;
+// ── Extract business info (Supabase join may return array or object) ──
+const biz: any = product?.business;
+const businessName = Array.isArray(biz) ? biz[0]?.name : biz?.name;
+const bizCatRaw: any = Array.isArray(biz) ? biz[0]?.category : biz?.category;
+const categoryName = Array.isArray(bizCatRaw) ? bizCatRaw[0]?.name : bizCatRaw?.name;
 
-// Build Product JSON-LD from server-side data
+// ── Auto-generate SEO title ──
+const seoTitle = product?.seo_title ||
+  (businessName ? `${product?.name} — ${businessName}` : product?.name) ||
+  'Produk UMKM';
+
+// ── Auto-generate SEO description ──
+let seoDesc = product?.seo_description;
+if (!seoDesc && product) {
+  const parts: string[] = [];
+
+  // Prefer rich_description (HTML stripped), fall back to plain description
+  const rawDesc = stripHtml(product.rich_description || product.description || '');
+  if (rawDesc) parts.push(rawDesc);
+
+  // Business context
+  if (businessName) parts.push(`Oleh ${businessName}`);
+  if (categoryName) parts.push(categoryName);
+
+  // Price
+  if (product.price) parts.push(`Harga ${formatIDR(product.price)}`);
+
+  // Always append site context for branding
+  parts.push('Tersedia di Direktori UMKM Paroki St. Servatius');
+
+  seoDesc = truncate(parts.join('. '));
+}
+if (!seoDesc) seoDesc = 'Produk UMKM Paroki St. Servatius, Kampung Sawah.';
+
+// ── OG image: product image > default ──
+const ogImage = product?.image_url || `${baseUrl}/og-default.jpg`;
+
+// ── Enhanced Product JSON-LD ──
 const jsonLd = product ? {
   '@context': 'https://schema.org',
   '@type': 'Product',
   name: product.name,
-  description: product.description || '',
+  description: seoDesc,
   url: `${baseUrl}/produk/${product.slug}`,
   ...(product.image_url ? { image: product.image_url } : {}),
-  ...(businessName ? { brand: { '@type': 'Brand', name: businessName } } : {}),
+  ...(businessName ? {
+    brand: { '@type': 'Brand', name: businessName },
+    seller: { '@type': 'Organization', name: businessName },
+  } : {}),
+  ...(categoryName ? { category: categoryName } : {}),
   ...(product.price ? {
     offers: {
       '@type': 'Offer',
       price: product.price,
       priceCurrency: 'IDR',
       availability: 'https://schema.org/InStock',
+      url: `${baseUrl}/produk/${product.slug}`,
     },
   } : {}),
 } : undefined;
 ---
 
 <BaseLayout
-  title={product?.name}
-  description={product?.description || `Produk UMKM Paroki St. Servatius.`}
-  image={product?.image_url}
+  title={seoTitle}
+  description={seoDesc}
+  image={ogImage}
   type="product"
   jsonLd={jsonLd}
 >

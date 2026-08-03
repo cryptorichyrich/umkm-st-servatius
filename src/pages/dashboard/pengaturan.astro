@@ -1,0 +1,10 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import DashboardApp from '../../components/react/DashboardApp.tsx';
+
+const title = 'Pengaturan';
+---
+
+<BaseLayout title={title} noindex>
+  <DashboardApp initialTab="pengaturan" client:load />
+</BaseLayout>

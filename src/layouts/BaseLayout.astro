@@ -211,6 +211,7 @@ const year = new Date().getFullYear();
         try {
           const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
           const sb = createClient(window.__SUPABASE__.url, window.__SUPABASE__.key, { auth: { persistSession: true } });
+          window.sb = sb; // expose for inline onclick logout
 
           const { data: { session } } = await sb.auth.getSession();
 
