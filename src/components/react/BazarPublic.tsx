@@ -6,9 +6,9 @@ import {
   Clock,
   MapPin,
   CheckCircle,
-  Loader2,
   History,
 } from "lucide-react";
+import { BazarCardSkeleton } from "./SkeletonLoader";
 import {
   supabase,
   type Bazar,
@@ -370,13 +370,9 @@ export default function BazarPublic() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-12">
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-gold-500" />
-          <span className="ml-2 font-display text-gray-500">
-            Memuat data bazar...
-          </span>
-        </div>
+      <div className="space-y-4">
+        <BazarCardSkeleton />
+        <BazarCardSkeleton />
       </div>
     );
   }
