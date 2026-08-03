@@ -11,6 +11,8 @@ import {
   DollarSign,
   Users,
   AlertCircle,
+  FileText,
+  ExternalLink,
 } from "lucide-react";
 import {
   supabase,
@@ -196,8 +198,34 @@ export default function BazarSchedule({
     .find((b) => b?.banner_aktif && b?.banner_pesan);
 
   // -------------------------------------------------------------------------
-  // Actions: confirm / decline
+  // Actions: accept regulasi / confirm / decline
   // -------------------------------------------------------------------------
+
+  async function handleAcceptRegulasi(a: AssignmentWithRelations) {
+    setActionLoading(a.id);
+    setError(null);
+    try {
+      const { error: err } = await supabase
+        .from("bazar_assignments")
+        .update({
+          regulasi_accepted: true,
+          regulasi_accepted_at: new Date().toISOString(),
+        })
+        .eq("id", a.id);
+      if (err) throw err;
+      setAssignments((prev) =>
+        prev.map((x) =>
+          x.id === a.id
+            ? { ...x, regulasi_accepted: true, regulasi_accepted_at: new Date().toISOString() }
+            : x
+        )
+      );
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Gagal menyimpan persetujuan");
+    } finally {
+      setActionLoading(null);
+    }
+  }
 
   async function handleConfirm(a: AssignmentWithRelations) {
     setActionLoading(a.id);
@@ -420,6 +448,10 @@ export default function BazarSchedule({
             const omsetReported = a.omset != null && a.omset > 0;
             const showOmsetForm = isCompletedBazar && !omsetReported;
             const showConfirmButtons = a.status === "assigned";
+            const hasRegulasi = !!bazar.regulasi_url;
+            const regulasiAccepted = !!a.regulasi_accepted;
+            const showRegulasiGate = showConfirmButtons && hasRegulasi && !regulasiAccepted;
+            const canConfirm = !hasRegulasi || regulasiAccepted;
 
             return (
               <div
@@ -470,13 +502,63 @@ export default function BazarSchedule({
                     </p>
                   )}
 
+                  {/* Regulasi Gate — must accept before confirming */}
+                  {showRegulasiGate && (
+                    <div className="mt-4 rounded-lg border-2 border-gold-300 bg-gold-50 p-4">
+                      <div className="flex items-start gap-3">
+                        <FileText className="mt-0.5 h-5 w-5 shrink-0 text-gold-600" />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-paroki-900">
+                            Wajib Baca Regulasi Bazar
+                          </p>
+                          <p className="mt-0.5 text-xs text-gray-600">
+                            Anda harus membaca dan menyetujui regulasi sebelum dapat mengonfirmasi kehadiran.
+                          </p>
+                          <a
+                            href={bazar.regulasi_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-gold-600"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            Baca Regulasi (PDF)
+                          </a>
+                          <button
+                            disabled={actionLoading === a.id}
+                            onClick={() => handleAcceptRegulasi(a)}
+                            className="mt-2 flex items-center gap-2 text-sm font-medium text-paroki-700"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={false}
+                              onChange={() => {}}
+                              className="pointer-events-none h-4 w-4 rounded border-gray-300"
+                            />
+                            <span className="cursor-pointer underline hover:text-paroki-900">
+                              Saya telah membaca dan menyetujui regulasi bazar
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Regulasi accepted badge */}
+                  {hasRegulasi && regulasiAccepted && (
+                    <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-green-600">
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      Regulasi bazar telah disetujui
+                    </div>
+                  )}
+
                   {/* Confirm / Decline buttons */}
                   {showConfirmButtons && (
                     <div className="mt-4 flex flex-wrap gap-2">
                       <button
-                        disabled={actionLoading === a.id}
+                        disabled={actionLoading === a.id || !canConfirm}
                         onClick={() => handleConfirm(a)}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
+                        title={!canConfirm ? "Setujui regulasi terlebih dahulu" : undefined}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <CheckCircle className="h-4 w-4" />
                         Saya Hadir

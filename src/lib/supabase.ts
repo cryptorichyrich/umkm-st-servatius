@@ -220,6 +220,7 @@ export interface Bazar {
   jam_selesai: string;
   lokasi: string;
   deskripsi: string;
+  regulasi_url: string;
   banner_pesan: string;
   banner_aktif: boolean;
   status: BazarStatus;
@@ -252,6 +253,8 @@ export interface BazarAssignment {
   assigned_at: string;
   confirmed_at: string | null;
   omset_reported_at: string | null;
+  regulasi_accepted: boolean;
+  regulasi_accepted_at: string | null;
   payment_proof_url: string | null;
   payment_status: string | null;
   payment_uploaded_at: string | null;

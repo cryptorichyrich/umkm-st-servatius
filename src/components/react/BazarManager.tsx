@@ -141,6 +141,7 @@ export default function BazarManager() {
     jam_selesai: "",
     lokasi: "",
     deskripsi: "",
+    regulasi_url: "",
     banner_pesan: "",
     banner_aktif: false,
     status: "draft" as BazarStatus,
@@ -233,6 +234,7 @@ export default function BazarManager() {
       jam_selesai: "16:00",
       lokasi: "",
       deskripsi: "",
+      regulasi_url: "",
       banner_pesan: "",
       banner_aktif: false,
       status: "draft",
@@ -257,6 +259,7 @@ export default function BazarManager() {
           jam_selesai: form.jam_selesai,
           lokasi: form.lokasi.trim(),
           deskripsi: form.deskripsi.trim(),
+          regulasi_url: form.regulasi_url.trim(),
           banner_pesan: form.banner_pesan.trim(),
           banner_aktif: form.banner_aktif,
           status: form.status,
@@ -297,6 +300,7 @@ export default function BazarManager() {
       jam_selesai: formatJam(b.jam_selesai ?? null),
       lokasi: b.lokasi ?? "",
       deskripsi: b.deskripsi ?? "",
+      regulasi_url: b.regulasi_url ?? "",
       banner_pesan: b.banner_pesan ?? "",
       banner_aktif: b.banner_aktif ?? false,
       status: b.status ?? "draft",
@@ -320,6 +324,7 @@ export default function BazarManager() {
           jam_selesai: form.jam_selesai,
           lokasi: form.lokasi.trim(),
           deskripsi: form.deskripsi.trim(),
+          regulasi_url: form.regulasi_url.trim(),
           banner_pesan: form.banner_pesan.trim(),
           banner_aktif: form.banner_aktif,
           status: form.status,
@@ -1297,6 +1302,7 @@ interface FormFieldsProps {
     jam_selesai: string;
     lokasi: string;
     deskripsi: string;
+    regulasi_url: string;
     banner_pesan: string;
     banner_aktif: boolean;
     status: BazarStatus;
@@ -1309,6 +1315,7 @@ interface FormFieldsProps {
       jam_selesai: string;
       lokasi: string;
       deskripsi: string;
+      regulasi_url: string;
       banner_pesan: string;
       banner_aktif: boolean;
       status: BazarStatus;
@@ -1431,6 +1438,25 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
           placeholder="Deskripsi singkat bazar..."
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
         />
+      </div>
+
+      {/* Regulasi URL (PDF) */}
+      <div className="sm:col-span-2">
+        <label className="mb-1 block text-sm font-medium text-gray-600">
+          📄 Link Regulasi Bazar (PDF)
+        </label>
+        <input
+          type="url"
+          value={form.regulasi_url}
+          onChange={(e) =>
+            setForm((p) => ({ ...p, regulasi_url: e.target.value }))
+          }
+          placeholder="https://contoh.com/regulasi-bazar.pdf"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
+        />
+        <p className="mt-1 text-xs text-gray-400">
+          Peserta wajib membaca dan menyetujui regulasi ini sebelum konfirmasi ikut bazar.
+        </p>
       </div>
 
       {/* Banner Pesan */}
