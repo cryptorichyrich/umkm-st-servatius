@@ -5,23 +5,16 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | und
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-// Always create a REAL client so method chaining (.from().select().eq()) works
-// even when env vars are missing at build time. With placeholder creds, queries
-// fail gracefully with a network/auth error instead of crashing the page with
-// "TypeError: ...select is not a function".
-// ponytail: ceiling — if Supabase adds a createClient() that throws on bad URL,
-// we'd need a try/catch; v2 tolerates placeholder hosts.
 export const supabase: SupabaseClient = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'public-anon-key-placeholder',
-  {
-    auth: { persistSession: true, autoRefreshToken: true },
-  },
+  { auth: { persistSession: true, autoRefreshToken: true } },
 );
 
 // Database types
 export type BusinessStatus = 'draft' | 'pending' | 'approved' | 'rejected';
-export type UserRole = 'owner' | 'admin';
+export type UserRole = 'owner' | 'member' | 'admin';
+export type VerificationStatus = 'unverified' | 'pending' | 'verified' | 'rejected';
 
 export interface Wilayah {
   id: string;
@@ -50,6 +43,11 @@ export interface Profile {
   phone: string;
   role: UserRole;
   created_at: string;
+  verification_status: VerificationStatus;
+  verification_type: string;
+  verified_at: string | null;
+  verified_by: string | null;
+  verification_note: string;
 }
 
 export interface Business {
@@ -75,9 +73,9 @@ export interface Business {
   rejection_note: string;
   created_at: string;
   updated_at: string;
-  // Joined fields
   category?: Category;
   images?: BusinessImage[];
+  owner?: Pick<Profile, 'id' | 'full_name' | 'verification_status' | 'verification_type'>;
 }
 
 export interface BusinessImage {
@@ -102,6 +100,18 @@ export interface Product {
   sort_order: number;
   created_at: string;
   updated_at: string;
-  // Joined fields
   business?: Business;
+}
+
+export interface Review {
+  id: string;
+  business_id: string;
+  reviewer_id: string;
+  rating: number;
+  title: string;
+  content: string;
+  is_visible: boolean;
+  created_at: string;
+  updated_at: string;
+  reviewer?: Pick<Profile, 'id' | 'full_name' | 'verification_status'>;
 }

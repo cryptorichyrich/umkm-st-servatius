@@ -44,6 +44,30 @@ interface LingkunganRow extends Lingkungan {
   wilayah?: Wilayah;
 }
 
+interface UserProfile {
+  id: string;
+  full_name: string | null;
+  phone: string | null;
+  role: 'owner' | 'member' | 'admin' | null;
+  verification_status: 'unverified' | 'pending' | 'verified' | 'rejected' | null;
+  verification_type: string | null;
+  verified_at: string | null;
+  created_at: string;
+}
+
+interface ReviewRow {
+  id: string;
+  business_id: string;
+  reviewer_id: string;
+  rating: number;
+  title: string | null;
+  content: string | null;
+  is_visible: boolean;
+  created_at: string;
+  business?: { name: string };
+  reviewer?: { full_name: string | null };
+}
+
 interface AdminStats {
   total: number;
   pending: number;
@@ -54,7 +78,7 @@ interface AdminStats {
 // ─────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────
-type TabKey = 'moderasi' | 'listing' | 'kategori' | 'wilayah';
+type TabKey = 'moderasi' | 'listing' | 'kategori' | 'wilayah' | 'users' | 'reviews';
 
 export default function AdminPanel() {
   // ── Auth / loading ──
@@ -97,6 +121,14 @@ export default function AdminPanel() {
   const [lingSort, setLingSort] = useState('0');
   const [lingSubmitting, setLingSubmitting] = useState(false);
   const [editingLingId, setEditingLingId] = useState<string | null>(null);
+
+  // ── User verification ──
+  const [userList, setUserList] = useState<UserProfile[]>([]);
+  const [userVerifyingId, setUserVerifyingId] = useState<string | null>(null);
+
+  // ── Reviews ──
+  const [reviewList, setReviewList] = useState<ReviewRow[]>([]);
+  const [reviewActionId, setReviewActionId] = useState<string | null>(null);
 
   // ───────────────────────────────────────────
   // Fetch helpers
@@ -145,6 +177,24 @@ export default function AdminPanel() {
       .order('sort_order', { ascending: true });
     if (error) throw error;
     setLingkunganList((data || []) as LingkunganRow[]);
+  }, []);
+
+  const fetchUsers = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    setUserList((data || []) as UserProfile[]);
+  }, []);
+
+  const fetchReviews = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*, business:businesses(name), reviewer:profiles(full_name)')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    setReviewList((data || []) as ReviewRow[]);
   }, []);
 
   const computeStats = useCallback(
@@ -196,6 +246,8 @@ export default function AdminPanel() {
           fetchCategories(),
           fetchWilayah(),
           fetchLingkungan(),
+          fetchUsers(),
+          fetchReviews(),
         ]);
       } catch (err) {
         console.error('Admin init error:', err);
@@ -204,7 +256,7 @@ export default function AdminPanel() {
         setLoading(false);
       }
     })();
-  }, [fetchPending, fetchAll, fetchCategories, fetchWilayah, fetchLingkungan]);
+  }, [fetchPending, fetchAll, fetchCategories, fetchWilayah, fetchLingkungan, fetchUsers, fetchReviews]);
 
   // Recompute stats whenever data changes
   useEffect(() => {
@@ -499,6 +551,90 @@ export default function AdminPanel() {
   };
 
   // ───────────────────────────────────────────
+  // User verification actions
+  // ───────────────────────────────────────────
+  const handleVerifyUser = async (
+    userId: string,
+    status: 'verified' | 'rejected',
+  ) => {
+    setUserVerifyingId(userId);
+    setError(null);
+    try {
+      const params: Record<string, unknown> = {
+        p_user_id: userId,
+        p_status: status,
+      };
+      if (status === 'rejected') {
+        params.p_note = 'Ditolak oleh admin';
+      }
+      const { error: rpcErr } = await supabase.rpc('verify_user', params);
+      if (rpcErr) throw rpcErr;
+      await fetchUsers();
+    } catch (err) {
+      alert(
+        err instanceof Error
+          ? `Gagal memverifikasi user: ${err.message}`
+          : 'Gagal memverifikasi user.',
+      );
+    } finally {
+      setUserVerifyingId(null);
+    }
+  };
+
+  // ───────────────────────────────────────────
+  // Review actions
+  // ───────────────────────────────────────────
+  const toggleReviewVisibility = async (
+    reviewId: string,
+    currentVisible: boolean,
+  ) => {
+    setReviewActionId(reviewId);
+    setError(null);
+    try {
+      const { error: updateErr } = await supabase
+        .from('reviews')
+        .update({ is_visible: !currentVisible })
+        .eq('id', reviewId);
+      if (updateErr) throw updateErr;
+      setReviewList((prev) =>
+        prev.map((r) =>
+          r.id === reviewId ? { ...r, is_visible: !currentVisible } : r,
+        ),
+      );
+    } catch (err) {
+      alert(
+        err instanceof Error
+          ? `Gagal mengubah visibilitas: ${err.message}`
+          : 'Gagal mengubah visibilitas ulasan.',
+      );
+    } finally {
+      setReviewActionId(null);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!confirm('Yakin ingin menghapus ulasan ini?')) return;
+    setReviewActionId(reviewId);
+    setError(null);
+    try {
+      const { error: delErr } = await supabase
+        .from('reviews')
+        .delete()
+        .eq('id', reviewId);
+      if (delErr) throw delErr;
+      setReviewList((prev) => prev.filter((r) => r.id !== reviewId));
+    } catch (err) {
+      alert(
+        err instanceof Error
+          ? `Gagal menghapus ulasan: ${err.message}`
+          : 'Gagal menghapus ulasan.',
+      );
+    } finally {
+      setReviewActionId(null);
+    }
+  };
+
+  // ───────────────────────────────────────────
   // Render: Loading
   // ───────────────────────────────────────────
   if (loading) {
@@ -540,6 +676,8 @@ export default function AdminPanel() {
     { key: 'listing', label: 'Semua Listing', icon: '📋' },
     { key: 'kategori', label: 'Kategori', icon: '🗂️' },
     { key: 'wilayah', label: 'Wilayah & Lingkungan', icon: '📍' },
+    { key: 'users', label: 'Verifikasi User', icon: '👥' },
+    { key: 'reviews', label: 'Ulasan', icon: '⭐' },
   ];
 
   // ───────────────────────────────────────────
@@ -1181,6 +1319,207 @@ export default function AdminPanel() {
                 </div>
               );
             })
+          )}
+        </div>
+      )}
+
+      {/* ─────────────────────────────── */}
+      {/* Verifikasi User tab */}
+      {/* ─────────────────────────────── */}
+      {activeTab === 'users' && (
+        <div>
+          {userList.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-paroki-300 bg-white py-16 text-center">
+              <div className="mb-3 text-5xl">👥</div>
+              <p className="text-paroki-600">Belum ada user terdaftar.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {userList.map((u) => (
+                <div
+                  key={u.id}
+                  className="rounded-2xl border border-paroki-200 bg-white p-5 shadow-sm"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    {/* User info */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-lg font-semibold text-paroki-900">
+                          {u.full_name || '(Tanpa nama)'}
+                        </h3>
+                        {/* Role badge */}
+                        {(() => {
+                          const role = u.role;
+                          const roleConfig: Record<string, { label: string; cls: string }> = {
+                            owner: { label: 'UMKM', cls: 'bg-green-100 text-green-800' },
+                            member: { label: 'Anggota', cls: 'bg-blue-100 text-blue-800' },
+                            admin: { label: 'Admin', cls: 'bg-amber-100 text-amber-800' },
+                          };
+                          const rc = role ? roleConfig[role] : null;
+                          if (!rc) return null;
+                          return (
+                            <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${rc.cls}`}>
+                              {rc.label}
+                            </span>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Contact details */}
+                      <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-paroki-500">
+                        {u.phone && <span>📞 {u.phone}</span>}
+                        <span className="font-mono opacity-60">ID: {u.id.slice(0, 8)}...</span>
+                      </div>
+
+                      {/* Verification info */}
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {/* Verification status badge */}
+                        {(() => {
+                          const vs = u.verification_status || 'unverified';
+                          const vsConfig: Record<string, { label: string; cls: string }> = {
+                            unverified: { label: 'Belum Verifikasi', cls: 'bg-gray-100 text-gray-600' },
+                            pending: { label: 'Menunggu', cls: 'bg-yellow-100 text-yellow-800' },
+                            verified: { label: 'Terverifikasi', cls: 'bg-green-100 text-green-800' },
+                            rejected: { label: 'Ditolak', cls: 'bg-red-100 text-red-800' },
+                          };
+                          const vc = vsConfig[vs] || vsConfig.unverified;
+                          return (
+                            <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${vc.cls}`}>
+                              {vc.label}
+                            </span>
+                          );
+                        })()}
+                        {u.verification_type && (
+                          <span className="rounded-full bg-paroki-100 px-2.5 py-0.5 text-xs font-medium text-paroki-700">
+                            📄 {u.verification_type}
+                          </span>
+                        )}
+                        {u.verified_at && (
+                          <span className="text-xs text-paroki-400">
+                            Diverifikasi: {new Date(u.verified_at).toLocaleDateString('id-ID')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action buttons for pending/unverified */}
+                    {(u.verification_status === 'pending' ||
+                      u.verification_status === 'unverified' ||
+                      !u.verification_status) && (
+                      <div className="flex shrink-0 gap-2">
+                        <button
+                          onClick={() => handleVerifyUser(u.id, 'verified')}
+                          disabled={userVerifyingId === u.id}
+                          className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {userVerifyingId === u.id ? '⏳' : '✓'} Verifikasi
+                        </button>
+                        <button
+                          onClick={() => handleVerifyUser(u.id, 'rejected')}
+                          disabled={userVerifyingId === u.id}
+                          className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          ✕ Tolak
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─────────────────────────────── */}
+      {/* Ulasan (Reviews) tab */}
+      {/* ─────────────────────────────── */}
+      {activeTab === 'reviews' && (
+        <div>
+          {reviewList.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-paroki-300 bg-white py-16 text-center">
+              <div className="mb-3 text-5xl">⭐</div>
+              <p className="text-paroki-600">Belum ada ulasan.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {reviewList.map((r) => (
+                <div
+                  key={r.id}
+                  className={`rounded-2xl border bg-white p-5 shadow-sm ${
+                    r.is_visible ? 'border-paroki-200' : 'border-gray-200 opacity-70'
+                  }`}
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    {/* Review content */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-sm font-semibold text-paroki-900">
+                          {r.business?.name || '(Usaha tidak diketahui)'}
+                        </h3>
+                        {!r.is_visible && (
+                          <span className="inline-block rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-medium text-gray-600">
+                            Disembunyikan
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Reviewer + rating */}
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-paroki-500">
+                        <span>oleh {r.reviewer?.full_name || 'Anonim'}</span>
+                        <span className="text-amber-500">
+                          {'★'.repeat(Math.max(1, Math.min(5, r.rating)))}
+                          {'☆'.repeat(Math.max(0, 5 - Math.max(1, Math.min(5, r.rating))))}
+                        </span>
+                        <span className="text-paroki-400">
+                          {new Date(r.created_at).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </span>
+                      </div>
+
+                      {/* Title + content */}
+                      {r.title && (
+                        <p className="mt-2 text-sm font-medium text-paroki-800">
+                          {r.title}
+                        </p>
+                      )}
+                      {r.content && (
+                        <p className="mt-1 text-sm text-paroki-600">{r.content}</p>
+                      )}
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex shrink-0 gap-2">
+                      <button
+                        onClick={() => toggleReviewVisibility(r.id, r.is_visible)}
+                        disabled={reviewActionId === r.id}
+                        className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                          r.is_visible
+                            ? 'border-yellow-300 text-yellow-700 hover:bg-yellow-50'
+                            : 'border-green-300 text-green-700 hover:bg-green-50'
+                        }`}
+                      >
+                        {reviewActionId === r.id
+                          ? '⏳'
+                          : r.is_visible
+                            ? '🙈 Sembunyikan'
+                            : '👁️ Tampilkan'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteReview(r.id)}
+                        disabled={reviewActionId === r.id}
+                        className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        🗑️ Hapus
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}
