@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { supabase } from '../../lib/supabase';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface Props {
   mode: 'login' | 'register';
@@ -10,6 +11,9 @@ export default function AuthForm({ mode }: Props) {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,8 +21,14 @@ export default function AuthForm({ mode }: Props) {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+
+    if (isRegister && password !== confirmPassword) {
+      setError('Kata sandi tidak cocok. Pastikan kedua kata sandi sama.');
+      return;
+    }
+
+    setLoading(true);
 
     try {
       if (isRegister) {
@@ -62,6 +72,18 @@ export default function AuthForm({ mode }: Props) {
     'w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-ink outline-none transition focus:border-gold-400 focus:ring-2 focus:ring-gold-200';
   const labelClass = 'mb-1.5 block text-sm font-medium text-ink-soft';
 
+  const eyeBtn = (show: boolean, toggle: () => void) => (
+    <button
+      type="button"
+      onClick={toggle}
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600"
+      tabIndex={-1}
+      aria-label={show ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+    >
+      {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+    </button>
+  );
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {isRegister && (
@@ -91,10 +113,32 @@ export default function AuthForm({ mode }: Props) {
 
       <div>
         <label htmlFor="password" className={labelClass}>Kata Sandi</label>
-        <input id="password" type="password" required minLength={6} value={password}
-          onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
-          className={inputClass} />
+        <div className="relative">
+          <input id="password" type={showPassword ? 'text' : 'password'} required minLength={6} value={password}
+            onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
+            className={inputClass} />
+          {eyeBtn(showPassword, () => setShowPassword(!showPassword))}
+        </div>
       </div>
+
+      {isRegister && (
+        <div>
+          <label htmlFor="confirm_password" className={labelClass}>Ulangi Kata Sandi</label>
+          <div className="relative">
+            <input id="confirm_password" type={showConfirm ? 'text' : 'password'} required minLength={6} value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••"
+              className={`${inputClass} ${confirmPassword && password !== confirmPassword ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : confirmPassword && password === confirmPassword ? 'border-green-300 focus:border-green-400 focus:ring-green-100' : ''}`}
+            />
+            {eyeBtn(showConfirm, () => setShowConfirm(!showConfirm))}
+          </div>
+          {confirmPassword && password !== confirmPassword && (
+            <p className="mt-1 text-xs text-red-500">Kata sandi tidak cocok</p>
+          )}
+          {confirmPassword && password === confirmPassword && (
+            <p className="mt-1 text-xs text-green-600">✓ Kata sandi cocok</p>
+          )}
+        </div>
+      )}
 
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
