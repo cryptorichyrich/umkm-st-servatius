@@ -20,12 +20,15 @@ interface FormData {
   tiktok: string;
   operating_hours_text: string;
   logo_url: string;
+  ktp_url: string;
+  catalog_url: string;
 }
 
 const emptyForm: FormData = {
   name: '', description: '', category_id: '', whatsapp: '', phone: '', email: '',
   address: '', area: '', lingkungan: '', instagram: '', facebook: '', tiktok: '',
   operating_hours_text: '', logo_url: '',
+  ktp_url: '', catalog_url: '',
 };
 
 function generateSlug(name: string): string {
@@ -54,6 +57,8 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingKtp, setUploadingKtp] = useState(false);
+  const [uploadingCatalog, setUploadingCatalog] = useState(false);
 
   // Fetch categories + existing business (if edit mode)
   useEffect(() => {
@@ -124,6 +129,8 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
           tiktok: biz.tiktok || '',
           operating_hours_text: hoursText,
           logo_url: biz.logo_url || '',
+          ktp_url: biz.ktp_url || '',
+          catalog_url: biz.catalog_url || '',
         });
       }
 
@@ -179,6 +186,90 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
     }
   };
 
+  const handleKtpUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      setError('Sesi berakhir. Silakan masuk kembali.');
+      return;
+    }
+
+    setUploadingKtp(true);
+    setError(null);
+
+    try {
+      const userId = session.user.id;
+      const ext = file.name.split('.').pop() || 'jpg';
+      const fileName = `${userId}/ktp-${Date.now()}.${ext}`;
+
+      const { error: uploadErr } = await supabase.storage
+        .from('verification-docs')
+        .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+      if (uploadErr) throw uploadErr;
+
+      const { data: pubData } = supabase.storage
+        .from('verification-docs')
+        .getPublicUrl(fileName);
+
+      setForm((prev) => ({ ...prev, ktp_url: pubData.publicUrl }));
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? `Gagal upload KTP: ${err.message}`
+          : 'Gagal upload KTP.',
+      );
+    } finally {
+      setUploadingKtp(false);
+    }
+  };
+
+  const handleCatalogUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      setError('Sesi berakhir. Silakan masuk kembali.');
+      return;
+    }
+
+    setUploadingCatalog(true);
+    setError(null);
+
+    try {
+      const userId = session.user.id;
+      const ext = file.name.split('.').pop() || 'jpg';
+      const fileName = `${userId}/catalog-${Date.now()}.${ext}`;
+
+      const { error: uploadErr } = await supabase.storage
+        .from('verification-docs')
+        .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+      if (uploadErr) throw uploadErr;
+
+      const { data: pubData } = supabase.storage
+        .from('verification-docs')
+        .getPublicUrl(fileName);
+
+      setForm((prev) => ({ ...prev, catalog_url: pubData.publicUrl }));
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? `Gagal upload katalog: ${err.message}`
+          : 'Gagal upload katalog.',
+      );
+    } finally {
+      setUploadingCatalog(false);
+    }
+  };
+
   const buildPayload = (status: 'draft') => {
     return {
       name: form.name.trim(),
@@ -196,6 +287,8 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
       tiktok: form.tiktok.trim(),
       operating_hours: { text: form.operating_hours_text.trim() },
       logo_url: form.logo_url,
+      ktp_url: form.ktp_url,
+      catalog_url: form.catalog_url,
       status,
     };
   };
@@ -255,6 +348,15 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
     }
     if (!form.category_id) {
       setError('Kategori wajib dipilih.');
+      return;
+    }
+
+    if (!form.ktp_url) {
+      setError('Foto KTP wajib diupload untuk verifikasi.');
+      return;
+    }
+    if (!form.catalog_url) {
+      setError('Foto katalog produk wajib diupload untuk verifikasi.');
       return;
     }
 
@@ -631,6 +733,122 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
             placeholder="contoh: Senin–Sabtu, 08.00–17.00"
             className={inputClass}
           />
+        </div>
+
+        {/* Verification documents */}
+        <div className="rounded-xl border border-paroki-100 bg-paroki-50/50 p-4">
+          <h2 className="mb-2 font-serif text-sm font-semibold text-paroki-800">
+            Dokumen Verifikasi UMKM
+          </h2>
+          <p className="mb-4 text-xs text-paroki-500">
+            Dokumen ini diperlukan untuk verifikasi usaha Anda oleh admin paroki.
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* KTP upload */}
+            <div>
+              <label className={labelClass}>
+                Foto KTP Pemilik <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="upload-ktp"
+                type="file"
+                accept="image/*"
+                onChange={handleKtpUpload}
+                disabled={uploadingKtp}
+                className="hidden"
+              />
+              {form.ktp_url ? (
+                <div className="flex items-center gap-3 rounded-lg border border-paroki-200 bg-white p-3">
+                  <img
+                    src={form.ktp_url}
+                    alt="KTP"
+                    className="h-16 w-16 rounded-lg border border-paroki-200 object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('upload-ktp') as HTMLInputElement;
+                      el?.click();
+                    }}
+                    className="text-sm font-medium text-paroki-600 hover:text-paroki-800"
+                  >
+                    Ganti Foto
+                  </button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => {
+                    const el = document.getElementById('upload-ktp') as HTMLInputElement;
+                    el?.click();
+                  }}
+                  className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-paroki-300 bg-white px-4 py-6 text-center transition hover:bg-paroki-50"
+                >
+                  {uploadingKtp ? (
+                    <span className="text-sm text-paroki-500">Mengupload...</span>
+                  ) : (
+                    <>
+                      <svg className="mb-2 h-8 w-8 text-paroki-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                      <span className="text-sm text-paroki-500">Klik untuk upload foto KTP</span>
+                      <span className="mt-1 text-xs text-paroki-400">JPG, PNG. Maks 2MB.</span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Catalog upload */}
+            <div>
+              <label className={labelClass}>
+                Foto Katalog Produk <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="upload-catalog"
+                type="file"
+                accept="image/*"
+                onChange={handleCatalogUpload}
+                disabled={uploadingCatalog}
+                className="hidden"
+              />
+              {form.catalog_url ? (
+                <div className="flex items-center gap-3 rounded-lg border border-paroki-200 bg-white p-3">
+                  <img
+                    src={form.catalog_url}
+                    alt="Katalog"
+                    className="h-16 w-16 rounded-lg border border-paroki-200 object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('upload-catalog') as HTMLInputElement;
+                      el?.click();
+                    }}
+                    className="text-sm font-medium text-paroki-600 hover:text-paroki-800"
+                  >
+                    Ganti Foto
+                  </button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => {
+                    const el = document.getElementById('upload-catalog') as HTMLInputElement;
+                    el?.click();
+                  }}
+                  className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-paroki-300 bg-white px-4 py-6 text-center transition hover:bg-paroki-50"
+                >
+                  {uploadingCatalog ? (
+                    <span className="text-sm text-paroki-500">Mengupload...</span>
+                  ) : (
+                    <>
+                      <svg className="mb-2 h-8 w-8 text-paroki-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                      <span className="text-sm text-paroki-500">Klik untuk upload foto katalog</span>
+                      <span className="mt-1 text-xs text-paroki-400">JPG, PNG. Maks 2MB.</span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Action buttons */}

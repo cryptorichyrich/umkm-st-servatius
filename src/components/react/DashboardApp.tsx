@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, type Business, type Profile, type BusinessStatus, type Product, type Favorite } from '../../lib/supabase';
-import ProductForm from './ProductForm';
 import FavoriteButton from './FavoriteButton';
-import ViewCounter from './ViewCounter';
 
 // ─────────────────────────────────────────────
 // Types
@@ -10,10 +8,6 @@ import ViewCounter from './ViewCounter';
 interface BusinessRow extends Business {
   category?: { id: string; name: string; slug: string; icon: string; sort_order: number };
 }
-
-type ProductRow = Omit<Product, 'business'> & {
-  business?: { id: string; name: string; slug: string };
-};
 
 interface FavoriteBusinessRow extends Favorite {
   business?: Business;
@@ -23,7 +17,7 @@ interface FavoriteProductRow extends Favorite {
   product?: Product & { business?: { id: string; name: string; slug: string } };
 }
 
-type TabKey = 'usaha' | 'produk' | 'verifikasi' | 'favorit';
+type TabKey = 'usaha' | 'verifikasi' | 'favorit';
 
 // ─────────────────────────────────────────────
 // Status badge helper (preserved from original)
@@ -115,7 +109,7 @@ function TabLink({
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
 interface DashboardAppProps {
-  initialTab?: 'usaha' | 'produk' | 'verifikasi' | 'favorit';
+  initialTab?: 'usaha' | 'verifikasi' | 'favorit';
 }
 
 export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps) {
@@ -123,16 +117,10 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [businesses, setBusinesses] = useState<BusinessRow[]>([]);
-  const [products, setProducts] = useState<Record<string, ProductRow[]>>({});
   const [favorites, setFavorites] = useState<{ businesses: FavoriteBusinessRow[]; products: FavoriteProductRow[] }>({ businesses: [], products: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
-
-  // Product tab state
-  const [productsLoading, setProductsLoading] = useState(false);
-  const [productForm, setProductForm] = useState<{ businessId: string; productId?: string } | null>(null);
-  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
 
   // Favorites tab state
   const [favoritesLoading, setFavoritesLoading] = useState(false);
@@ -188,45 +176,6 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
       setLoading(false);
     })();
   }, []);
-
-  // ─────────────────────────────────────────────
-  // Fetch products for all businesses
-  // ─────────────────────────────────────────────
-  const fetchProducts = useCallback(async () => {
-    if (businesses.length === 0) {
-      setProductsLoading(false);
-      return;
-    }
-
-    setProductsLoading(true);
-    try {
-      const businessIds = businesses.map((b) => b.id);
-      const { data, error: prodErr } = await supabase
-        .from('products')
-        .select(
-          `
-          *,
-          business:businesses(id, name, slug)
-        `,
-        )
-        .in('business_id', businessIds)
-        .order('created_at', { ascending: false });
-
-      if (prodErr) throw prodErr;
-
-      // Group by business_id
-      const grouped: Record<string, ProductRow[]> = {};
-      for (const prod of (data || []) as ProductRow[]) {
-        if (!grouped[prod.business_id]) grouped[prod.business_id] = [];
-        grouped[prod.business_id].push(prod);
-      }
-      setProducts(grouped);
-    } catch (err) {
-      console.error('Products fetch error:', err);
-    } finally {
-      setProductsLoading(false);
-    }
-  }, [businesses]);
 
   // ─────────────────────────────────────────────
   // Fetch favorites
@@ -292,12 +241,6 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
     }
   }, [activeTab, fetchFavorites]);
 
-  useEffect(() => {
-    if (activeTab === 'produk') {
-      fetchProducts();
-    }
-  }, [activeTab, fetchProducts]);
-
   // ─────────────────────────────────────────────
   // Business handlers (preserved from original)
   // ─────────────────────────────────────────────
@@ -338,72 +281,6 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
   }, []);
 
   // ─────────────────────────────────────────────
-  // Product handlers
-  // ─────────────────────────────────────────────
-  const handleProductSaved = useCallback(() => {
-    setProductForm(null);
-    fetchProducts();
-  }, [fetchProducts]);
-
-  const handleProductDelete = useCallback(
-    async (productId: string, businessId: string) => {
-      if (!confirm('Yakin ingin menghapus produk ini? Tindakan ini tidak dapat dibatalkan.')) return;
-
-      setDeletingProductId(productId);
-      try {
-        const { error: delErr } = await supabase
-          .from('products')
-          .delete()
-          .eq('id', productId);
-
-        if (delErr) throw delErr;
-
-        // Update local state
-        setProducts((prev) => ({
-          ...prev,
-          [businessId]: (prev[businessId] || []).filter((p) => p.id !== productId),
-        }));
-      } catch (err) {
-        alert(
-          err instanceof Error
-            ? `Gagal menghapus produk: ${err.message}`
-            : 'Gagal menghapus produk.',
-        );
-      } finally {
-        setDeletingProductId(null);
-      }
-    },
-    [],
-  );
-
-  const handleProductToggleAvailable = useCallback(
-    async (productId: string, businessId: string, currentAvailable: boolean) => {
-      try {
-        const { error: updErr } = await supabase
-          .from('products')
-          .update({ is_available: !currentAvailable })
-          .eq('id', productId);
-
-        if (updErr) throw updErr;
-
-        setProducts((prev) => ({
-          ...prev,
-          [businessId]: (prev[businessId] || []).map((p) =>
-            p.id === productId ? { ...p, is_available: !currentAvailable } : p,
-          ),
-        }));
-      } catch (err) {
-        alert(
-          err instanceof Error
-            ? `Gagal mengubah status: ${err.message}`
-            : 'Gagal mengubah status.',
-        );
-      }
-    },
-    [],
-  );
-
-  // ─────────────────────────────────────────────
   // Favorite removal
   // ─────────────────────────────────────────────
   const handleRemoveFavorite = useCallback(
@@ -439,8 +316,9 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
   );
 
   // Derived values
-  const isUmkmVerified =
-    profile?.verification_status === 'verified' && profile?.verification_type === 'umkm';
+  const canAddBusiness =
+    profile?.verification_status === 'verified' &&
+    (profile?.verification_type === 'member' || profile?.verification_type === 'umkm');
 
   // ─────────────────────────────────────────────
   // Loading state
@@ -481,12 +359,22 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
           )}
         </div>
         <div className="flex items-center gap-2">
-          <a
-            href="/dashboard/baru"
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-paroki-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-paroki-700"
-          >
-            <span>+</span> Tambah Usaha Baru
-          </a>
+          {canAddBusiness ? (
+            <a
+              href="/dashboard/baru"
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-paroki-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-paroki-700"
+            >
+              <span>+</span> Tambah Usaha Baru
+            </a>
+          ) : (
+            <a
+              href="/dashboard/verifikasi"
+              title="Anda harus verifikasi member terlebih dahulu untuk menambah usaha"
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-800 shadow-sm transition hover:bg-amber-100"
+            >
+              ⚠ Verifikasi Diperlukan
+            </a>
+          )}
           <button
             onClick={handleLogout}
             className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
@@ -507,9 +395,6 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
         <div className="flex">
           <TabLink href="/dashboard" active={activeTab === 'usaha'}>
             Usaha Saya
-          </TabLink>
-          <TabLink href="/dashboard/produk" active={activeTab === 'produk'}>
-            Produk Saya
           </TabLink>
           <TabLink href="/dashboard/verifikasi" active={activeTab === 'verifikasi'}>
             Verifikasi
@@ -674,193 +559,7 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
       )}
 
       {/* ═══════════════════════════════════════════════════════════
-          TAB 2: PRODUK SAYA (Product Management)
-      ═══════════════════════════════════════════════════════════ */}
-      {activeTab === 'produk' && (
-        <>
-          {/* Not UMKM-verified warning */}
-          {!isUmkmVerified && (
-            <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-              <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-              <p className="text-sm text-amber-800">
-                Anda perlu verifikasi UMKM untuk menambah produk.{' '}
-                <a
-                  href="/dashboard/verifikasi"
-                  className="font-semibold underline underline-offset-2 hover:text-amber-900"
-                >
-                  Lihat tab Verifikasi.
-                </a>
-              </p>
-            </div>
-          )}
-
-          {/* Inline ProductForm view */}
-          {productForm ? (
-            <div>
-              <button
-                onClick={() => setProductForm(null)}
-                className="mb-3 inline-flex items-center gap-1 text-sm text-paroki-500 hover:text-paroki-700"
-              >
-                ← Kembali
-              </button>
-              <ProductForm
-                key={`${productForm.businessId}-${productForm.productId || 'new'}`}
-                businessId={productForm.businessId}
-                productId={productForm.productId}
-                onSaved={handleProductSaved}
-                onCancel={() => setProductForm(null)}
-              />
-            </div>
-          ) : isUmkmVerified ? (
-            <>
-              {productsLoading ? (
-                <div className="animate-pulse space-y-4">
-                  <div className="h-12 w-full rounded-lg bg-paroki-100" />
-                  <div className="h-12 w-full rounded-lg bg-paroki-100" />
-                  <div className="h-12 w-full rounded-lg bg-paroki-100" />
-                </div>
-              ) : businesses.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-paroki-300 bg-white py-16 text-center">
-                  <p className="font-medium text-paroki-700">Belum ada usaha terdaftar</p>
-                  <p className="mt-1 text-sm text-paroki-400">
-                    Tambahkan usaha terlebih dahulu sebelum menambahkan produk.
-                  </p>
-                </div>
-              ) : businesses.every((b) => (products[b.id] || []).length === 0) ? (
-                /* All businesses have no products → show grouped empty states with add buttons */
-                <div className="space-y-6">
-                  {businesses.map((b) => (
-                    <div key={b.id} className="rounded-xl border border-paroki-200 bg-white p-4 shadow-sm">
-                      <div className="mb-3 flex items-center justify-between">
-                        <h3 className="font-semibold text-paroki-900">{b.name}</h3>
-                        <button
-                          onClick={() => setProductForm({ businessId: b.id })}
-                          className="rounded-md bg-paroki-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-paroki-700"
-                        >
-                          + Tambah Produk
-                        </button>
-                      </div>
-                      <div className="py-8 text-center">
-                        <p className="text-sm text-paroki-400">Belum ada produk. Tambahkan produk pertama Anda!</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                /* Products grouped by business */
-                <div className="space-y-6">
-                  {businesses.map((b) => {
-                    const bizProducts = products[b.id] || [];
-                    return (
-                      <div key={b.id} className="rounded-xl border border-paroki-200 bg-white shadow-sm">
-                        {/* Business header */}
-                        <div className="flex items-center justify-between border-b border-paroki-100 px-4 py-3">
-                          <div className="min-w-0">
-                            <h3 className="font-semibold text-paroki-900">{b.name}</h3>
-                            <p className="text-xs text-paroki-400">
-                              {bizProducts.length} produk
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => setProductForm({ businessId: b.id })}
-                            className="flex-shrink-0 rounded-md bg-paroki-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-paroki-700"
-                          >
-                            + Tambah Produk
-                          </button>
-                        </div>
-
-                        {/* Products list */}
-                        {bizProducts.length === 0 ? (
-                          <div className="px-4 py-8 text-center">
-                            <p className="text-sm text-paroki-400">Belum ada produk. Tambahkan produk pertama Anda!</p>
-                          </div>
-                        ) : (
-                          <div className="divide-y divide-paroki-50">
-                            {bizProducts.map((p) => (
-                              <div key={p.id} className="flex items-center gap-3 px-4 py-3 hover:bg-paroki-50/40">
-                                {/* Thumbnail */}
-                                <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-paroki-50">
-                                  {p.image_url ? (
-                                    <img
-                                      src={p.image_url}
-                                      alt={p.name}
-                                      className="h-full w-full object-cover"
-                                    />
-                                  ) : (
-                                    <div className="flex h-full w-full items-center justify-center text-paroki-300">
-                                      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.5-3.5L9 20"/></svg>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Product info */}
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="truncate font-medium text-paroki-900">{p.name}</span>
-                                    <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
-                                      p.product_type === 'jasa'
-                                        ? 'bg-blue-100 text-blue-700'
-                                        : 'bg-paroki-100 text-paroki-700'
-                                    }`}>
-                                      {p.product_type}
-                                    </span>
-                                  </div>
-                                  <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-paroki-500">
-                                    <span>
-                                      {p.price != null
-                                        ? `Rp ${new Intl.NumberFormat('id-ID').format(p.price)}`
-                                        : 'Harga nego'}
-                                      {p.price_note ? ` ${p.price_note}` : ''}
-                                    </span>
-                                    <ViewCounter count={p.view_count} label="dilihat" />
-                                  </div>
-                                </div>
-
-                                {/* Available toggle */}
-                                <button
-                                  onClick={() => handleProductToggleAvailable(p.id, b.id, p.is_available)}
-                                  className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${
-                                    p.is_available
-                                      ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                                  }`}
-                                  title={p.is_available ? 'Tersedia (klik untuk nonaktifkan)' : 'Tidak tersedia (klik untuk aktifkan)'}
-                                >
-                                  {p.is_available ? 'Tersedia' : 'Nonaktif'}
-                                </button>
-
-                                {/* Actions */}
-                                <div className="flex flex-shrink-0 items-center gap-1">
-                                  <button
-                                    onClick={() => setProductForm({ businessId: b.id, productId: p.id })}
-                                    className="rounded-md border border-paroki-200 px-2.5 py-1 text-xs font-medium text-paroki-700 hover:bg-paroki-50"
-                                  >
-                                    Edit
-                                  </button>
-                                  <button
-                                    onClick={() => handleProductDelete(p.id, b.id)}
-                                    disabled={deletingProductId === p.id}
-                                    className="rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                  >
-                                    {deletingProductId === p.id ? '...' : 'Hapus'}
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </>
-          ) : null}
-        </>
-      )}
-
-      {/* ═══════════════════════════════════════════════════════════
-          TAB 3: VERIFIKASI — redirect to dedicated page
+          TAB 2: VERIFIKASI — redirect to dedicated page
       ═══════════════════════════════════════════════════════════ */}
       {activeTab === 'verifikasi' && (
         <div className="py-10 text-center">
@@ -874,7 +573,7 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
       )}
 
       {/* ═══════════════════════════════════════════════════════════
-          TAB 4: FAVORIT SAYA
+          TAB 3: FAVORIT SAYA
       ═══════════════════════════════════════════════════════════ */}
       {activeTab === 'favorit' && (
         <>

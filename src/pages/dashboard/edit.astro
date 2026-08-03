@@ -1,8 +1,10 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BusinessForm from '../../components/react/BusinessForm.tsx';
+import ProductManager from '../../components/react/ProductManager.tsx';
 ---
 
 <BaseLayout title="Edit Usaha" noindex>
   <BusinessForm client:load />
+  <ProductManager client:idle businessId={Astro.url.searchParams.get('id') || ''} />
 </BaseLayout>
