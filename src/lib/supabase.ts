@@ -1,13 +1,31 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL as string | undefined;
-const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined;
+// Runtime config: injected by the Worker (SSR) via window.__SUPABASE__
+// Falls back to import.meta.env for local dev / static builds
+declare global {
+  interface Window {
+    __SUPABASE__?: { url: string; key: string };
+  }
+}
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+function getConfig() {
+  if (typeof window !== 'undefined' && window.__SUPABASE__) {
+    return window.__SUPABASE__;
+  }
+  // SSR / local dev fallback
+  return {
+    url: import.meta.env.PUBLIC_SUPABASE_URL as string,
+    key: import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string,
+  };
+}
+
+const config = getConfig();
+
+export const isSupabaseConfigured = Boolean(config.url && config.key);
 
 export const supabase: SupabaseClient = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'public-anon-key-placeholder',
+  config.url || 'https://placeholder.supabase.co',
+  config.key || 'public-anon-key-placeholder',
   { auth: { persistSession: true, autoRefreshToken: true } },
 );
 

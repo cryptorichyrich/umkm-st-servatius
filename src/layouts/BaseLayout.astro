@@ -39,6 +39,9 @@ const year = new Date().getFullYear();
     />
 
     <title>{fullTitle}</title>
+
+    <!-- Load Supabase config from Worker runtime env (dynamic, not baked at build) -->
+    <script is:inline src="/__env.js"></script>
   </head>
   <body>
     <!-- Header — clean white bar -->
