@@ -193,57 +193,47 @@ export default function BazarSchedule({
   // Derived: active banner (from the most recent bazar with active banner)
   // -------------------------------------------------------------------------
 
+  const [localRegulasiChecked, setLocalRegulasiChecked] = useState<Record<string, boolean>>({});
+  const [confirmDialogAssignment, setConfirmDialogAssignment] = useState<AssignmentWithRelations | null>(null);
   const activeBanner = assignments
     .map((a) => a.bazar)
     .find((b) => b?.banner_aktif && b?.banner_pesan);
 
   // -------------------------------------------------------------------------
-  // Actions: accept regulasi / confirm / decline
+  // Actions: confirm / decline
   // -------------------------------------------------------------------------
-
-  async function handleAcceptRegulasi(a: AssignmentWithRelations) {
-    setActionLoading(a.id);
-    setError(null);
-    try {
-      const { error: err } = await supabase
-        .from("bazar_assignments")
-        .update({
-          regulasi_accepted: true,
-          regulasi_accepted_at: new Date().toISOString(),
-        })
-        .eq("id", a.id);
-      if (err) throw err;
-      setAssignments((prev) =>
-        prev.map((x) =>
-          x.id === a.id
-            ? { ...x, regulasi_accepted: true, regulasi_accepted_at: new Date().toISOString() }
-            : x
-        )
-      );
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Gagal menyimpan persetujuan");
-    } finally {
-      setActionLoading(null);
-    }
-  }
 
   async function handleConfirm(a: AssignmentWithRelations) {
     setActionLoading(a.id);
     setError(null);
     try {
+      const now = new Date().toISOString();
+      const update: Record<string, unknown> = {
+        status: "confirmed",
+        confirmed_at: now,
+      };
+      // Mark regulasi as accepted together with confirmation
+      if (a.bazar?.regulasi_url) {
+        update.regulasi_accepted = true;
+        update.regulasi_accepted_at = now;
+      }
       const { error: err } = await supabase
         .from("bazar_assignments")
-        .update({
-          status: "confirmed",
-          confirmed_at: new Date().toISOString(),
-        })
+        .update(update)
         .eq("id", a.id);
       if (err) throw err;
 
       setAssignments((prev) =>
         prev.map((x) =>
           x.id === a.id
-            ? { ...x, status: "confirmed", confirmed_at: new Date().toISOString() }
+            ? {
+                ...x,
+                status: "confirmed",
+                confirmed_at: now,
+                ...(a.bazar?.regulasi_url
+                  ? { regulasi_accepted: true, regulasi_accepted_at: now }
+                  : {}),
+              }
             : x
         )
       );
@@ -449,9 +439,9 @@ export default function BazarSchedule({
             const showOmsetForm = isCompletedBazar && !omsetReported;
             const showConfirmButtons = a.status === "assigned";
             const hasRegulasi = !!bazar.regulasi_url;
-            const regulasiAccepted = !!a.regulasi_accepted;
-            const showRegulasiGate = showConfirmButtons && hasRegulasi && !regulasiAccepted;
-            const canConfirm = !hasRegulasi || regulasiAccepted;
+            const regulasiCheckedLocal = !!localRegulasiChecked[a.id];
+            const showRegulasiGate = showConfirmButtons && hasRegulasi;
+            const canConfirm = !hasRegulasi || regulasiCheckedLocal;
 
             return (
               <div
@@ -502,7 +492,7 @@ export default function BazarSchedule({
                     </p>
                   )}
 
-                  {/* Regulasi Gate — must accept before confirming */}
+                  {/* Regulasi Gate — must check before confirming */}
                   {showRegulasiGate && (
                     <div className="mt-4 rounded-lg border-2 border-gold-300 bg-gold-50 p-4">
                       <div className="flex items-start gap-3">
@@ -523,28 +513,29 @@ export default function BazarSchedule({
                             <ExternalLink className="h-4 w-4" />
                             Baca Regulasi (PDF)
                           </a>
-                          <button
-                            disabled={actionLoading === a.id}
-                            onClick={() => handleAcceptRegulasi(a)}
-                            className="mt-2 flex items-center gap-2 text-sm font-medium text-paroki-700"
-                          >
+                          <label className="mt-3 flex cursor-pointer items-center gap-2">
                             <input
                               type="checkbox"
-                              checked={false}
-                              onChange={() => {}}
-                              className="pointer-events-none h-4 w-4 rounded border-gray-300"
+                              checked={regulasiCheckedLocal}
+                              onChange={(e) =>
+                                setLocalRegulasiChecked((prev) => ({
+                                  ...prev,
+                                  [a.id]: e.target.checked,
+                                }))
+                              }
+                              className="h-4 w-4 rounded border-gray-300 text-paroki-700 focus:ring-paroki-700"
                             />
-                            <span className="cursor-pointer underline hover:text-paroki-900">
+                            <span className="text-sm font-medium text-gray-700">
                               Saya telah membaca dan menyetujui regulasi bazar
                             </span>
-                          </button>
+                          </label>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Regulasi accepted badge */}
-                  {hasRegulasi && regulasiAccepted && (
+                  {/* Regulasi accepted badge — only after confirmed */}
+                  {hasRegulasi && a.regulasi_accepted && a.status !== "assigned" && (
                     <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-green-600">
                       <CheckCircle className="h-3.5 w-3.5" />
                       Regulasi bazar telah disetujui
@@ -556,7 +547,7 @@ export default function BazarSchedule({
                     <div className="mt-4 flex flex-wrap gap-2">
                       <button
                         disabled={actionLoading === a.id || !canConfirm}
-                        onClick={() => handleConfirm(a)}
+                        onClick={() => setConfirmDialogAssignment(a)}
                         title={!canConfirm ? "Setujui regulasi terlebih dahulu" : undefined}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
@@ -716,6 +707,49 @@ export default function BazarSchedule({
             })}
           </div>
         </section>
+      )}
+
+      {/* Confirmation dialog */}
+      {confirmDialogAssignment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold-100">
+                <FileText className="h-5 w-5 text-gold-600" />
+              </div>
+              <div>
+                <h3 className="font-display text-lg font-bold text-paroki-900">
+                  Konfirmasi Kehadiran
+                </h3>
+                <p className="mt-1 text-sm text-gray-600">
+                  {confirmDialogAssignment.bazar?.regulasi_url
+                    ? "Pastikan Anda sudah membaca regulasi UMKM. Dengan menekan \"Ya, Saya Hadir\", Anda menyatakan telah membaca dan menyetujui seluruh regulasi bazar."
+                    : "Anda akan mengonfirmasi kehadiran untuk bazar ini. Lanjutkan?"}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmDialogAssignment(null)}
+                disabled={actionLoading === confirmDialogAssignment.id}
+                className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => {
+                  const a = confirmDialogAssignment;
+                  setConfirmDialogAssignment(null);
+                  handleConfirm(a);
+                }}
+                disabled={actionLoading === confirmDialogAssignment.id}
+                className="flex-1 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
+              >
+                {actionLoading === confirmDialogAssignment.id ? "Memproses..." : "Ya, Saya Hadir"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

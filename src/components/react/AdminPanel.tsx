@@ -15,7 +15,6 @@ import {
   Inbox,
   AlertCircle,
   Flag,
-  Tent,
 } from 'lucide-react';
 import {
   supabase,
@@ -1445,7 +1444,7 @@ export default function AdminPanel() {
     { key: 'users', label: 'Pengguna', icon: Users },
     { key: 'reviews', label: 'Ulasan', icon: Star },
     { key: 'laporan', label: 'Laporan', icon: Flag },
-    { key: 'bazar', label: 'Bazar', icon: Tent },
+    { key: 'bazar', label: 'Bazar', icon: Store },
   ];
 
   // ───────────────────────────────────────────

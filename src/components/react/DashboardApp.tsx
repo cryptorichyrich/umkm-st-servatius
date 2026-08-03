@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, type Business, type Profile, type BusinessStatus, type Product, type Favorite } from '../../lib/supabase';
-import { Eye, EyeOff, Tent } from 'lucide-react';
+import { Eye, EyeOff, Store } from 'lucide-react';
 import FavoriteButton from './FavoriteButton';
 import BazarSchedule from './BazarSchedule';
 

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
-  Tent,
+  Store,
   Megaphone,
   Calendar,
   Clock,
@@ -8,7 +8,6 @@ import {
   CheckCircle,
   Loader2,
   History,
-  Store,
 } from "lucide-react";
 import {
   supabase,
@@ -301,7 +300,7 @@ export default function BazarPublic() {
         <div className="flex items-start justify-between gap-3 border-b border-gray-100 px-5 py-4">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-paroki-900 text-gold-500">
-              <Tent className="h-5 w-5" />
+              <Store className="h-5 w-5" />
             </div>
             <div>
               <h3 className="font-display text-lg font-bold text-paroki-900">
@@ -353,7 +352,7 @@ export default function BazarPublic() {
           {/* Table count summary */}
           <div className="mb-4 flex items-center gap-4 text-sm">
             <span className="flex items-center gap-1.5 font-medium text-paroki-700">
-              <Tent className="h-4 w-4 text-gold-500" />
+              <Store className="h-4 w-4 text-gold-500" />
               {filledTables}/{tables.length} meja terisi
             </span>
           </div>
@@ -391,7 +390,7 @@ export default function BazarPublic() {
       {/* Page header */}
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-paroki-900 text-gold-500">
-          <Tent className="h-6 w-6" />
+          <Store className="h-6 w-6" />
         </div>
         <div>
           <h1 className="font-display text-3xl font-bold text-paroki-900">
@@ -428,7 +427,7 @@ export default function BazarPublic() {
       {/* Upcoming bazars */}
       {bazars.length === 0 ? (
         <div className="rounded-xl border-2 border-dashed border-gray-200 py-20 text-center">
-          <Tent className="mx-auto mb-3 h-12 w-12 text-gray-300" />
+          <Store className="mx-auto mb-3 h-12 w-12 text-gray-300" />
           <p className="font-display text-lg text-gray-500">
             Belum ada bazar yang dijadwalkan
           </p>
