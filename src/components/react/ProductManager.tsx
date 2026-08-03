@@ -172,7 +172,7 @@ export default function ProductManager({ businessId }: ProductManagerProps) {
   // ─────────────────────────────────────────────
   if (statusLoading) {
     return (
-      <div className="mt-8 border-t border-paroki-200 pt-8">
+      <div className="mx-auto mt-8 max-w-2xl border-t border-paroki-200 px-4 pt-8">
         <div className="flex items-center gap-2 text-sm text-paroki-500">
           <Loader2 className="h-4 w-4 animate-spin" />
           Memuat data produk...
@@ -186,7 +186,7 @@ export default function ProductManager({ businessId }: ProductManagerProps) {
   // ─────────────────────────────────────────────
   if (businessStatus !== 'approved') {
     return (
-      <div className="mt-8 border-t border-paroki-200 pt-8">
+      <div className="mx-auto mt-8 max-w-2xl border-t border-paroki-200 px-4 pt-8">
         <div className="flex items-start gap-3 rounded-xl border border-paroki-200 bg-paroki-50 px-4 py-4">
           <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-paroki-500" />
           <p className="text-sm text-paroki-700">
@@ -201,7 +201,7 @@ export default function ProductManager({ businessId }: ProductManagerProps) {
   // RENDER: approved business — full product manager
   // ═══════════════════════════════════════════════════════════════
   return (
-    <div className="mt-8 border-t border-paroki-200 pt-8">
+    <div className="mx-auto mt-8 max-w-2xl border-t border-paroki-200 px-4 pt-8 sm:py-10">
       {/* ── Inline ProductForm view ── */}
       {showForm ? (
         <div>

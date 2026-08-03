@@ -57,6 +57,7 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState<string>('draft');
   const [uploadingKtp, setUploadingKtp] = useState(false);
   const [uploadingCatalog, setUploadingCatalog] = useState(false);
 
@@ -132,6 +133,7 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
           ktp_url: biz.ktp_url || '',
           catalog_url: biz.catalog_url || '',
         });
+        setCurrentStatus(biz.status || 'draft');
       }
 
       setLoading(false);
@@ -397,7 +399,7 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
       if (!savedId) throw new Error('Gagal mendapatkan ID usaha');
 
       const { error: rpcErr } = await supabase.rpc('submit_for_review', {
-        business_id: savedId,
+        p_business_id: savedId,
       });
       if (rpcErr) throw rpcErr;
 
@@ -852,22 +854,34 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
         </div>
 
         {/* Action buttons */}
+        {currentStatus === 'approved' ? (
+          <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+            ✅ Usaha ini sudah disetujui dan tampil di direktori publik. Perubahan yang Anda simpan akan langsung tampil.
+          </div>
+        ) : null}
         <div className="flex flex-col gap-3 pt-2 sm:flex-row">
           <button
             type="submit"
             disabled={saving}
             className="flex-1 rounded-lg border border-paroki-300 bg-white px-5 py-2.5 text-sm font-semibold text-paroki-700 shadow-sm transition hover:bg-paroki-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {saving ? 'Menyimpan...' : 'Simpan sebagai Draft'}
+            {saving ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Simpan sebagai Draft'}
           </button>
-          <button
-            type="button"
-            onClick={handleSubmitForReview}
-            disabled={saving}
-            className="flex-1 rounded-lg bg-paroki-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-paroki-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {saving ? 'Memproses...' : 'Kirim untuk Review'}
-          </button>
+          {currentStatus !== 'approved' && currentStatus !== 'pending' && (
+            <button
+              type="button"
+              onClick={handleSubmitForReview}
+              disabled={saving}
+              className="flex-1 rounded-lg bg-paroki-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-paroki-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving ? 'Memproses...' : 'Kirim untuk Review'}
+            </button>
+          )}
+          {currentStatus === 'pending' && (
+            <div className="flex items-center justify-center rounded-lg border border-yellow-200 bg-yellow-50 px-5 py-2.5 text-sm font-semibold text-yellow-700">
+              ⏳ Menunggu Review Admin
+            </div>
+          )}
         </div>
       </form>
     </div>

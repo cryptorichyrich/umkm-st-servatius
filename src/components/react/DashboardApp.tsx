@@ -248,7 +248,7 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
     setSubmittingId(businessId);
     try {
       const { error: rpcErr } = await supabase.rpc('submit_for_review', {
-        business_id: businessId,
+        p_business_id: businessId,
       });
       if (rpcErr) throw rpcErr;
 
