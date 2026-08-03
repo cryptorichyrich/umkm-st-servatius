@@ -1,37 +1,40 @@
 @import "tailwindcss";
 
 /*
-  UMKM St. Servatius — design tokens
-  Palette: deep liturgical green (ordinary time / growth) + refined gold (celebration / dignity).
-  Deliberately NOT the AI-default clay-orange or purple. One accent, locked.
-  Type: Plus Jakarta Sans (display — Indonesian-designed, characterful) + Inter (body — accessible).
-  Shape lock: rounded-lg (8px) for all structural surfaces; rounded-full only for inline chips.
+  UMKM St. Servatius — design tokens v2
+  Palette: WHITE base + deep forest GREEN (structural) + GOLD (accents/CTAs).
+  Matches the main church site at servatius.pages.dev.
+  Green #004225 = liturgical ordinary-time green. Gold #C99A2E = celebration/dignity.
 */
 @theme {
-  /* Green — primary */
-  --color-paroki-50: #f2f7f4;
-  --color-paroki-100: #d8e6dd;
-  --color-paroki-200: #adccb7;
-  --color-paroki-300: #7caa8d;
-  --color-paroki-400: #4f8567;
-  --color-paroki-500: #346a4f;
-  --color-paroki-600: #275440;
-  --color-paroki-700: #204335;
-  --color-paroki-800: #19332b;
-  --color-paroki-900: #122620;
-  --color-paroki-950: #0a1714;
+  /* Green — structural color (footer, quick-links, section accents) */
+  --color-paroki-50: #f0f6f2;
+  --color-paroki-100: #d8e8df;
+  --color-paroki-200: #b1d1bf;
+  --color-paroki-300: #7eb093;
+  --color-paroki-400: #4d8c68;
+  --color-paroki-500: #2d7a4f;
+  --color-paroki-600: #1a6138;
+  --color-paroki-700: #0d4a28;
+  --color-paroki-800: #053a1d;
+  --color-paroki-900: #004225;
+  --color-paroki-950: #002815;
 
-  /* Gold — accent (sparingly: stars, dark-section highlights, wordmark dot) */
-  --color-accent-300: #e0bd63;
-  --color-accent-400: #d0a63e;
-  --color-accent-500: #bd8f2c;
-  --color-accent-600: #9c7320;
+  /* Gold — accent color (CTAs, badges, highlights) */
+  --color-gold-200: #f5e6c4;
+  --color-gold-300: #ecd29a;
+  --color-gold-400: #ddb867;
+  --color-gold-500: #c99a2e;
+  --color-gold-600: #a87d1e;
+  --color-gold-700: #876418;
 
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  /* Map the legacy `font-serif` utility to the display sans so existing
-     headings pick up Plus Jakarta Sans without touching every file. */
-  --font-serif: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
-  --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  /* Ink — text colors */
+  --color-ink: #1c1c1c;
+  --color-ink-soft: #4a4a4a;
+
+  --font-sans: 'Source Sans 3', 'Source Sans Pro', system-ui, sans-serif;
+  --font-serif: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
 html {
@@ -39,15 +42,14 @@ html {
 }
 
 body {
-  @apply bg-paroki-50 text-paroki-950 antialiased;
+  @apply bg-white text-ink antialiased;
   font-family: var(--font-sans);
-  font-feature-settings: 'cv11', 'ss01';
 }
 
-/* Display headings use Plus Jakarta Sans with tight, confident tracking */
 h1, h2, h3 {
   font-family: var(--font-display);
   letter-spacing: -0.018em;
+  @apply text-ink;
 }
 
 /* Smooth fade-in for dynamic content */
@@ -60,10 +62,10 @@ h1, h2, h3 {
   animation: fadeIn 0.3s ease-out;
 }
 
-/* Tinted soft shadow — never pure black on this warm-green base */
+/* Tinted soft shadow */
 @utility shadow-soft {
-  box-shadow: 0 1px 2px rgba(20, 60, 45, 0.04), 0 4px 12px rgba(20, 60, 45, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 50, 25, 0.06), 0 4px 12px rgba(0, 50, 25, 0.05);
 }
 @utility shadow-soft-lg {
-  box-shadow: 0 2px 4px rgba(20, 60, 45, 0.05), 0 12px 28px rgba(20, 60, 45, 0.10);
+  box-shadow: 0 2px 6px rgba(0, 50, 25, 0.07), 0 12px 28px rgba(0, 50, 25, 0.09);
 }
