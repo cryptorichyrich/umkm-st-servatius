@@ -1331,7 +1331,7 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
     "cancelled",
   ];
 
-  const [pdfList, setPdfList] = useState<string[]>([]);
+  const [pdfList, setPdfList] = useState<{ name: string; url: string }[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState("");
 
@@ -1341,15 +1341,15 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
         .from("bazar-files")
         .list("", { sortBy: { column: "created_at", order: "desc" } });
       if (error || !data) return;
-      const urls = data
+      const items = data
         .filter((f) => f.name.toLowerCase().endsWith(".pdf"))
         .map((f) => {
           const { data: pub } = supabase.storage
             .from("bazar-files")
             .getPublicUrl(f.name);
-          return pub.publicUrl;
+          return { name: f.name, url: pub.publicUrl };
         });
-      setPdfList(urls);
+      setPdfList(items);
     })();
   }, []);
 
@@ -1468,31 +1468,8 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
           📄 Regulasi Bazar (PDF)
         </label>
 
-        {/* Select existing PDF */}
-        {pdfList.length > 0 && (
-          <select
-            value=""
-            onChange={(e) => {
-              if (e.target.value) {
-                setForm((p) => ({ ...p, regulasi_url: e.target.value }));
-              }
-            }}
-            className="mb-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
-          >
-            <option value="">— Pilih dari PDF yang sudah diunggah —</option>
-            {pdfList.map((p) => {
-              const name = p.split("/").pop() || p;
-              return (
-                <option key={p} value={p}>
-                  {decodeURIComponent(name)}
-                </option>
-              );
-            })}
-          </select>
-        )}
-
+        {/* Upload + manual URL */}
         <div className="flex gap-2">
-          {/* Upload button */}
           <label className="cursor-pointer whitespace-nowrap rounded-lg bg-paroki-50 px-3 py-2 text-sm font-medium text-paroki-700 transition hover:bg-paroki-100">
             {uploading ? "Mengunggah..." : "⬆ Upload PDF"}
             <input
@@ -1503,6 +1480,7 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
                 const file = e.target.files?.[0];
                 if (!file) return;
                 setUploading(true);
+                setUploadErr("");
                 const fname = `${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
                 const { error: ulErr } = await supabase.storage
                   .from("bazar-files")
@@ -1515,14 +1493,15 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
                 const { data: pub } = supabase.storage
                   .from("bazar-files")
                   .getPublicUrl(fname);
-                const url = pub.publicUrl;
-                setPdfList((prev) => [...prev, url]);
-                setForm((p) => ({ ...p, regulasi_url: url }));
+                setPdfList((prev) => [
+                  { name: fname, url: pub.publicUrl },
+                  ...prev,
+                ]);
+                setForm((p) => ({ ...p, regulasi_url: pub.publicUrl }));
               }}
             />
           </label>
 
-          {/* Current URL / manual input */}
           <input
             type="url"
             value={form.regulasi_url}
@@ -1534,16 +1513,71 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
           />
         </div>
 
-        {/* Preview link */}
-        {form.regulasi_url && (
-          <a
-            href={form.regulasi_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-paroki-600 hover:underline"
-          >
-            👁 Lihat PDF yang dipilih
-          </a>
+        {/* Uploaded PDF list with select + delete */}
+        {pdfList.length > 0 && (
+          <div className="mt-2 space-y-1">
+            <p className="text-xs font-medium text-gray-500">
+              PDF tersimpan ({pdfList.length}):
+            </p>
+            {pdfList.map((pdf) => (
+              <div
+                key={pdf.name}
+                className={`flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm transition ${
+                  form.regulasi_url === pdf.url
+                    ? "bg-paroki-50 ring-1 ring-paroki-300"
+                    : "hover:bg-gray-50"
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm((p) => ({ ...p, regulasi_url: pdf.url }))
+                  }
+                  className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+                >
+                  <span className={`text-xs ${form.regulasi_url === pdf.url ? "text-paroki-700 font-medium" : "text-gray-600"}`}>
+                    {form.regulasi_url === pdf.url ? "✓ " : "📄 "}
+                  </span>
+                  <span className={`truncate ${form.regulasi_url === pdf.url ? "text-paroki-700 font-medium" : "text-gray-600"}`}>
+                    {decodeURIComponent(pdf.name.replace(/^\d+-/, ""))}
+                  </span>
+                </button>
+                <div className="flex shrink-0 items-center gap-1">
+                  <a
+                    href={pdf.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-gray-400 hover:text-paroki-600"
+                    title="Lihat PDF"
+                  >
+                    👁
+                  </a>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const { error: delErr } = await supabase.storage
+                        .from("bazar-files")
+                        .remove([pdf.name]);
+                      if (delErr) {
+                        setUploadErr("Gagal menghapus: " + delErr.message);
+                        return;
+                      }
+                      setPdfList((prev) =>
+                        prev.filter((p) => p.name !== pdf.name)
+                      );
+                      if (form.regulasi_url === pdf.url) {
+                        setForm((p) => ({ ...p, regulasi_url: "" }));
+                      }
+                    }}
+                    className="text-xs text-gray-400 transition hover:text-red-500"
+                    title="Hapus PDF"
+                  >
+                    🗑
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
 
         {uploadErr && (
