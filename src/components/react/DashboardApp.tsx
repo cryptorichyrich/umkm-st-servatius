@@ -359,6 +359,14 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
           )}
         </div>
         <div className="flex items-center gap-2">
+          {profile?.role === 'admin' && (
+            <a
+              href="/admin"
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-paroki-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-paroki-800"
+            >
+              ⚙️ Admin
+            </a>
+          )}
           {canAddBusiness ? (
             <a
               href="/dashboard/baru"
@@ -375,12 +383,6 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
               ⚠ Verifikasi Diperlukan
             </a>
           )}
-          <button
-            onClick={handleLogout}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
-          >
-            Keluar
-          </button>
         </div>
       </div>
 

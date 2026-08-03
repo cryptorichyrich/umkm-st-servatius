@@ -110,13 +110,18 @@ const year = new Date().getFullYear();
           <a href="/direktori" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">Direktori</a>
           <a href="/produk" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">Produk</a>
           <a href="/#kategori" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">Kategori</a>
-          <a href="/dashboard" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">Dashboard</a>
-          <a
-            href="/daftar"
-            class="ml-2 inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-gold-600 active:translate-y-px"
-          >
-            Daftarkan Usaha
-          </a>
+
+          <!-- Auth-aware section (populated by client-side script) -->
+          <div id="nav-auth-area" class="flex items-center gap-1">
+            <!-- Default: Dashboard (hidden until we know auth state) -->
+            <a href="/dashboard" class="nav-guest-only hidden rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">Dashboard</a>
+          </div>
+
+          <!-- Not logged in: Daftar/Masuk -->
+          <div id="nav-auth-buttons" class="nav-guest-only flex items-center gap-2">
+            <a href="/masuk" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">Masuk</a>
+            <a href="/daftar" class="ml-1 inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-gold-600 active:translate-y-px">Daftar</a>
+          </div>
         </div>
 
         <!-- Mobile menu button -->
@@ -137,8 +142,12 @@ const year = new Date().getFullYear();
           <a href="/direktori" class="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">Direktori</a>
           <a href="/produk" class="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">Produk</a>
           <a href="/#kategori" class="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">Kategori</a>
-          <a href="/dashboard" class="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">Dashboard</a>
-          <a href="/daftar" class="mt-1 rounded-lg bg-gold-500 px-3 py-2.5 text-center text-sm font-bold text-white">Daftarkan Usaha</a>
+          <!-- Mobile auth area (populated by script) -->
+          <div id="mobile-auth-area" class="flex flex-col gap-1"></div>
+          <div id="mobile-auth-guest" class="nav-guest-only flex flex-col gap-1">
+            <a href="/masuk" class="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">Masuk</a>
+            <a href="/daftar" class="mt-1 rounded-lg bg-gold-500 px-3 py-2.5 text-center text-sm font-bold text-white">Daftar</a>
+          </div>
         </div>
       </div>
     </header>
@@ -188,6 +197,94 @@ const year = new Date().getFullYear();
       const btn = document.getElementById('mobile-menu-btn');
       const menu = document.getElementById('mobile-menu');
       btn?.addEventListener('click', () => menu?.classList.toggle('hidden'));
+    </script>
+
+    <!-- Auth-aware navbar -->
+    <script type="module">
+      async function updateNav() {
+        // Wait for supabase config from Worker
+        if (!window.__SUPABASE__) {
+          setTimeout(updateNav, 200);
+          return;
+        }
+
+        try {
+          const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+          const sb = createClient(window.__SUPABASE__.url, window.__SUPABASE__.key, { auth: { persistSession: true } });
+
+          const { data: { session } } = await sb.auth.getSession();
+
+          if (!session) {
+            // Guest: show Masuk + Daftar (already visible by default)
+            return;
+          }
+
+          // Logged in: fetch profile
+          const { data: profile } = await sb
+            .from('profiles')
+            .select('full_name, role, verification_status, verification_type')
+            .eq('id', session.user.id)
+            .single();
+
+          const role = profile?.role || 'member';
+          const vStatus = profile?.verification_status || 'unverified';
+          const vType = profile?.verification_type || '';
+          const isAdmin = role === 'admin';
+          const isVerified = vStatus === 'verified';
+          const isMember = vType === 'member';
+          const isUmkm = vType === 'umkm';
+
+          // Build badge label + color
+          let badge = '';
+          if (isUmkm) {
+            badge = '<span class="inline-flex items-center gap-1 rounded-full bg-gold-100 px-2 py-0.5 text-[11px] font-bold text-gold-700">UMKM</span>';
+          } else if (isMember) {
+            badge = '<span class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-bold text-green-700">Member</span>';
+          } else if (vStatus === 'pending') {
+            badge = '<span class="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2 py-0.5 text-[11px] font-bold text-yellow-700">⏳</span>';
+          } else {
+            badge = '<span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-bold text-gray-500">Belum</span>';
+          }
+
+          // Hide guest-only elements
+          document.querySelectorAll('.nav-guest-only').forEach(el => el.classList.add('hidden'));
+
+          // Desktop nav auth area
+          const desktopArea = document.getElementById('nav-auth-area');
+          const desktopButtons = document.getElementById('nav-auth-buttons');
+
+          if (desktopArea) {
+            desktopArea.innerHTML = `
+              ${isAdmin ? '<a href="/admin" class="rounded-lg px-3 py-2 text-sm font-bold text-paroki-700 transition hover:bg-paroki-50 hover:text-paroki-900">⚙️ Admin</a>' : ''}
+              <a href="/dashboard" class="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">
+                Dashboard ${badge}
+              </a>
+              <button onclick="(async()=>{await sb.auth.signOut();window.location.href='/'})()" class="ml-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-500 transition hover:bg-gray-50 hover:text-gray-700">
+                Keluar
+              </button>
+            `;
+            desktopArea.classList.remove('hidden');
+          }
+          if (desktopButtons) desktopButtons.classList.add('hidden');
+
+          // Mobile auth area
+          const mobileArea = document.getElementById('mobile-auth-area');
+          const mobileGuest = document.getElementById('mobile-auth-guest');
+          if (mobileArea) {
+            mobileArea.innerHTML = `
+              ${isAdmin ? '<a href="/admin" class="rounded-lg px-3 py-2.5 text-sm font-bold text-paroki-700 hover:bg-paroki-50">⚙️ Admin Panel</a>' : ''}
+              <a href="/dashboard" class="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">Dashboard ${badge}</a>
+              <button onclick="(async()=>{await sb.auth.signOut();window.location.href='/'})()" class="mt-1 rounded-lg border border-gray-200 px-3 py-2.5 text-center text-sm font-medium text-gray-500 hover:bg-gray-50">Keluar</button>
+            `;
+          }
+          if (mobileGuest) mobileGuest.classList.add('hidden');
+
+        } catch (e) {
+          // Silently fail — guest view is default
+        }
+      }
+
+      updateNav();
     </script>
   </body>
 </html>
