@@ -4,6 +4,8 @@ import {
   type Business,
   type Category,
   type BusinessStatus,
+  type Wilayah,
+  type Lingkungan,
 } from '../../lib/supabase';
 
 // ─────────────────────────────────────────────
@@ -38,6 +40,10 @@ interface BusinessRow extends Business {
   category?: Category;
 }
 
+interface LingkunganRow extends Lingkungan {
+  wilayah?: Wilayah;
+}
+
 interface AdminStats {
   total: number;
   pending: number;
@@ -48,7 +54,7 @@ interface AdminStats {
 // ─────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────
-type TabKey = 'moderasi' | 'listing' | 'kategori';
+type TabKey = 'moderasi' | 'listing' | 'kategori' | 'wilayah';
 
 export default function AdminPanel() {
   // ── Auth / loading ──
@@ -74,6 +80,23 @@ export default function AdminPanel() {
   const [catIcon, setCatIcon] = useState('');
   const [catSort, setCatSort] = useState('0');
   const [catSubmitting, setCatSubmitting] = useState(false);
+
+  // ── Wilayah & Lingkungan data ──
+  const [wilayahList, setWilayahList] = useState<Wilayah[]>([]);
+  const [lingkunganList, setLingkunganList] = useState<LingkunganRow[]>([]);
+
+  // ── Wilayah form ──
+  const [wilName, setWilName] = useState('');
+  const [wilSort, setWilSort] = useState('0');
+  const [wilSubmitting, setWilSubmitting] = useState(false);
+  const [editingWilId, setEditingWilId] = useState<string | null>(null);
+
+  // ── Lingkungan form ──
+  const [lingWilId, setLingWilId] = useState('');
+  const [lingName, setLingName] = useState('');
+  const [lingSort, setLingSort] = useState('0');
+  const [lingSubmitting, setLingSubmitting] = useState(false);
+  const [editingLingId, setEditingLingId] = useState<string | null>(null);
 
   // ───────────────────────────────────────────
   // Fetch helpers
@@ -104,6 +127,24 @@ export default function AdminPanel() {
       .order('sort_order', { ascending: true });
     if (error) throw error;
     setCategories((data || []) as Category[]);
+  }, []);
+
+  const fetchWilayah = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('wilayah')
+      .select('*')
+      .order('sort_order', { ascending: true });
+    if (error) throw error;
+    setWilayahList((data || []) as Wilayah[]);
+  }, []);
+
+  const fetchLingkungan = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('lingkungan')
+      .select('*, wilayah:wilayah(*)')
+      .order('sort_order', { ascending: true });
+    if (error) throw error;
+    setLingkunganList((data || []) as LingkunganRow[]);
   }, []);
 
   const computeStats = useCallback(
@@ -149,7 +190,13 @@ export default function AdminPanel() {
         setAuthState('ok');
 
         // Load all data
-        await Promise.all([fetchPending(), fetchAll(), fetchCategories()]);
+        await Promise.all([
+          fetchPending(),
+          fetchAll(),
+          fetchCategories(),
+          fetchWilayah(),
+          fetchLingkungan(),
+        ]);
       } catch (err) {
         console.error('Admin init error:', err);
         setError('Gagal memuat data. Silakan coba lagi.');
@@ -157,7 +204,7 @@ export default function AdminPanel() {
         setLoading(false);
       }
     })();
-  }, [fetchPending, fetchAll, fetchCategories]);
+  }, [fetchPending, fetchAll, fetchCategories, fetchWilayah, fetchLingkungan]);
 
   // Recompute stats whenever data changes
   useEffect(() => {
@@ -302,6 +349,156 @@ export default function AdminPanel() {
   };
 
   // ───────────────────────────────────────────
+  // Wilayah actions
+  // ───────────────────────────────────────────
+  const handleSubmitWilayah = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!wilName.trim()) return;
+    setWilSubmitting(true);
+    setError(null);
+    try {
+      if (editingWilId) {
+        const { error: updateErr } = await supabase
+          .from('wilayah')
+          .update({
+            name: wilName.trim(),
+            sort_order: parseInt(wilSort, 10) || 0,
+          })
+          .eq('id', editingWilId);
+        if (updateErr) throw updateErr;
+      } else {
+        const { error: insertErr } = await supabase.from('wilayah').insert({
+          name: wilName.trim(),
+          sort_order: parseInt(wilSort, 10) || 0,
+        });
+        if (insertErr) throw insertErr;
+      }
+      setWilName('');
+      setWilSort('0');
+      setEditingWilId(null);
+      await fetchWilayah();
+    } catch (err) {
+      alert(
+        err instanceof Error
+          ? `Gagal menyimpan wilayah: ${err.message}`
+          : 'Gagal menyimpan wilayah.',
+      );
+    } finally {
+      setWilSubmitting(false);
+    }
+  };
+
+  const startEditWilayah = (w: Wilayah) => {
+    setEditingWilId(w.id);
+    setWilName(w.name);
+    setWilSort(String(w.sort_order));
+  };
+
+  const cancelEditWilayah = () => {
+    setEditingWilId(null);
+    setWilName('');
+    setWilSort('0');
+  };
+
+  const handleDeleteWilayah = async (wilayahId: string) => {
+    if (
+      !confirm(
+        'Yakin ingin menghapus wilayah ini? Lingkungan di bawahnya juga akan terhapus.',
+      )
+    )
+      return;
+    setError(null);
+    try {
+      const { error: delErr } = await supabase
+        .from('wilayah')
+        .delete()
+        .eq('id', wilayahId);
+      if (delErr) throw delErr;
+      await Promise.all([fetchWilayah(), fetchLingkungan()]);
+    } catch (err) {
+      alert(
+        err instanceof Error
+          ? `Gagal menghapus wilayah: ${err.message}`
+          : 'Gagal menghapus wilayah.',
+      );
+    }
+  };
+
+  // ───────────────────────────────────────────
+  // Lingkungan actions
+  // ───────────────────────────────────────────
+  const handleSubmitLingkungan = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!lingName.trim() || !lingWilId) return;
+    setLingSubmitting(true);
+    setError(null);
+    try {
+      if (editingLingId) {
+        const { error: updateErr } = await supabase
+          .from('lingkungan')
+          .update({
+            wilayah_id: lingWilId,
+            name: lingName.trim(),
+            sort_order: parseInt(lingSort, 10) || 0,
+          })
+          .eq('id', editingLingId);
+        if (updateErr) throw updateErr;
+      } else {
+        const { error: insertErr } = await supabase.from('lingkungan').insert({
+          wilayah_id: lingWilId,
+          name: lingName.trim(),
+          sort_order: parseInt(lingSort, 10) || 0,
+        });
+        if (insertErr) throw insertErr;
+      }
+      setLingName('');
+      setLingSort('0');
+      setEditingLingId(null);
+      await fetchLingkungan();
+    } catch (err) {
+      alert(
+        err instanceof Error
+          ? `Gagal menyimpan lingkungan: ${err.message}`
+          : 'Gagal menyimpan lingkungan.',
+      );
+    } finally {
+      setLingSubmitting(false);
+    }
+  };
+
+  const startEditLingkungan = (l: LingkunganRow) => {
+    setEditingLingId(l.id);
+    setLingWilId(l.wilayah_id);
+    setLingName(l.name);
+    setLingSort(String(l.sort_order));
+  };
+
+  const cancelEditLingkungan = () => {
+    setEditingLingId(null);
+    setLingName('');
+    setLingSort('0');
+  };
+
+  const handleDeleteLingkungan = async (lingkunganId: string) => {
+    if (!confirm('Yakin ingin menghapus lingkungan ini?')) return;
+    setError(null);
+    try {
+      const { error: delErr } = await supabase
+        .from('lingkungan')
+        .delete()
+        .eq('id', lingkunganId);
+      if (delErr) throw delErr;
+      await fetchLingkungan();
+    } catch (err) {
+      alert(
+        err instanceof Error
+          ? `Gagal menghapus lingkungan: ${err.message}`
+          : 'Gagal menghapus lingkungan.',
+      );
+    }
+  };
+
+  // ───────────────────────────────────────────
   // Render: Loading
   // ───────────────────────────────────────────
   if (loading) {
@@ -342,6 +539,7 @@ export default function AdminPanel() {
     { key: 'moderasi', label: 'Moderasi', icon: '⏳', badge: pendingBiz.length },
     { key: 'listing', label: 'Semua Listing', icon: '📋' },
     { key: 'kategori', label: 'Kategori', icon: '🗂️' },
+    { key: 'wilayah', label: 'Wilayah & Lingkungan', icon: '📍' },
   ];
 
   // ───────────────────────────────────────────
@@ -728,6 +926,262 @@ export default function AdminPanel() {
               </ul>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────── */}
+      {/* Wilayah & Lingkungan tab */}
+      {/* ─────────────────────────────── */}
+      {activeTab === 'wilayah' && (
+        <div className="space-y-6">
+          {/* ── Wilayah Section ── */}
+          <div className="rounded-2xl border border-paroki-200 bg-white p-5 shadow-sm">
+            <h3 className="mb-4 font-serif text-lg font-bold text-paroki-900">
+              {editingWilId ? 'Edit Wilayah' : 'Tambah Wilayah Baru'}
+            </h3>
+            <form onSubmit={handleSubmitWilayah} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-xs font-medium text-paroki-700">
+                  Nama Wilayah
+                </label>
+                <input
+                  type="text"
+                  value={wilName}
+                  onChange={(e) => setWilName(e.target.value)}
+                  required
+                  placeholder="cth. Paroki Pusat"
+                  className="w-full rounded-lg border border-paroki-200 px-3 py-2 text-sm focus:border-paroki-400 focus:outline-none focus:ring-2 focus:ring-paroki-200"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-paroki-700">
+                  Urutan
+                </label>
+                <input
+                  type="number"
+                  value={wilSort}
+                  onChange={(e) => setWilSort(e.target.value)}
+                  min="0"
+                  className="w-full rounded-lg border border-paroki-200 px-3 py-2 text-sm focus:border-paroki-400 focus:outline-none focus:ring-2 focus:ring-paroki-200"
+                />
+              </div>
+              <div className="flex items-end gap-2 sm:col-span-3">
+                <button
+                  type="submit"
+                  disabled={wilSubmitting}
+                  className="rounded-lg bg-paroki-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-paroki-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {wilSubmitting
+                    ? 'Menyimpan...'
+                    : editingWilId
+                      ? '💾 Simpan'
+                      : '+ Tambah'}
+                </button>
+                {editingWilId && (
+                  <button
+                    type="button"
+                    onClick={cancelEditWilayah}
+                    className="rounded-lg border border-paroki-200 px-4 py-2 text-sm font-medium text-paroki-600 hover:bg-paroki-50"
+                  >
+                    Batal
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+
+          {/* Wilayah list */}
+          <div className="rounded-2xl border border-paroki-200 bg-white shadow-sm">
+            <div className="border-b border-paroki-100 px-5 py-3">
+              <h3 className="font-serif text-sm font-bold text-paroki-900">
+                Daftar Wilayah ({wilayahList.length})
+              </h3>
+            </div>
+            {wilayahList.length === 0 ? (
+              <div className="py-12 text-center">
+                <div className="mb-2 text-3xl">📍</div>
+                <p className="text-sm text-paroki-400">Belum ada wilayah.</p>
+              </div>
+            ) : (
+              <ul className="divide-y divide-paroki-100">
+                {wilayahList.map((w) => (
+                  <li
+                    key={w.id}
+                    className="flex items-center justify-between px-5 py-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">📍</span>
+                      <div>
+                        <div className="font-medium text-paroki-900">
+                          {w.name}
+                        </div>
+                        <div className="text-xs text-paroki-400">
+                          urutan {w.sort_order}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => startEditWilayah(w)}
+                        className="rounded-lg border border-paroki-200 px-3 py-1.5 text-xs font-medium text-paroki-600 transition hover:bg-paroki-50"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteWilayah(w.id)}
+                        className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* ── Lingkungan Section ── */}
+          <div className="rounded-2xl border border-paroki-200 bg-white p-5 shadow-sm">
+            <h3 className="mb-4 font-serif text-lg font-bold text-paroki-900">
+              {editingLingId ? 'Edit Lingkungan' : 'Tambah Lingkungan Baru'}
+            </h3>
+            <form
+              onSubmit={handleSubmitLingkungan}
+              className="grid grid-cols-1 gap-3 sm:grid-cols-4"
+            >
+              <div>
+                <label className="mb-1 block text-xs font-medium text-paroki-700">
+                  Wilayah
+                </label>
+                <select
+                  value={lingWilId}
+                  onChange={(e) => setLingWilId(e.target.value)}
+                  required
+                  className="w-full rounded-lg border border-paroki-200 px-3 py-2 text-sm focus:border-paroki-400 focus:outline-none focus:ring-2 focus:ring-paroki-200"
+                >
+                  <option value="">Pilih wilayah...</option>
+                  {wilayahList.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-xs font-medium text-paroki-700">
+                  Nama Lingkungan
+                </label>
+                <input
+                  type="text"
+                  value={lingName}
+                  onChange={(e) => setLingName(e.target.value)}
+                  required
+                  placeholder="cth. Lingkungan St. Maria"
+                  className="w-full rounded-lg border border-paroki-200 px-3 py-2 text-sm focus:border-paroki-400 focus:outline-none focus:ring-2 focus:ring-paroki-200"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-paroki-700">
+                  Urutan
+                </label>
+                <input
+                  type="number"
+                  value={lingSort}
+                  onChange={(e) => setLingSort(e.target.value)}
+                  min="0"
+                  className="w-full rounded-lg border border-paroki-200 px-3 py-2 text-sm focus:border-paroki-400 focus:outline-none focus:ring-2 focus:ring-paroki-200"
+                />
+              </div>
+              <div className="flex items-end gap-2 sm:col-span-4">
+                <button
+                  type="submit"
+                  disabled={lingSubmitting}
+                  className="rounded-lg bg-paroki-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-paroki-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {lingSubmitting
+                    ? 'Menyimpan...'
+                    : editingLingId
+                      ? '💾 Simpan'
+                      : '+ Tambah'}
+                </button>
+                {editingLingId && (
+                  <button
+                    type="button"
+                    onClick={cancelEditLingkungan}
+                    className="rounded-lg border border-paroki-200 px-4 py-2 text-sm font-medium text-paroki-600 hover:bg-paroki-50"
+                  >
+                    Batal
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+
+          {/* Lingkungan list grouped by wilayah */}
+          {lingkunganList.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-paroki-300 bg-white py-12 text-center">
+              <div className="mb-2 text-3xl">🏘️</div>
+              <p className="text-sm text-paroki-400">Belum ada lingkungan.</p>
+            </div>
+          ) : (
+            wilayahList.map((w) => {
+              const lings = lingkunganList.filter(
+                (l) => l.wilayah_id === w.id,
+              );
+              return (
+                <div
+                  key={w.id}
+                  className="rounded-2xl border border-paroki-200 bg-white shadow-sm"
+                >
+                  <div className="border-b border-paroki-100 px-5 py-3">
+                    <h3 className="font-serif text-sm font-bold text-paroki-900">
+                      📍 {w.name} ({lings.length})
+                    </h3>
+                  </div>
+                  {lings.length === 0 ? (
+                    <div className="py-6 text-center text-sm text-paroki-400">
+                      Belum ada lingkungan di wilayah ini.
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-paroki-100">
+                      {lings.map((l) => (
+                        <li
+                          key={l.id}
+                          className="flex items-center justify-between px-5 py-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-xl">🏘️</span>
+                            <div>
+                              <div className="font-medium text-paroki-900">
+                                {l.name}
+                              </div>
+                              <div className="text-xs text-paroki-400">
+                                urutan {l.sort_order}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => startEditLingkungan(l)}
+                              className="rounded-lg border border-paroki-200 px-3 py-1.5 text-xs font-medium text-paroki-600 transition hover:bg-paroki-50"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteLingkungan(l.id)}
+                              className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       )}
     </div>

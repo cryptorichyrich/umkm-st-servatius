@@ -23,6 +23,19 @@ export const supabase: SupabaseClient = createClient(
 export type BusinessStatus = 'draft' | 'pending' | 'approved' | 'rejected';
 export type UserRole = 'owner' | 'admin';
 
+export interface Wilayah {
+  id: string;
+  name: string;
+  sort_order: number;
+}
+
+export interface Lingkungan {
+  id: string;
+  wilayah_id: string;
+  name: string;
+  sort_order: number;
+}
+
 export interface Category {
   id: string;
   name: string;
@@ -51,6 +64,7 @@ export interface Business {
   email: string;
   address: string;
   area: string;
+  lingkungan: string;
   instagram: string;
   facebook: string;
   tiktok: string;

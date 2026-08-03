@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
-import { supabase, type Category } from '../../lib/supabase';
+import { supabase, type Category, type Wilayah, type Lingkungan } from '../../lib/supabase';
 
 interface Props {
   businessId?: string;
@@ -14,6 +14,7 @@ interface FormData {
   email: string;
   address: string;
   area: string;
+  lingkungan: string;
   instagram: string;
   facebook: string;
   tiktok: string;
@@ -22,19 +23,9 @@ interface FormData {
 }
 
 const emptyForm: FormData = {
-  name: '',
-  description: '',
-  category_id: '',
-  whatsapp: '',
-  phone: '',
-  email: '',
-  address: '',
-  area: '',
-  instagram: '',
-  facebook: '',
-  tiktok: '',
-  operating_hours_text: '',
-  logo_url: '',
+  name: '', description: '', category_id: '', whatsapp: '', phone: '', email: '',
+  address: '', area: '', lingkungan: '', instagram: '', facebook: '', tiktok: '',
+  operating_hours_text: '', logo_url: '',
 };
 
 function generateSlug(name: string): string {
@@ -57,6 +48,8 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
 
   const [form, setForm] = useState<FormData>(emptyForm);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [wilayahList, setWilayahList] = useState<Wilayah[]>([]);
+  const [lingkunganList, setLingkunganList] = useState<Lingkungan[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +75,12 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
         .order('name', { ascending: true });
 
       setCategories((catData || []) as Category[]);
+
+      // Fetch wilayah + lingkungan
+      const { data: wData } = await supabase.from('wilayah').select('*').order('sort_order');
+      const { data: lData } = await supabase.from('lingkungan').select('*').order('sort_order');
+      setWilayahList((wData || []) as Wilayah[]);
+      setLingkunganList((lData || []) as Lingkungan[]);
 
       // If editing, fetch existing business
       if (businessId) {
@@ -119,6 +118,7 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
           email: biz.email || '',
           address: biz.address || '',
           area: biz.area || '',
+          lingkungan: biz.lingkungan || '',
           instagram: biz.instagram || '',
           facebook: biz.facebook || '',
           tiktok: biz.tiktok || '',
@@ -190,6 +190,7 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
       email: form.email.trim(),
       address: form.address.trim(),
       area: form.area.trim(),
+      lingkungan: form.lingkungan.trim(),
       instagram: form.instagram.trim(),
       facebook: form.facebook.trim(),
       tiktok: form.tiktok.trim(),
@@ -448,20 +449,49 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
           </div>
         </div>
 
-        {/* Area */}
-        <div>
-          <label htmlFor="area" className={labelClass}>
-            Wilayah
-          </label>
-          <input
-            id="area"
-            name="area"
-            type="text"
-            value={form.area}
-            onChange={handleChange}
-            placeholder="contoh: Wilayah 1"
-            className={inputClass}
-          />
+        {/* Wilayah + Lingkungan */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="area" className={labelClass}>
+              Wilayah
+            </label>
+            <select
+              id="area"
+              name="area"
+              value={form.area}
+              onChange={handleChange}
+              className={inputClass}
+            >
+              <option value="">Pilih Wilayah...</option>
+              {wilayahList.map((w) => (
+                <option key={w.id} value={w.name}>{w.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="lingkungan" className={labelClass}>
+              Lingkungan
+            </label>
+            <select
+              id="lingkungan"
+              name="lingkungan"
+              value={form.lingkungan}
+              onChange={handleChange}
+              className={inputClass}
+            >
+              <option value="">Pilih Lingkungan...</option>
+              {lingkunganList
+                .filter((l) => {
+                  const matchedWilayah = wilayahList.find((w) => w.name === form.area);
+                  return !matchedWilayah || l.wilayah_id === matchedWilayah.id;
+                })
+                .map((l) => (
+                  <option key={l.id} value={l.name}>{l.name}</option>
+                ))
+              }
+            </select>
+            {!form.area && <p className="mt-1 text-xs text-gray-400">Pilih wilayah dulu untuk melihat lingkungan.</p>}
+          </div>
         </div>
 
         {/* Contact info */}
