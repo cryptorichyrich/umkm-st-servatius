@@ -236,6 +236,7 @@ export interface BazarTable {
   nomor: number;
   label: string;
   arah: TableArah;
+  tenda: number;
   sort_order: number;
 }
 

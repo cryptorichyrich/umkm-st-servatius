@@ -98,6 +98,14 @@ const DEFAULT_TABLE_TEMPLATE: { arah: TableArah }[] = [
   { arah: "utara" },
 ];
 
+// 1 tenda = max 5 meja. Tenda = ceil(nomor / 5)
+function tendaForNomor(nomor: number): number {
+  return Math.ceil(nomor / 5);
+}
+function tendaCount(totalTables: number): number {
+  return Math.ceil(totalTables / 5);
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -257,11 +265,12 @@ export default function BazarManager() {
         .single();
       if (err) throw err;
 
-      // Auto-create default 5 tables
+      // Auto-create default 5 tables (Tenda 1)
       const tableRows = DEFAULT_TABLE_TEMPLATE.map((t, i) => ({
         bazar_id: created.id,
         nomor: i + 1,
         arah: t.arah,
+        tenda: 1,
       }));
       const { error: tableErr } = await supabase
         .from("bazar_tables")
@@ -425,6 +434,7 @@ export default function BazarManager() {
           bazar_id: editingBazar.id,
           nomor: nextNomor,
           arah: newTableArah,
+          tenda: tendaForNomor(nextNomor),
         })
         .select()
         .single();
@@ -942,59 +952,68 @@ export default function BazarManager() {
       <section className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-paroki-900">
           <Tent className="h-5 w-5 text-gold-500" />
-          Tata Letak Meja ({tables.length} meja)
+          Tata Letak Meja ({tables.length} meja · {tendaCount(tables.length)} tenda)
         </h2>
 
-        {/* U-layout visualization */}
-        <div className="mb-6 space-y-3">
-          {ARAH_ORDER.map((arah) => {
-            const groupTables = tables.filter((t) => t.arah === arah);
-            if (groupTables.length === 0) return null;
+        {/* Tenda-grouped U-layout visualization */}
+        <div className="mb-6 space-y-4">
+          {Array.from({ length: tendaCount(tables.length) }, (_, i) => i + 1).map((tendaNum) => {
+            const tendaTables = tables
+              .filter((t) => (t.tenda || tendaForNomor(t.nomor)) === tendaNum)
+              .sort((a, b) => a.nomor - b.nomor);
+            if (tendaTables.length === 0) return null;
             return (
-              <div key={arah}>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                  {ARAH_LABELS[arah]}
+              <div key={tendaNum} className="rounded-lg border border-paroki-200 bg-paroki-50/50 p-4">
+                <p className="mb-3 text-sm font-bold text-paroki-800">
+                  🎪 Tenda {tendaNum} <span className="font-normal text-gray-400">({tendaTables.length} meja)</span>
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  {groupTables
-                    .sort((a, b) => (a.nomor ?? 0) - (b.nomor ?? 0))
-                    .map((t) => {
-                      const assignment = assignments.find(
-                        (a) => a.table_id === t.id
-                      );
-                      return (
-                        <div
-                          key={t.id}
-                          className={`flex min-w-[160px] flex-col gap-1 rounded-lg border-2 p-3 ${
-                            assignment
-                              ? "border-gold-500 bg-gold-50"
-                              : "border-dashed border-gray-300 bg-gray-50"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-bold text-paroki-900">
-                              Meja {t.nomor}
-                            </span>
-                            <button
-                              onClick={() => handleRemoveTable(t)}
-                              className="text-red-400 hover:text-red-600"
-                              title="Hapus meja"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                          {assignment?.business ? (
-                            <span className="text-xs font-medium text-paroki-700">
-                              {assignment.business.name}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-gray-400">
-                              Kosong
-                            </span>
-                          )}
+                <div className="space-y-2">
+                  {ARAH_ORDER.map((arah) => {
+                    const groupTables = tendaTables.filter((t) => t.arah === arah);
+                    if (groupTables.length === 0) return null;
+                    return (
+                      <div key={arah}>
+                        <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                          {ARAH_LABELS[arah]}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {groupTables.map((t) => {
+                            const assignment = assignments.find((a) => a.table_id === t.id);
+                            return (
+                              <div
+                                key={t.id}
+                                className={`flex min-w-[160px] flex-col gap-1 rounded-lg border-2 p-3 ${
+                                  assignment
+                                    ? "border-gold-500 bg-gold-50"
+                                    : "border-dashed border-gray-300 bg-white"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-bold text-paroki-900">
+                                    Meja {t.nomor}
+                                  </span>
+                                  <button
+                                    onClick={() => handleRemoveTable(t)}
+                                    className="text-red-400 hover:text-red-600"
+                                    title="Hapus meja"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                                {assignment?.business ? (
+                                  <span className="text-xs font-medium text-paroki-700">
+                                    {assignment.business.name}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-gray-400">Kosong</span>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
