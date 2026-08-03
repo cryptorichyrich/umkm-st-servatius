@@ -210,6 +210,7 @@ export const ECOMMERCE_PLATFORMS = [
   { key: 'shopee', label: 'Shopee', color: '#EE4D2D', icon: '🛍️', iconUrl: '/icons/shopee.png' },
   { key: 'lazada', label: 'Lazada', color: '#0F146D', icon: '🏷️', iconUrl: '/icons/lazada.webp' },
   { key: 'blibli', label: 'Blibli', color: '#0095DA', icon: '📦', iconUrl: '/icons/blibli.png' },
+  { key: 'toco', label: 'Toco', color: '#E2231A', icon: '🛒', iconUrl: '/icons/toco.jpg' },
   { key: 'bukalapak', label: 'Bukalapak', color: '#E31D33', icon: '📄' },
   { key: 'website', label: 'Website Sendiri', color: '#10B981', icon: '🌐' },
 ] as const;
