@@ -1,16 +1,16 @@
 /**
- * Cloudflare Worker — dynamic env injection + static asset passthrough + SPA fallback.
- *
- * 1. /__env.js → Supabase config from runtime env vars
- * 2. Static assets passthrough (with explicit index.html resolution)
- * 3. /umkm/* and /produk/* → serve static HTML or fallback to generic shell
- * 4. /admin/<tab> and /dashboard/<tab> → SPA shell fallback
+ * Cloudflare Worker — fixed ASSETS.fetch with proper Request objects.
  */
 export interface Env {
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
   ASSETS: Fetcher;
 }
+
+const HTML_HEADERS: Record<string, string> = {
+  'Content-Type': 'text/html; charset=utf-8',
+  'Cache-Control': 'no-cache, no-store, must-revalidate',
+};
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -24,73 +24,115 @@ export default {
           url: env.SUPABASE_URL || '',
           key: env.SUPABASE_ANON_KEY || '',
         })};`,
-        { headers: { 'Content-Type': 'application/javascript', 'Cache-Control': 'no-cache' } },
+        { headers: { 'Content-Type': 'application/javascript', ...HTML_HEADERS } },
       );
     }
 
-    // ── Try static asset as-is (handles most paths: /, /icons/*, /_astro/*, etc.) ──
-    const assetResponse = await env.ASSETS.fetch(request);
-    if (assetResponse.status === 200) return assetResponse;
-
-    // ── SPA: /admin/<tab> ──
-    if (path.startsWith('/admin/') && !path.includes('.') && path !== '/admin/') {
-      const adminHtml = await env.ASSETS.fetch(new Request(`${url.origin}/admin/`));
-      if (adminHtml.ok) {
-        let html = await adminHtml.text();
-        const tab = path.split('/')[2] || 'admin';
-        html = html.replace(/<title>[^<]*<\/title>/, `<title>Admin — ${tab} | UMKM St. Servatius</title>`);
-        return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' } });
-      }
+    // ── File assets (JS, CSS, images, etc.) — pass straight to Assets ──
+    if (path.includes('.')) {
+      return env.ASSETS.fetch(request);
     }
 
-    // ── SPA: /dashboard/<tab> ──
-    if (path.startsWith('/dashboard/') && !path.includes('.') && path !== '/dashboard/') {
-      const dashHtml = await env.ASSETS.fetch(new Request(`${url.origin}/dashboard/`));
-      if (dashHtml.ok) {
-        let html = await dashHtml.text();
-        const tab = path.split('/')[2] || 'dashboard';
-        html = html.replace(/<title>[^<]*<\/title>/, `<title>${tab.charAt(0).toUpperCase() + tab.slice(1)} — Dashboard | UMKM St. Servatius</title>`);
-        return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' } });
-      }
+    const segments = path.split('/').filter(Boolean);
+
+    // Helper: fetch a specific asset path by creating proper Request
+    async function fetchAsset(assetPath: string): Promise<Response> {
+      const assetUrl = new URL(assetPath, url.origin);
+      const assetReq = new Request(assetUrl, { method: 'GET' });
+      return env.ASSETS.fetch(assetReq);
     }
 
-    // ── /umkm/<slug> and /produk/<slug> ──
-    const isUmkm = path.startsWith('/umkm/') && !path.includes('.');
-    const isProduk = path.startsWith('/produk/') && !path.includes('.') && path !== '/produk/';
-    if (isUmkm || isProduk) {
-      const slug = path.split('/')[2]?.replace(/\/$/, '');
-      if (!slug) return assetResponse;
+    // ── /umkm/<slug> — serve from asset or template ──
+    if (segments[0] === 'umkm' && segments[1]) {
+      const slug = segments[1];
 
-      // Normalize trailing slash
       if (!path.endsWith('/')) {
-        return Response.redirect(url.origin + path + '/' + url.search, 307);
+        return Response.redirect(url.origin + path + '/' + url.search, 301);
       }
 
-      // Try explicit index.html (CF Assets is inconsistent with dir resolution)
-      const directHtml = await env.ASSETS.fetch(new Request(`${url.origin}/${isUmkm ? 'umkm' : 'produk'}/${slug}/index.html`));
-      if (directHtml.ok) {
-        return new Response(directHtml.body, {
-          status: 200,
-          headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' },
-        });
+      // Try direct page
+      const direct = await fetchAsset(`/umkm/${slug}/index.html`);
+      if (direct.ok) {
+        return new Response(direct.body, { status: 200, headers: HTML_HEADERS });
       }
 
-      // Fallback: use a known page as template, replace slug
-      const templateSlug = isUmkm ? 'bengkel-motor-tarik' : 'aksesoris-mobil-led-bengkel-motor-tarik';
-      const templateHtml = await env.ASSETS.fetch(
-        new Request(`${url.origin}/${isUmkm ? 'umkm' : 'produk'}/${templateSlug}/index.html`),
-      );
-      if (templateHtml.ok) {
-        let html = await templateHtml.text();
-        html = html.replace(new RegExp(templateSlug, 'g'), slug);
+      // Fallback: template with slug swap
+      for (const tpl of ['katering-bu-maria', 'agen-pulsa-token', 'bengkel-motor-tarik']) {
+        const tplRes = await fetchAsset(`/umkm/${tpl}/index.html`);
+        if (tplRes.ok) {
+          let html = await tplRes.text();
+          html = html.replace(new RegExp(tpl, 'g'), slug);
+          html = html.replace(
+            /<title>[^<]*<\/title>/,
+            `<title>${slug.replace(/-/g, ' ')} | UMKM St. Servatius</title>`,
+          );
+          return new Response(html, { status: 200, headers: HTML_HEADERS });
+        }
+      }
+    }
+
+    // ── /produk/<slug> — same approach ──
+    if (segments[0] === 'produk' && segments[1]) {
+      const slug = segments[1];
+
+      if (!path.endsWith('/')) {
+        return Response.redirect(url.origin + path + '/' + url.search, 301);
+      }
+
+      const direct = await fetchAsset(`/produk/${slug}/index.html`);
+      if (direct.ok) {
+        return new Response(direct.body, { status: 200, headers: HTML_HEADERS });
+      }
+
+      const tplRes = await fetchAsset(`/produk/aksesoris-mobil-led-bengkel-motor-tarik/index.html`);
+      if (tplRes.ok) {
+        let html = await tplRes.text();
+        html = html.replace(/aksesoris-mobil-led-bengkel-motor-tarik/g, slug);
         html = html.replace(
           /<title>[^<]*<\/title>/,
-          `<title>${decodeURIComponent(slug.replace(/-/g, ' '))} | UMKM St. Servatius</title>`,
+          `<title>${slug.replace(/-/g, ' ')} | UMKM St. Servatius</title>`,
         );
-        return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' } });
+        return new Response(html, { status: 200, headers: HTML_HEADERS });
       }
     }
 
-    return assetResponse;
+    // ── /admin/<tab> — SPA fallback ──
+    if (segments[0] === 'admin' && segments[1]) {
+      const adminRes = await fetchAsset('/admin/index.html');
+      if (adminRes.ok) {
+        let html = await adminRes.text();
+        html = html.replace(
+          /<title>[^<]*<\/title>/,
+          `<title>Admin — ${segments[1]} | UMKM St. Servatius</title>`,
+        );
+        return new Response(html, { status: 200, headers: HTML_HEADERS });
+      }
+    }
+
+    // ── /dashboard/<tab> — SPA fallback ──
+    if (segments[0] === 'dashboard' && segments[1]) {
+      const dashRes = await fetchAsset('/dashboard/index.html');
+      if (dashRes.ok) {
+        let html = await dashRes.text();
+        html = html.replace(
+          /<title>[^<]*<\/title>/,
+          `<title>${segments[1].charAt(0).toUpperCase() + segments[1].slice(1)} — Dashboard | UMKM St. Servatius</title>`,
+        );
+        return new Response(html, { status: 200, headers: HTML_HEADERS });
+      }
+    }
+
+    // ── Everything else: try static asset ──
+    const assetRes = await env.ASSETS.fetch(request);
+    if (assetRes.status === 200) return assetRes;
+
+    // Try /path/index.html
+    const cleanPath = path.endsWith('/') ? path.slice(0, -1) : path;
+    const idxRes = await fetchAsset(`${cleanPath}/index.html`);
+    if (idxRes.ok) {
+      return new Response(idxRes.body, { status: 200, headers: HTML_HEADERS });
+    }
+
+    return new Response('Not found', { status: 404, headers: { 'Content-Type': 'text/plain' } });
   },
 };

@@ -5,9 +5,7 @@
   "compatibility_date": "2026-08-01",
   "assets": {
     "directory": "./dist",
-    "binding": "ASSETS",
-    "not_found_handling": "none",
-    "html_handling": "auto-trailing-slash"
+    "binding": "ASSETS"
   },
   "vars": {
     "SUPABASE_URL": "https://vfqcydqmwhfelqizxzbi.supabase.co",
