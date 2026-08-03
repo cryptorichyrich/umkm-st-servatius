@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import {
-  Tent,
+  Store,
   Plus,
   Trash2,
   Copy,
@@ -71,15 +71,17 @@ const STATUS_LABELS: Record<BazarStatus, string> = {
 };
 
 const ASSIGN_STYLES: Record<AssignmentStatus, string> = {
-  assigned: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  confirmed: "bg-green-50 text-green-700 border-green-200",
-  absent: "bg-red-50 text-red-700 border-red-200",
+  assigned: "bg-amber-100 text-amber-800 border-amber-300",
+  confirmed: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  absent: "bg-red-100 text-red-800 border-red-300",
+  completed: "bg-blue-100 text-blue-800 border-blue-300",
 };
 
 const ASSIGN_LABELS: Record<AssignmentStatus, string> = {
   assigned: "Ditugaskan",
   confirmed: "Dikonfirmasi",
   absent: "Tidak Hadir",
+  completed: "Selesai",
 };
 
 const ARAH_ORDER: TableArah[] = ["selatan", "timur", "utara"];
@@ -248,8 +250,8 @@ export default function BazarManager() {
       bank_nama: "",
       bank_rekening: "",
       bank_atas_nama: "",
-      pembayaran_pesan: "",
-      anti_scam_pesan: "",
+      pembayaran_pesan: "Setelah konfirmasi kehadiran, segera lakukan pembayaran paling lambat hari Jumat. Upload bukti transfer di bawah ini.",
+      anti_scam_pesan: "PERHATIAN: Keamanan peserta adalah prioritas utama kami. Jangan pernah mentransfer ke nomor rekening selain yang tertera di atas. Kami tidak akan pernah meminta pembayaran via WhatsApp pribadi atau aplikasi lain. Jika ada yang mengaku dari panitia dan meminta transfer ke rekening berbeda, hubungi panitia resmi.",
     });
     setShowCreateForm(true);
   }
@@ -741,10 +743,12 @@ export default function BazarManager() {
   function renderAssignmentBadge(status: AssignmentStatus) {
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${
-          ASSIGN_STYLES[status] ?? ASSIGN_STYLES.assigned
-        }`}
+        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${ASSIGN_STYLES[status] ?? ASSIGN_STYLES.assigned}`}
       >
+        {status === "assigned" && <Clock className="h-3 w-3" />}
+        {status === "confirmed" && <CheckCircle className="h-3 w-3" />}
+        {status === "absent" && <XCircle className="h-3 w-3" />}
+        {status === "completed" && <CheckCircle className="h-3 w-3" />}
         {ASSIGN_LABELS[status] ?? status}
       </span>
     );
@@ -761,7 +765,7 @@ export default function BazarManager() {
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-paroki-900 text-gold-500">
-              <Tent className="h-5 w-5" />
+              <Store className="h-5 w-5" />
             </div>
             <div>
               <h1 className="font-display text-2xl font-bold text-paroki-900">
@@ -827,7 +831,7 @@ export default function BazarManager() {
         {/* Empty state */}
         {!loading && bazars.length === 0 && !showCreateForm && (
           <div className="rounded-lg border-2 border-dashed border-gray-200 py-20 text-center">
-            <Tent className="mx-auto mb-3 h-10 w-10 text-gray-300" />
+            <Store className="mx-auto mb-3 h-10 w-10 text-gray-300" />
             <p className="text-gray-500">
               Belum ada bazar. Klik "Buat Bazar" untuk mulai.
             </p>
@@ -873,7 +877,7 @@ export default function BazarManager() {
 
                   <div className="mb-4 flex items-center gap-4 text-sm text-gray-500">
                     <span className="flex items-center gap-1">
-                      <Tent className="h-4 w-4" />
+                      <Store className="h-4 w-4" />
                       {tableCount} meja
                     </span>
                     {b.banner_aktif && (
@@ -986,7 +990,7 @@ export default function BazarManager() {
       {/* Table Layout Manager */}
       <section className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-paroki-900">
-          <Tent className="h-5 w-5 text-gold-500" />
+          <Store className="h-5 w-5 text-gold-500" />
           Tata Letak Meja ({tables.length} meja · {tendaCount(tables.length)} tenda)
         </h2>
 
@@ -1504,6 +1508,39 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
         />
       </div>
 
+      {/* Pesan Banner (moved up) */}
+      <div className="sm:col-span-2">
+        <label className="mb-1 block text-sm font-medium text-gray-600">
+          Pesan Banner
+        </label>
+        <textarea
+          value={form.banner_pesan}
+          onChange={(e) =>
+            setForm((p) => ({ ...p, banner_pesan: e.target.value }))
+          }
+          rows={2}
+          placeholder="Pengumuman singkat untuk ditampilkan di banner..."
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
+        />
+      </div>
+
+      {/* Banner Aktif */}
+      <div className="sm:col-span-2">
+        <label className="flex cursor-pointer items-center gap-2">
+          <input
+            type="checkbox"
+            checked={form.banner_aktif}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, banner_aktif: e.target.checked }))
+            }
+            className="h-4 w-4 rounded border-gray-300 text-paroki-700 focus:ring-paroki-700"
+          />
+          <span className="text-sm font-medium text-gray-600">
+            Tampilkan banner aktif di beranda
+          </span>
+        </label>
+      </div>
+
       {/* Regulasi PDF */}
       <div className="sm:col-span-2">
         <label className="mb-1 block text-sm font-medium text-gray-600">
@@ -1737,39 +1774,6 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
         <p className="mt-1 text-xs text-gray-400">
           Tampil dengan latar merah di dashboard peserta. Kosongkan untuk disembunyikan.
         </p>
-      </div>
-
-      {/* Banner Pesan */}
-      <div className="sm:col-span-2">
-        <label className="mb-1 block text-sm font-medium text-gray-600">
-          Pesan Banner
-        </label>
-        <textarea
-          value={form.banner_pesan}
-          onChange={(e) =>
-            setForm((p) => ({ ...p, banner_pesan: e.target.value }))
-          }
-          rows={2}
-          placeholder="Pengumuman singkat untuk ditampilkan di banner..."
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
-        />
-      </div>
-
-      {/* Banner Aktif */}
-      <div className="sm:col-span-2">
-        <label className="flex cursor-pointer items-center gap-2">
-          <input
-            type="checkbox"
-            checked={form.banner_aktif}
-            onChange={(e) =>
-              setForm((p) => ({ ...p, banner_aktif: e.target.checked }))
-            }
-            className="h-4 w-4 rounded border-gray-300 text-paroki-700 focus:ring-paroki-700"
-          />
-          <span className="text-sm font-medium text-gray-600">
-            Tampilkan banner aktif di beranda
-          </span>
-        </label>
       </div>
     </div>
   );
