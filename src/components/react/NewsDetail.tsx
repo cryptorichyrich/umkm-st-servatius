@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   Loader2,
 } from 'lucide-react';
+import { sanitizeHtml } from '../../lib/sanitize';
 import ShareButtons from './ShareButtons';
 
 // ─────────────────────────────────────────────
@@ -239,7 +240,7 @@ export default function NewsDetail({ slug: propSlug }: Props) {
         {article.content && (
           <div
             className="wysiwyg-content mt-6"
-            dangerouslySetInnerHTML={{ __html: article.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.content) }}
           />
         )}
 

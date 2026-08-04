@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { sanitizeHtml } from '../../lib/sanitize';
 import {
   Search,
   Inbox,
@@ -656,7 +657,7 @@ export default function BlogModeration() {
                 <div
                   className="prose prose-sm max-w-none rounded-xl border border-paroki-100 bg-gray-50 px-4 py-3 wysiwyg-content"
                   dangerouslySetInnerHTML={{
-                    __html: selectedPost.content || '<p class="text-paroki-400">Konten kosong</p>',
+                    __html: sanitizeHtml(selectedPost.content || '<p class="text-paroki-400">Konten kosong</p>'),
                   }}
                 />
               </div>

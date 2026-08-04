@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Search, ArrowLeft, Store, Eye, AlertCircle } from 'lucide-react';
+import { sanitizeHtml } from '../../lib/sanitize';
 import ShareButtons from './ShareButtons';
 
 function formatDate(date: string | null): string {
@@ -155,7 +156,7 @@ export default function BlogDetail() {
       {/* Content */}
       <article
         className="wysiwyg-content mt-8 max-w-none text-gray-700"
-        dangerouslySetInnerHTML={{ __html: post.content || '' }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content || '') }}
       />
 
       {/* Share buttons */}

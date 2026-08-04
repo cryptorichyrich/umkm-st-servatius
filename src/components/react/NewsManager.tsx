@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { sanitizeHtml } from '../../lib/sanitize';
 import {
   supabase,
 } from '../../lib/supabase';
@@ -992,7 +993,7 @@ export default function NewsManager() {
                       <div
                         className="wysiwyg-content mt-1 max-h-48 overflow-y-auto rounded-lg border border-paroki-100 bg-gray-50 p-3 text-sm"
                         dangerouslySetInnerHTML={{
-                          __html: detailArticle.content,
+                          __html: sanitizeHtml(detailArticle.content),
                         }}
                       />
                     </div>

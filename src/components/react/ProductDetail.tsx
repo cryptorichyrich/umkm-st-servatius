@@ -5,6 +5,7 @@ import FavoriteButton from './FavoriteButton';
 import ViewCounter from './ViewCounter';
 import PageViewTracker from './PageViewTracker';
 import ReportButton from './ReportButton';
+import { sanitizeHtml } from '../../lib/sanitize';
 import ShareButtons from './ShareButtons';
 
 interface Props { slug: string; }
@@ -210,7 +211,7 @@ export default function ProductDetail({ slug }: Props) {
           <h2 className="mb-4 font-display text-lg font-bold text-ink">Detail Produk</h2>
           <div
             className="wysiwyg-content max-w-none text-gray-600"
-            dangerouslySetInnerHTML={{ __html: product.rich_description }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.rich_description) }}
           />
         </div>
       )}
