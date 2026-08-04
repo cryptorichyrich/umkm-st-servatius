@@ -107,34 +107,30 @@ const year = new Date().getFullYear();
 
         <!-- Desktop nav -->
         <div class="hidden items-center gap-1 md:flex">
-          <a href="/direktori" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">Direktori</a>
-          <a href="/berita" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">Berita</a>
-          <a href="/blog" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">Blog</a>
+          <a href="/direktori" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">UMKM</a>
+          <a href="/produk" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">Produk</a>
           <a href="/bazar" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">Bazar</a>
 
-          <!-- Dropdown: Lainnya -->
-          <div class="relative" id="nav-more-wrap">
-            <button id="nav-more-btn" class="flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">
-              Lainnya
+          <!-- Dropdown: Artikel [Berita, Blog] -->
+          <div class="relative nav-dropdown" id="dd-artikel">
+            <button class="nav-dd-btn flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">
+              Artikel
               <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
             </button>
-            <div id="nav-more-menu" class="invisible absolute right-0 top-full z-50 mt-1 w-52 translate-y-1 rounded-xl border border-gray-200 bg-white py-1.5 opacity-0 shadow-lg transition-all duration-150">
-              <a href="/produk" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-paroki-50">Produk</a>
-              <a href="/#kategori" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-paroki-50">Kategori Usaha</a>
+            <div class="nav-dd-menu invisible absolute left-0 top-full z-50 mt-1 w-44 translate-y-1 rounded-xl border border-gray-200 bg-white py-1.5 opacity-0 shadow-lg transition-all duration-150">
+              <a href="/berita" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-paroki-50">📰 Berita</a>
+              <a href="/blog" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-paroki-50">📝 Blog UMKM</a>
             </div>
           </div>
 
-          <!-- Auth-aware section (populated by client-side script) -->
-          <div id="nav-auth-area" class="flex items-center gap-1">
-            <!-- Default: Dashboard (hidden until we know auth state) -->
-            <a href="/dashboard" class="nav-guest-only hidden rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">Dashboard</a>
-          </div>
-
-          <!-- Not logged in: Daftar/Masuk -->
-          <div id="nav-auth-buttons" class="nav-guest-only flex items-center gap-2 border-l border-gray-200 pl-2 ml-1">
+          <!-- Logged out: Masuk + Daftar -->
+          <div id="nav-auth-buttons" class="nav-guest-only flex items-center gap-2 border-l border-gray-200 pl-3 ml-2">
             <a href="/masuk" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">Masuk</a>
             <a href="/daftar" class="inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-gold-600 active:translate-y-px">Daftar</a>
           </div>
+
+          <!-- Logged in: Akun dropdown (populated by script) -->
+          <div id="nav-auth-area" class="hidden relative" id="dd-akun"></div>
         </div>
 
         <!-- Mobile menu button -->
@@ -152,14 +148,13 @@ const year = new Date().getFullYear();
       <!-- Mobile menu -->
       <div id="mobile-menu" class="hidden border-t border-gray-200 bg-white px-4 py-3 md:hidden">
         <div class="flex flex-col gap-1">
-          <a href="/direktori" class="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">Direktori</a>
+          <a href="/direktori" class="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">UMKM</a>
           <a href="/produk" class="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">Produk</a>
-          <a href="/berita" class="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">Berita</a>
-          <a href="/blog" class="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">Blog</a>
           <a href="/bazar" class="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">Bazar</a>
-          <a href="/#kategori" class="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">Kategori</a>
+          <a href="/berita" class="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">📰 Berita</a>
+          <a href="/blog" class="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">📝 Blog UMKM</a>
           <!-- Mobile auth area (populated by script) -->
-          <div id="mobile-auth-area" class="flex flex-col gap-1"></div>
+          <div id="mobile-auth-area" class="mt-2 border-t border-gray-100 pt-2 flex flex-col gap-1"></div>
           <div id="mobile-auth-guest" class="nav-guest-only flex flex-col gap-1">
             <a href="/masuk" class="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">Masuk</a>
             <a href="/daftar" class="mt-1 rounded-lg bg-gold-500 px-3 py-2.5 text-center text-sm font-bold text-white">Daftar</a>
@@ -194,7 +189,7 @@ const year = new Date().getFullYear();
           </div>
           <div class="flex flex-col gap-2 text-sm">
             <span class="text-xs font-semibold uppercase tracking-wider text-paroki-300">Jelajahi</span>
-            <a href="/direktori" class="text-paroki-100 transition hover:text-white">Direktori Usaha</a>
+            <a href="/direktori" class="text-paroki-100 transition hover:text-white">UMKM</a>
             <a href="/produk" class="text-paroki-100 transition hover:text-white">Produk</a>
             <a href="/berita" class="text-paroki-100 transition hover:text-white">Berita</a>
             <a href="/blog" class="text-paroki-100 transition hover:text-white">Blog</a>
@@ -210,41 +205,54 @@ const year = new Date().getFullYear();
       </div>
     </footer>
 
-    <!-- Mobile menu toggle + Desktop dropdown toggle -->
+    <!-- Mobile menu toggle + Desktop dropdowns -->
     <script>
       const btn = document.getElementById('mobile-menu-btn');
       const menu = document.getElementById('mobile-menu');
       btn?.addEventListener('click', () => menu?.classList.toggle('hidden'));
 
-      // Desktop "Lainnya" dropdown
-      const moreBtn = document.getElementById('nav-more-btn');
-      const moreMenu = document.getElementById('nav-more-menu');
-      const moreWrap = document.getElementById('nav-more-wrap');
+      // Generic dropdown handler — works for ALL .nav-dropdown elements
+      document.querySelectorAll('.nav-dropdown').forEach((dd) => {
+        const ddBtn = dd.querySelector('.nav-dd-btn');
+        const ddMenu = dd.querySelector('.nav-dd-menu');
+        if (!ddBtn || !ddMenu) return;
 
-      function openMore() {
-        if (!moreMenu) return;
-        moreMenu.classList.remove('invisible', 'opacity-0', 'translate-y-1');
-        moreMenu.classList.add('visible', 'opacity-100', 'translate-y-0');
-      }
-      function closeMore() {
-        if (!moreMenu) return;
-        moreMenu.classList.add('invisible', 'opacity-0', 'translate-y-1');
-        moreMenu.classList.remove('visible', 'opacity-100', 'translate-y-0');
-      }
+        const open = () => {
+          ddMenu.classList.remove('invisible', 'opacity-0', 'translate-y-1');
+          ddMenu.classList.add('opacity-100', 'translate-y-0');
+        };
+        const close = () => {
+          ddMenu.classList.add('invisible', 'opacity-0', 'translate-y-1');
+          ddMenu.classList.remove('opacity-100', 'translate-y-0');
+        };
 
-      moreBtn?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (moreMenu?.classList.contains('opacity-0')) openMore(); else closeMore();
+        ddBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          // Close all other dropdowns first
+          document.querySelectorAll('.nav-dd-menu').forEach((m) => {
+            if (m !== ddMenu) {
+              m.classList.add('invisible', 'opacity-0', 'translate-y-1');
+              m.classList.remove('opacity-100', 'translate-y-0');
+            }
+          });
+          if (ddMenu.classList.contains('opacity-0')) open(); else close();
+        });
+        dd.addEventListener('mouseenter', open);
+        dd.addEventListener('mouseleave', close);
       });
-      moreWrap?.addEventListener('mouseleave', closeMore);
-      moreWrap?.addEventListener('mouseenter', openMore);
-      document.addEventListener('click', closeMore);
+
+      // Close all dropdowns on outside click
+      document.addEventListener('click', () => {
+        document.querySelectorAll('.nav-dd-menu').forEach((m) => {
+          m.classList.add('invisible', 'opacity-0', 'translate-y-1');
+          m.classList.remove('opacity-100', 'translate-y-0');
+        });
+      });
     </script>
 
     <!-- Auth-aware navbar -->
     <script type="module">
       async function updateNav() {
-        // Wait for supabase config from Worker
         if (!window.__SUPABASE__) {
           setTimeout(updateNav, 200);
           return;
@@ -253,12 +261,12 @@ const year = new Date().getFullYear();
         try {
           const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
           const sb = createClient(window.__SUPABASE__.url, window.__SUPABASE__.key, { auth: { persistSession: true } });
-          window.sb = sb; // expose for inline onclick logout
+          window.sb = sb;
 
           const { data: { session } } = await sb.auth.getSession();
 
           if (!session) {
-            // Guest: show Masuk + Daftar (already visible by default)
+            // Guest: Masuk + Daftar already visible by default
             return;
           }
 
@@ -270,54 +278,67 @@ const year = new Date().getFullYear();
             .single();
 
           const role = profile?.role || 'member';
-          const vStatus = profile?.verification_status || 'unverified';
-          const vType = profile?.verification_type || '';
           const isAdmin = role === 'admin';
-          const isVerified = vStatus === 'verified';
-          const isMember = vType === 'member';
-          const isUmkm = vType === 'umkm';
-
-          // Build badge label + color
-          let badge = '';
-          if (isUmkm) {
-            badge = '<span class="inline-flex items-center gap-1 rounded-full bg-gold-100 px-2 py-0.5 text-[11px] font-bold text-gold-700">UMKM</span>';
-          } else if (isMember) {
-            badge = '<span class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-bold text-green-700">Member</span>';
-          } else if (vStatus === 'pending') {
-            badge = '<span class="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2 py-0.5 text-[11px] font-bold text-yellow-700">⏳</span>';
-          } else {
-            badge = '<span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-bold text-gray-500">Belum</span>';
-          }
+          const fullName = profile?.full_name || 'Akun';
+          const initials = fullName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
           // Hide guest-only elements
           document.querySelectorAll('.nav-guest-only').forEach(el => el.classList.add('hidden'));
 
-          // Desktop nav auth area
+          // ── Desktop: Akun dropdown ──
           const desktopArea = document.getElementById('nav-auth-area');
           const desktopButtons = document.getElementById('nav-auth-buttons');
 
           if (desktopArea) {
             desktopArea.innerHTML = `
-              ${isAdmin ? '<a href="/admin" class="rounded-lg px-3 py-2 text-sm font-bold text-paroki-700 transition hover:bg-paroki-50 hover:text-paroki-900">⚙️ Admin</a>' : ''}
-              <a href="/dashboard" class="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">
-                Dashboard ${badge}
-              </a>
-              <button onclick="(async()=>{await sb.auth.signOut();window.location.href='/'})()" class="ml-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-500 transition hover:bg-gray-50 hover:text-gray-700">
-                Keluar
+              <button class="nav-dd-btn flex items-center gap-2 rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-paroki-50">
+                <span class="flex h-7 w-7 items-center justify-center rounded-full bg-paroki-900 text-xs font-bold text-white">${initials}</span>
+                <span class="max-w-[100px] truncate">${fullName}</span>
+                <svg class="h-3.5 w-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
               </button>
+              <div class="nav-dd-menu invisible absolute right-0 top-full z-50 mt-1 w-52 translate-y-1 rounded-xl border border-gray-200 bg-white py-1.5 opacity-0 shadow-lg transition-all duration-150">
+                <a href="/dashboard" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">
+                  <svg class="h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+                  Dashboard
+                </a>
+                ${isAdmin ? '<a href="/admin" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-paroki-700 hover:bg-paroki-50"><svg class="h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Admin Panel</a>' : ''}
+                <div class="my-1 border-t border-gray-100"></div>
+                <button onclick="(async()=>{await sb.auth.signOut();window.location.href='/'})()" class="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  Keluar
+                </button>
+              </div>
             `;
             desktopArea.classList.remove('hidden');
+            desktopArea.classList.add('relative', 'nav-dropdown');
+
+            // Wire up the newly injected dropdown
+            const ddBtn = desktopArea.querySelector('.nav-dd-btn');
+            const ddMenu = desktopArea.querySelector('.nav-dd-menu');
+            if (ddBtn && ddMenu) {
+              const open = () => { ddMenu.classList.remove('invisible', 'opacity-0', 'translate-y-1'); ddMenu.classList.add('opacity-100', 'translate-y-0'); };
+              const close = () => { ddMenu.classList.add('invisible', 'opacity-0', 'translate-y-1'); ddMenu.classList.remove('opacity-100', 'translate-y-0'); };
+              ddBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.nav-dd-menu').forEach((m) => { if (m !== ddMenu) { m.classList.add('invisible', 'opacity-0', 'translate-y-1'); m.classList.remove('opacity-100', 'translate-y-0'); } });
+                if (ddMenu.classList.contains('opacity-0')) open(); else close();
+              });
+              desktopArea.addEventListener('mouseenter', open);
+              desktopArea.addEventListener('mouseleave', close);
+            }
           }
           if (desktopButtons) desktopButtons.classList.add('hidden');
 
-          // Mobile auth area
+          // ── Mobile auth area ──
           const mobileArea = document.getElementById('mobile-auth-area');
           const mobileGuest = document.getElementById('mobile-auth-guest');
           if (mobileArea) {
             mobileArea.innerHTML = `
-              ${isAdmin ? '<a href="/admin" class="rounded-lg px-3 py-2.5 text-sm font-bold text-paroki-700 hover:bg-paroki-50">⚙️ Admin Panel</a>' : ''}
-              <a href="/dashboard" class="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">Dashboard ${badge}</a>
-              <button onclick="(async()=>{await sb.auth.signOut();window.location.href='/'})()" class="mt-1 rounded-lg border border-gray-200 px-3 py-2.5 text-center text-sm font-medium text-gray-500 hover:bg-gray-50">Keluar</button>
+              <a href="/dashboard" class="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-paroki-50">📊 Dashboard</a>
+              ${isAdmin ? '<a href="/admin" class="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-bold text-paroki-700 hover:bg-paroki-50">⚙️ Admin Panel</a>' : ''}
+              <button onclick="(async()=>{await sb.auth.signOut();window.location.href='/'})()" class="mt-1 flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50">
+                🚪 Keluar
+              </button>
             `;
           }
           if (mobileGuest) mobileGuest.classList.add('hidden');
