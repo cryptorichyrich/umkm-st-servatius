@@ -8,8 +8,8 @@ import {
   Loader2,
   X,
   ArrowLeft,
-  MapPin,
 } from 'lucide-react';
+import SearchableSelect from './SearchableSelect';
 
 interface MemberVerificationProps {
   onRequestSubmitted?: () => void;
@@ -296,50 +296,34 @@ export default function MemberVerification({ onRequestSubmitted }: MemberVerific
           </ul>
         </div>
 
-        {/* ── Wilayah & Lingkungan — cascading dropdowns ── */}
+        {/* ── Wilayah & Lingkungan — searchable cascading dropdowns ── */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="wilayah" className={labelClass}>
               Wilayah <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <select
-                id="wilayah"
-                value={selectedWilayah}
-                onChange={(e) => setSelectedWilayah(e.target.value)}
-                required
-                className={`${inputClass} appearance-none pr-9`}
-              >
-                <option value="">Pilih Wilayah...</option>
-                {wilayahList.map((w) => (
-                  <option key={w.id} value={w.name}>{w.name}</option>
-                ))}
-              </select>
-              <MapPin className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paroki-400" />
-            </div>
+            <SearchableSelect
+              id="wilayah"
+              value={selectedWilayah}
+              onChange={setSelectedWilayah}
+              options={wilayahList.map((w) => w.name)}
+              placeholder="Cari wilayah..."
+              emptyText="Wilayah tidak ditemukan"
+            />
           </div>
           <div>
             <label htmlFor="lingkungan" className={labelClass}>
               Lingkungan <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <select
-                id="lingkungan"
-                value={selectedLingkungan}
-                onChange={(e) => setSelectedLingkungan(e.target.value)}
-                required
-                disabled={!selectedWilayah}
-                className={`${inputClass} appearance-none pr-9 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400`}
-              >
-                <option value="">
-                  {selectedWilayah ? 'Pilih Lingkungan...' : 'Pilih wilayah dulu...'}
-                </option>
-                {filteredLingkungan.map((l) => (
-                  <option key={l.id} value={l.name}>{l.name}</option>
-                ))}
-              </select>
-              <MapPin className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paroki-400" />
-            </div>
+            <SearchableSelect
+              id="lingkungan"
+              value={selectedLingkungan}
+              onChange={setSelectedLingkungan}
+              options={filteredLingkungan.map((l) => l.name)}
+              placeholder={selectedWilayah ? 'Cari lingkungan...' : 'Pilih wilayah dulu...'}
+              emptyText="Lingkungan tidak ditemukan"
+              disabled={!selectedWilayah}
+            />
           </div>
         </div>
 

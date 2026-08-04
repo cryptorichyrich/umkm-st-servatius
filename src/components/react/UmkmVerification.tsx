@@ -15,6 +15,7 @@ import {
   X,
   ArrowLeft,
 } from 'lucide-react';
+import SearchableSelect from './SearchableSelect';
 
 interface UploadedFile {
   url: string;
@@ -623,44 +624,34 @@ export default function UmkmVerification() {
           </div>
         </div>
 
-        {/* Wilayah + Lingkungan — cascading dropdowns */}
+        {/* Wilayah + Lingkungan — searchable cascading dropdowns */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="umkm_wilayah" className={labelClass}>
               Wilayah <span className="text-red-500">*</span>
             </label>
-            <select
+            <SearchableSelect
               id="umkm_wilayah"
               value={selectedWilayah}
-              onChange={(e) => setSelectedWilayah(e.target.value)}
-              required
-              className={inputClass}
-            >
-              <option value="">Pilih Wilayah...</option>
-              {wilayahList.map((w) => (
-                <option key={w.id} value={w.name}>{w.name}</option>
-              ))}
-            </select>
+              onChange={setSelectedWilayah}
+              options={wilayahList.map((w) => w.name)}
+              placeholder="Cari wilayah..."
+              emptyText="Wilayah tidak ditemukan"
+            />
           </div>
           <div>
             <label htmlFor="umkm_lingkungan" className={labelClass}>
               Lingkungan <span className="text-red-500">*</span>
             </label>
-            <select
+            <SearchableSelect
               id="umkm_lingkungan"
               value={selectedLingkungan}
-              onChange={(e) => setSelectedLingkungan(e.target.value)}
-              required
+              onChange={setSelectedLingkungan}
+              options={filteredLingkungan.map((l) => l.name)}
+              placeholder={selectedWilayah ? 'Cari lingkungan...' : 'Pilih wilayah dulu...'}
+              emptyText="Lingkungan tidak ditemukan"
               disabled={!selectedWilayah}
-              className={`${inputClass} disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400`}
-            >
-              <option value="">
-                {selectedWilayah ? 'Pilih Lingkungan...' : 'Pilih wilayah dulu...'}
-              </option>
-              {filteredLingkungan.map((l) => (
-                <option key={l.id} value={l.name}>{l.name}</option>
-              ))}
-            </select>
+            />
           </div>
         </div>
 

@@ -1,7 +1,12 @@
 /**
- * Cloudflare Worker — fixed ASSETS.fetch with proper Request objects.
- * Uses Cache API to serve HTML through edge cache with short TTL,
- * and NEVER caches 404s.
+ * Cloudflare Worker — simplified, bulletproof asset routing.
+ * 
+ * Design: For all dynamic routes, try ASSETS.fetch(originalRequest) FIRST.
+ * If that returns 200, serve it. If not, try /path/index.html.
+ * If still nothing, use SPA template fallback. NEVER return 404 for
+ * known dynamic route prefixes (produk/umkm/berita/blog).
+ *
+ * ponytail: All HTML responses get no-store to prevent CF edge caching stale 404s.
  */
 export interface Env {
   SUPABASE_URL: string;
@@ -19,6 +24,9 @@ const NF_HEADERS: Record<string, string> = {
   'Cache-Control': 'no-store, max-age=0',
 };
 
+// Routes that should NEVER return 404 — always SPA fallback
+const SPA_ROUTES = ['produk', 'umkm', 'berita', 'blog', 'kategori', 'admin', 'dashboard'];
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -35,188 +43,120 @@ export default {
       );
     }
 
-    // ── File assets (JS, CSS, images, etc.) — pass straight to Assets ──
+    // ── /direktori → /umkm redirect (301, SEO) ──
+    if (path === '/direktori' || path.startsWith('/direktori/')) {
+      const rest = path.replace('/direktori', '');
+      const target = rest ? `/umkm${rest}${url.search}` : `/umkm${url.search}`;
+      return Response.redirect(url.origin + target, 301);
+    }
+
+    // ── File assets (JS, CSS, images, fonts, etc.) ──
+    // These have file extensions and should be served directly by ASSETS.
     if (path.includes('.')) {
       return env.ASSETS.fetch(request);
     }
 
     const segments = path.split('/').filter(Boolean);
 
-    // Helper: fetch a specific asset path by creating proper Request
-    async function fetchAsset(assetPath: string): Promise<Response> {
-      const assetUrl = new URL(assetPath, url.origin);
-      const assetReq = new Request(assetUrl, { method: 'GET' });
-      return env.ASSETS.fetch(assetReq);
+    // ── Trailing slash normalization (add slash if missing) ──
+    if (segments.length > 0 && !path.endsWith('/')) {
+      return Response.redirect(url.origin + path + '/' + url.search, 301);
     }
 
-    // ── /direktori → /umkm redirect (renamed) ──
-    if (segments[0] === 'direktori') {
-      const rest = segments.slice(1).join('/');
-      const target = rest ? `/umkm/${rest}${url.search}` : `/umkm${url.search}`;
-      return Response.redirect(url.origin + target, 301);
+    // ── Helper: try to fetch an asset path from ASSETS binding ──
+    async function tryAsset(assetPath: string): Promise<Response | null> {
+      try {
+        const res = await env.ASSETS.fetch(new Request(url.origin + assetPath, { method: 'GET' }));
+        if (res.ok) return res;
+        return null;
+      } catch {
+        return null;
+      }
     }
 
-    // ── /umkm/<slug> — serve from asset or template ──
-    if (segments[0] === 'umkm' && segments[1]) {
-      const slug = segments[1];
+    // ── Helper: serve HTML with proper headers ──
+    function htmlResponse(body: BodyInit, headers?: Record<string, string>): Response {
+      return new Response(body, { status: 200, headers: { ...HTML_HEADERS, ...headers } });
+    }
 
-      if (!path.endsWith('/')) {
-        return Response.redirect(url.origin + path + '/' + url.search, 301);
-      }
+    // ── Dynamic route handlers ──
+    if (segments.length >= 2) {
+      const [prefix, slug] = segments;
 
-      // Try direct page
-      const direct = await fetchAsset(`/umkm/${slug}/index.html`);
-      if (direct.ok) {
-        return new Response(direct.body, { status: 200, headers: HTML_HEADERS });
-      }
+      // Skip non-dynamic prefixes (static dirs)
+      if (SPA_ROUTES.includes(prefix)) {
+        // Try direct asset first: /produk/slug/ → /produk/slug/index.html
+        const directPath = path.endsWith('/') 
+          ? `${path}index.html` 
+          : `${path}/index.html`;
+        const direct = await tryAsset(directPath);
+        if (direct) {
+          return htmlResponse(direct.body);
+        }
 
-      // Fallback: template with slug swap
-      for (const tpl of ['katering-bu-maria', 'agen-pulsa-token', 'bengkel-motor-tarik']) {
-        const tplRes = await fetchAsset(`/umkm/${tpl}/index.html`);
-        if (tplRes.ok) {
-          let html = await tplRes.text();
-          html = html.replace(new RegExp(tpl, 'g'), slug);
-          html = html.replace(
-            /<title>[^<]*<\/title>/,
-            `<title>${slug.replace(/-/g, ' ')} | UMKM St. Servatius</title>`,
-          );
-          return new Response(html, { status: 200, headers: HTML_HEADERS });
+        // For detail pages: try template fallback
+        const TEMPLATES: Record<string, string[]> = {
+          umkm: ['/umkm/bengkel-motor-tarik/index.html', '/umkm/katering-bu-maria/index.html'],
+          produk: ['/produk/aksesoris-mobil-led-bengkel-motor-tarik/index.html'],
+          berita: ['/berita/berita-pertama/index.html'],
+          blog: ['/blog/artikel-pertama/index.html'],
+        };
+
+        // Category listing pages: /berita/kategori/slug → serve listing shell
+        if (slug === 'kategori' && segments[2]) {
+          const listRes = await tryAsset(`/${prefix}/index.html`);
+          if (listRes) return htmlResponse(listRes.body);
+        }
+
+        // Template fallback: swap slug in HTML
+        const templates = TEMPLATES[prefix];
+        if (templates) {
+          for (const tpl of templates) {
+            const tplRes = await tryAsset(tpl);
+            if (tplRes) {
+              let html = await tplRes.text();
+              // Replace the template slug with the actual slug
+              const tplSlug = tpl.split('/')[2];
+              html = html.split(tplSlug).join(slug);
+              // Fix title
+              html = html.replace(
+                /<title>[^<]*<\/title>/,
+                `<title>${slug.replace(/-/g, ' ')} | UMKM St. Servatius</title>`,
+              );
+              return htmlResponse(html);
+            }
+          }
+        }
+
+        // SPA fallback for admin/dashboard sub-routes
+        if (prefix === 'admin' || prefix === 'dashboard') {
+          const spaRes = await tryAsset(`/${prefix}/index.html`);
+          if (spaRes) {
+            let html = await spaRes.text();
+            html = html.replace(
+              /<title>[^<]*<\/title>/,
+              `<title>${slug.charAt(0).toUpperCase() + slug.slice(1)} | UMKM St. Servatius</title>`,
+            );
+            return htmlResponse(html);
+          }
         }
       }
     }
 
-    // ── /produk/<slug> — same approach ──
-    if (segments[0] === 'produk' && segments[1]) {
-      const slug = segments[1];
-
-      if (!path.endsWith('/')) {
-        return Response.redirect(url.origin + path + '/' + url.search, 301);
-      }
-
-      const direct = await fetchAsset(`/produk/${slug}/index.html`);
-      if (direct.ok) {
-        return new Response(direct.body, { status: 200, headers: HTML_HEADERS });
-      }
-
-      const tplRes = await fetchAsset(`/produk/aksesoris-mobil-led-bengkel-motor-tarik/index.html`);
-      if (tplRes.ok) {
-        let html = await tplRes.text();
-        html = html.replace(/aksesoris-mobil-led-bengkel-motor-tarik/g, slug);
-        html = html.replace(
-          /<title>[^<]*<\/title>/,
-          `<title>${slug.replace(/-/g, ' ')} | UMKM St. Servatius</title>`,
-        );
-        return new Response(html, { status: 200, headers: HTML_HEADERS });
-      }
+    // ── Root-level routes (/produk, /umkm, /berita, etc.) ──
+    // Try as directory index
+    const indexPath = path.endsWith('/') ? `${path}index.html` : `${path}/index.html`;
+    const indexRes = await tryAsset(indexPath);
+    if (indexRes) {
+      return htmlResponse(indexRes.body);
     }
 
-    // ── /admin/<tab> — SPA fallback ──
-    if (segments[0] === 'admin' && segments[1]) {
-      const adminRes = await fetchAsset('/admin/index.html');
-      if (adminRes.ok) {
-        let html = await adminRes.text();
-        html = html.replace(
-          /<title>[^<]*<\/title>/,
-          `<title>Admin — ${segments[1]} | UMKM St. Servatius</title>`,
-        );
-        return new Response(html, { status: 200, headers: HTML_HEADERS });
-      }
-    }
-
-    // ── /berita/<slug> — serve from asset or template ──
-    if (segments[0] === 'berita' && segments[1]) {
-      const slug = segments[1];
-      if (!path.endsWith('/')) {
-        return Response.redirect(url.origin + path + '/' + url.search, 301);
-      }
-      const direct = await fetchAsset(`/berita/${slug}/index.html`);
-      if (direct.ok) {
-        return new Response(direct.body, { status: 200, headers: HTML_HEADERS });
-      }
-      // Try template fallback
-      const tplRes = await fetchAsset('/berita/berita-pertama/index.html');
-      if (tplRes.ok) {
-        let html = await tplRes.text();
-        html = html.replace(/berita-pertama/g, slug);
-        html = html.replace(
-          /<title>[^<]*<\/title>/,
-          `<title>${slug.replace(/-/g, ' ')} | UMKM St. Servatius</title>`,
-        );
-        return new Response(html, { status: 200, headers: HTML_HEADERS });
-      }
-    }
-
-    // ── /blog/<slug> — serve from asset or template ──
-    if (segments[0] === 'blog' && segments[1] && segments[1] !== 'kategori') {
-      const slug = segments[1];
-      if (!path.endsWith('/')) {
-        return Response.redirect(url.origin + path + '/' + url.search, 301);
-      }
-      const direct = await fetchAsset(`/blog/${slug}/index.html`);
-      if (direct.ok) {
-        return new Response(direct.body, { status: 200, headers: HTML_HEADERS });
-      }
-      // Try template fallback
-      const tplRes = await fetchAsset('/blog/artikel-pertama/index.html');
-      if (tplRes.ok) {
-        let html = await tplRes.text();
-        html = html.replace(/artikel-pertama/g, slug);
-        html = html.replace(
-          /<title>[^<]*<\/title>/,
-          `<title>${slug.replace(/-/g, ' ')} | Blog UMKM St. Servatius</title>`,
-        );
-        return new Response(html, { status: 200, headers: HTML_HEADERS });
-      }
-    }
-
-    // ── /berita/kategori/<slug> — serve listing shell ──
-    if (segments[0] === 'berita' && segments[1] === 'kategori') {
-      const listRes = await fetchAsset('/berita/index.html');
-      if (listRes.ok) {
-        return new Response(listRes.body, { status: 200, headers: HTML_HEADERS });
-      }
-    }
-
-    // ── /blog/kategori/<slug> — serve listing shell ──
-    if (segments[0] === 'blog' && segments[1] === 'kategori') {
-      const listRes = await fetchAsset('/blog/index.html');
-      if (listRes.ok) {
-        return new Response(listRes.body, { status: 200, headers: HTML_HEADERS });
-      }
-    }
-
-    // ── /dashboard/<tab> — SPA fallback ──
-    if (segments[0] === 'dashboard' && segments[1]) {
-      const dashRes = await fetchAsset('/dashboard/index.html');
-      if (dashRes.ok) {
-        let html = await dashRes.text();
-        html = html.replace(
-          /<title>[^<]*<\/title>/,
-          `<title>${segments[1].charAt(0).toUpperCase() + segments[1].slice(1)} — Dashboard | UMKM St. Servatius</title>`,
-        );
-        return new Response(html, { status: 200, headers: HTML_HEADERS });
-      }
-      // Try specific dashboard subpage
-      const subRes = await fetchAsset(`/dashboard/${segments[1]}/index.html`);
-      if (subRes.ok) {
-        return new Response(subRes.body, { status: 200, headers: HTML_HEADERS });
-      }
-    }
-
-    // ── Everything else: try static asset ──
-    const assetRes = await env.ASSETS.fetch(request);
-    if (assetRes.status === 200) return assetRes;
-
-    // Try /path/index.html (handles trailing slash inconsistency)
-    const cleanPath = path.endsWith('/') ? path.slice(0, -1) : path;
-    const idxRes = await fetchAsset(`${cleanPath}/index.html`);
-    if (idxRes.ok) {
-      return new Response(idxRes.body, { status: 200, headers: HTML_HEADERS });
-    }
-    // Also try path/index.html (for trailing slash URLs)
-    const idxRes2 = await fetchAsset(`${path}/index.html`);
-    if (idxRes2.ok) {
-      return new Response(idxRes2.body, { status: 200, headers: HTML_HEADERS });
+    // ── Last resort: try original request to ASSETS ──
+    try {
+      const res = await env.ASSETS.fetch(request);
+      if (res.ok) return res;
+    } catch {
+      // fall through
     }
 
     return new Response('Not found', { status: 404, headers: NF_HEADERS });
