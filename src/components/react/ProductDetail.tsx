@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, type Product, ECOMMERCE_PLATFORMS } from '../../lib/supabase';
-import { Search, MapPin, Store, Package, ArrowLeft, MessageCircle, ExternalLink } from 'lucide-react';
+import { Search, MapPin, Store, Package, ArrowLeft, MessageCircle, ExternalLink, ShoppingBag } from 'lucide-react';
 import FavoriteButton from './FavoriteButton';
 import ViewCounter from './ViewCounter';
 import PageViewTracker from './PageViewTracker';
@@ -67,19 +67,21 @@ export default function ProductDetail({ slug }: Props) {
   const hasRichDescription = product.rich_description && product.rich_description.trim().length > 0;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 md:py-8">
       <PageViewTracker type="product" slug={slug} />
+
+      {/* Breadcrumb */}
       <nav className="mb-4 flex items-center gap-1.5 text-sm text-gray-500">
         <a href="/" className="transition hover:text-paroki-700">Beranda</a><span>/</span>
         <a href="/produk" className="transition hover:text-paroki-700">Produk</a><span>/</span>
-        <span className="font-medium text-gray-700">{product.name}</span>
+        <span className="font-medium text-gray-700 line-clamp-1">{product.name}</span>
       </nav>
 
-      {/* ── Main grid: image (left) + info sidebar (right, sticky) ── */}
+      {/* ── SECTION 1: Gallery + Purchase Card ── */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        {/* Image + Gallery — takes 3/5 on desktop */}
+        {/* Gallery — 3/5 */}
         <div className="lg:col-span-3">
-          <div className="overflow-hidden rounded-xl bg-gray-100 shadow-sm">
+          <div className="overflow-hidden rounded-xl bg-gray-50 shadow-sm ring-1 ring-gray-200/60">
             {galleryImages.length > 0
               ? <img src={galleryImages[activeImage]} alt={product.name} className="aspect-square w-full object-cover" />
               : <div className="flex aspect-square items-center justify-center text-gray-300"><Package className="h-24 w-24" /></div>}
@@ -90,121 +92,128 @@ export default function ProductDetail({ slug }: Props) {
                 <button
                   key={i}
                   onClick={() => setActiveImage(i)}
-                  className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition ${activeImage === i ? 'border-gold-500' : 'border-transparent hover:border-gray-300'}`}
+                  className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition ${activeImage === i ? 'border-gold-500 ring-1 ring-gold-300' : 'border-gray-200 hover:border-gray-400'}`}
                 >
                   <img src={img} alt="" className="h-full w-full object-cover" />
                 </button>
               ))}
             </div>
           )}
-
-          {/* Rich Description moved HERE — below image, fills left column space */}
-          {hasRichDescription && (
-            <div className="mt-6 rounded-xl border border-gray-200 bg-white p-6">
-              <h2 className="mb-4 font-display text-xl font-bold text-ink">Detail Produk</h2>
-              <div
-                className="wysiwyg-content max-w-none text-gray-600"
-                dangerouslySetInnerHTML={{ __html: product.rich_description }}
-              />
-            </div>
-          )}
         </div>
 
-        {/* Info sidebar — takes 2/5 on desktop, sticky */}
+        {/* Purchase Card — 2/5, sticky, COMPACT */}
         <div className="lg:col-span-2">
-          <div className="lg:sticky lg:top-20 space-y-4">
-            {/* Category + actions */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
+          <div className="lg:sticky lg:top-20">
+            {/* Badges + actions row */}
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
                 {b?.category && (
-                  <a href={`/kategori/${b.category.slug}`} className="mb-1.5 inline-flex w-fit items-center rounded-full bg-paroki-50 px-3 py-1 text-xs font-semibold text-paroki-800 transition hover:bg-paroki-100">
+                  <a href={`/kategori/${b.category.slug}`} className="inline-flex items-center rounded-full bg-paroki-50 px-2.5 py-1 text-xs font-semibold text-paroki-800 transition hover:bg-paroki-100">
                     {b.category.name}
                   </a>
                 )}
                 {product.product_type && (
-                  <span className="ml-1 inline-flex w-fit items-center rounded-full bg-gold-50 px-3 py-1 text-xs font-semibold text-gold-700">
+                  <span className="inline-flex items-center rounded-full bg-gold-50 px-2.5 py-1 text-xs font-semibold text-gold-700">
                     {product.product_type === 'jasa' ? 'Jasa' : 'Produk'}
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-shrink-0 items-center gap-1.5">
                 <FavoriteButton targetType="product" targetId={product.id} variant="button" />
                 <ReportButton targetType="product" targetId={product.id} variant="compact" className="rounded-lg border border-gray-200 p-2" />
               </div>
             </div>
 
             {/* Title */}
-            <h1 className="font-display text-2xl font-extrabold tracking-tight text-ink break-words md:text-3xl">{product.name}</h1>
+            <h1 className="font-display text-2xl font-extrabold leading-tight tracking-tight text-ink break-words md:text-[1.75rem]">{product.name}</h1>
 
             {/* Price + views */}
-            <div className="flex items-center gap-3">
-              <div className="text-2xl font-bold text-paroki-700">{formatPrice(product.price, product.price_note)}</div>
+            <div className="mt-2 flex items-center gap-3">
+              <div className="text-xl font-bold text-paroki-700 md:text-2xl">{formatPrice(product.price, product.price_note)}</div>
               <ViewCounter count={product.view_count || 0} />
             </div>
 
-            {/* Description */}
+            {/* Short description */}
             {product.description && (
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-600">{product.description}</p>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-gray-500">{product.description}</p>
             )}
 
-            {/* WhatsApp CTA */}
+            {/* WhatsApp CTA — primary action */}
             {waLink && (
-              <a href={waLink} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-lg bg-gold-500 px-5 py-3.5 font-bold text-white transition hover:bg-gold-600 active:translate-y-px">
+              <a
+                href={waLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gold-500 px-5 py-3.5 font-bold text-white shadow-sm transition hover:bg-gold-600 active:translate-y-px"
+              >
                 <MessageCircle className="h-5 w-5" />Tanya via WhatsApp
               </a>
             )}
 
-            <ShareButtons title={product.name} />
+            {/* Share — inline, compact */}
+            <div className="mt-3">
+              <ShareButtons title={product.name} />
+            </div>
 
-            {/* Penyedia (Business card) */}
+            {/* Penyedia — compact card */}
             {b && (
-              <div className="rounded-lg border border-gray-200 bg-white p-4">
-                <h3 className="mb-2.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500"><Store className="h-3.5 w-3.5" />Penyedia</h3>
-                <a href={`/umkm/${b.slug}`} className="flex items-center gap-3 transition hover:opacity-80">
-                  {b.logo_url
-                    ? <img src={b.logo_url} alt={b.name} className="h-11 w-11 rounded-lg object-cover" />
-                    : <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-paroki-50 text-paroki-400"><Store className="h-5 w-5" /></div>}
-                  <div className="min-w-0">
-                    <div className="font-display font-bold text-ink truncate">{b.name}</div>
-                    {b.area && <div className="mt-0.5 inline-flex items-center gap-1 text-xs text-gray-500"><MapPin className="h-3.5 w-3.5" />{b.area}</div>}
-                  </div>
-                </a>
-                <a href={`/umkm/${b.slug}`} className="mt-3 inline-block text-sm font-semibold text-paroki-700 transition hover:text-paroki-900 hover:underline">Lihat profil Usaha →</a>
-              </div>
-            )}
-
-            {/* E-commerce Links */}
-            {ecommerceLinks.length > 0 && (
-              <div className="rounded-lg border border-gray-200 bg-white p-4">
-                <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500"><ExternalLink className="h-3.5 w-3.5" />Beli dari Marketplace</h3>
-                <div className="grid grid-cols-1 gap-2">
-                  {ecommerceLinks.map((platform) => {
-                    const url = product.ecommerce_links[platform.key as keyof typeof product.ecommerce_links];
-                    return (
-                      <a
-                        key={platform.key}
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer nofollow"
-                        className="flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm font-semibold transition hover:shadow-sm active:translate-y-px"
-                        style={{ borderColor: platform.color + '40' }}
-                      >
-                        {'iconUrl' in platform && platform.iconUrl ? (
-                          <img src={platform.iconUrl} alt={platform.label} className="h-6 w-6 rounded object-contain" />
-                        ) : (
-                          <span className="text-lg">{platform.icon}</span>
-                        )}
-                        <span className="flex-1 text-ink">{platform.label}</span>
-                        <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
-                      </a>
-                    );
-                  })}
+              <a href={`/umkm/${b.slug}`} className="mt-4 flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 transition hover:border-paroki-200 hover:shadow-sm">
+                {b.logo_url
+                  ? <img src={b.logo_url} alt={b.name} className="h-11 w-11 flex-shrink-0 rounded-lg object-cover" />
+                  : <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-paroki-50 text-paroki-400"><Store className="h-5 w-5" /></div>}
+                <div className="min-w-0 flex-1">
+                  <div className="font-display text-sm font-bold text-ink truncate">{b.name}</div>
+                  {b.area && <div className="mt-0.5 inline-flex items-center gap-1 text-xs text-gray-500"><MapPin className="h-3 w-3" />{b.area}</div>}
                 </div>
-              </div>
+                <span className="flex-shrink-0 text-xs font-semibold text-paroki-700">Profil →</span>
+              </a>
             )}
           </div>
         </div>
       </div>
+
+      {/* ── SECTION 2: Marketplace Links — FULL WIDTH, visible without deep scroll ── */}
+      {ecommerceLinks.length > 0 && (
+        <div className="mt-6 rounded-xl border border-gray-200 bg-white p-5 md:p-6">
+          <h2 className="mb-4 flex items-center gap-2 font-display text-base font-bold text-ink">
+            <ShoppingBag className="h-4.5 w-4.5 text-paroki-600" />
+            Beli dari Marketplace
+          </h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {ecommerceLinks.map((platform) => {
+              const url = product.ecommerce_links[platform.key as keyof typeof product.ecommerce_links];
+              return (
+                <a
+                  key={platform.key}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-3 text-sm font-semibold transition hover:border-gray-300 hover:bg-white hover:shadow-md active:translate-y-px"
+                >
+                  {'iconUrl' in platform && platform.iconUrl ? (
+                    <img src={platform.iconUrl} alt={platform.label} className="h-7 w-7 flex-shrink-0 rounded object-contain" />
+                  ) : (
+                    <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center text-xl">{platform.icon}</span>
+                  )}
+                  <span className="min-w-0 flex-1 text-ink truncate">{platform.label}</span>
+                  <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── SECTION 3: Detail Produk — FULL WIDTH ── */}
+      {hasRichDescription && (
+        <div className="mt-6 rounded-xl border border-gray-200 bg-white p-5 md:p-8">
+          <h2 className="mb-4 font-display text-lg font-bold text-ink">Detail Produk</h2>
+          <div
+            className="wysiwyg-content max-w-none text-gray-600"
+            dangerouslySetInnerHTML={{ __html: product.rich_description }}
+          />
+        </div>
+      )}
 
       {/* Back link */}
       <div className="mt-8">
