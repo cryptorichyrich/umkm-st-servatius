@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-  <rect width="100" height="100" rx="22" fill="#004225"/>
-  <!-- gold cross accent -->
-  <path d="M50 18v8M46 22h8" stroke="#ddb867" stroke-width="3.4" stroke-linecap="round"/>
-  <!-- church silhouette in white -->
-  <path d="M50 26 30 40V74h40V40L50 26Z" fill="none" stroke="#ffffff" stroke-width="3.4" stroke-linejoin="round"/>
-  <path d="M43 74V60a7 7 0 0 1 14 0v14" fill="none" stroke="#ddb867" stroke-width="3.4" stroke-linejoin="round"/>
-</svg>
