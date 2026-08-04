@@ -1,0 +1,37 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+export const prerender = true;
+---
+<BaseLayout title="404 — Halaman Tidak Ditemukan" noindex>
+  <div class="mx-auto flex min-h-[60vh] max-w-lg flex-col items-center justify-center px-4 py-16 text-center">
+    <div class="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-paroki-50 text-paroki-400">
+      <svg class="h-10 w-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M9 9h.01M15 9h.01M9 15c1-1 2-1.5 3-1.5s2 .5 3 1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h1 class="font-display text-3xl font-extrabold text-ink">404</h1>
+    <p class="mt-2 text-lg font-semibold text-gray-700">Halaman tidak ditemukan</p>
+    <p class="mt-2 text-sm leading-relaxed text-gray-500">
+      Maaf, halaman yang Anda cari tidak tersedia atau telah dipindahkan.
+    </p>
+    <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+      <a href="/" class="inline-flex items-center justify-center gap-2 rounded-xl bg-gold-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-gold-600 active:translate-y-px">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Kembali ke Beranda
+      </a>
+      <a href="/produk" class="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
+        Lihat Produk
+      </a>
+    </div>
+    <div class="mt-10 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm">
+      <a href="/umkm" class="text-paroki-700 hover:underline">Direktori UMKM</a>
+      <span class="text-gray-300">·</span>
+      <a href="/berita" class="text-paroki-700 hover:underline">Berita</a>
+      <span class="text-gray-300">·</span>
+      <a href="/blog" class="text-paroki-700 hover:underline">Blog</a>
+      <span class="text-gray-300">·</span>
+      <a href="/bazar" class="text-paroki-700 hover:underline">Bazar</a>
+    </div>
+  </div>
+</BaseLayout>
