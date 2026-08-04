@@ -1,4 +1,5 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
+import { supabase } from '../../lib/supabase';
 
 interface WysiwygEditorProps {
   value: string;
@@ -67,6 +68,86 @@ export default function WysiwygEditor({ value, onChange, placeholder = '' }: Wys
     exec('formatBlock', 'p');
   }, [exec]);
 
+  // ── Image insert (upload to article-images bucket) ──
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = useCallback(async () => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = ''; // reset input
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Ukuran file maksimal 5MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop() || 'jpg';
+      const fileName = `inline/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('article-images')
+        .upload(fileName, file, { contentType: file.type });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('article-images')
+        .getPublicUrl(fileName);
+
+      // Insert img at cursor position
+      editorRef.current?.focus();
+      document.execCommand('insertImage', false, publicUrl);
+
+      if (editorRef.current) {
+        onChange(editorRef.current.innerHTML);
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+      alert('Gagal upload gambar: ' + (err as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  }, [onChange]);
+
+  // ── Internal link picker (search businesses) ──
+  const [linkSearchOpen, setLinkSearchOpen] = useState(false);
+  const [linkQuery, setLinkQuery] = useState('');
+  const [linkResults, setLinkResults] = useState<Array<{ name: string; slug: string }>>([]);
+  const linkSearchRef = useRef<HTMLInputElement>(null);
+
+  const searchInternal = useCallback(async (q: string) => {
+    if (q.trim().length < 2) {
+      setLinkResults([]);
+      return;
+    }
+    const { data } = await supabase
+      .from('businesses')
+      .select('name, slug')
+      .or(`name.ilike.%${q}%,description.ilike.%${q}%`)
+      .eq('status', 'approved')
+      .limit(5);
+    setLinkResults(data || []);
+  }, []);
+
+  const insertInternalLink = useCallback((name: string, slug: string) => {
+    const url = `/umkm/${slug}/`;
+    editorRef.current?.focus();
+    document.execCommand('createLink', false, url);
+    // After createLink, the selected text becomes the link. If no selection, insert the name.
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+    setLinkSearchOpen(false);
+    setLinkQuery('');
+    setLinkResults([]);
+  }, [onChange]);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // Use built-in bold/italic keyboard shortcuts via execCommand
     if ((e.metaKey || e.ctrlKey) && !e.shiftKey) {
@@ -129,6 +210,27 @@ export default function WysiwygEditor({ value, onChange, placeholder = '' }: Wys
 
         <button
           type="button"
+          title="Sisipkan Gambar"
+          className={`${btnClass} flex items-center gap-1`}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            handleImageUpload();
+          }}
+          disabled={uploading}
+        >
+          {uploading ? '⏳...' : '🖼️ Gambar'}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+
+        {/* External Link */}
+        <button
+          type="button"
           title="Insert Link"
           className={`${btnClass} flex items-center gap-1`}
           onMouseDown={(e) => {
@@ -138,6 +240,54 @@ export default function WysiwygEditor({ value, onChange, placeholder = '' }: Wys
         >
           🔗 Link
         </button>
+
+        {/* Internal Link Picker */}
+        <div className="relative">
+          <button
+            type="button"
+            title="Link Internal ke UMKM"
+            className={`${btnClass} flex items-center gap-1`}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setLinkSearchOpen(!linkSearchOpen);
+            }}
+          >
+            🏪 Link UMKM
+          </button>
+          {linkSearchOpen && (
+            <div className="absolute top-full mt-1 right-0 z-50 w-72 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
+              <input
+                ref={linkSearchRef}
+                type="text"
+                value={linkQuery}
+                onChange={(e) => { setLinkQuery(e.target.value); searchInternal(e.target.value); }}
+                placeholder="Cari nama UMKM..."
+                className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-paroki-500 focus:outline-none"
+                autoFocus
+              />
+              {linkResults.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {linkResults.map((biz) => (
+                    <button
+                      key={biz.slug}
+                      type="button"
+                      className="w-full rounded-md px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-paroki-50"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        insertInternalLink(biz.name, biz.slug);
+                      }}
+                    >
+                      {biz.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {linkQuery.length >= 2 && linkResults.length === 0 && (
+                <p className="mt-2 text-xs text-gray-500">UMKM tidak ditemukan</p>
+              )}
+            </div>
+          )}
+        </div>
 
         <button
           type="button"

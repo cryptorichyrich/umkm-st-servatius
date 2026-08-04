@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured, type Business, type Product, type Review } from '../../lib/supabase';
-import { Search, MapPin, Star, Phone, Clock, Store, Package, ArrowLeft, ArrowRight, MessageCircle, ThumbsUp, Pencil, Trash2 } from 'lucide-react';
+import { Search, MapPin, Star, Phone, Clock, Store, Package, ArrowLeft, ArrowRight, MessageCircle, ThumbsUp, Pencil, Trash2, AlertCircle } from 'lucide-react';
 import FavoriteButton from './FavoriteButton';
 import ViewCounter from './ViewCounter';
 import PageViewTracker from './PageViewTracker';
 import ReportButton from './ReportButton';
+import ShareButtons from './ShareButtons';
 import PhotoGalleryUploader from './PhotoGalleryUploader';
 
 interface Props { slug: string; }
@@ -72,7 +73,7 @@ export default function BusinessDetail({ slug }: Props) {
   useEffect(() => {
     (async () => {
       if (!isSupabaseConfigured && demoBusinesses[slug]) { setBusiness(demoBusinesses[slug]); setLoading(false); return; }
-      const { data, error } = await supabase.from('businesses').select(`*, category:categories(*), images:business_images(*), owner:profiles!owner_id(full_name)`).eq('slug', slug).eq('status', 'approved').single();
+      const { data, error } = await supabase.from('businesses').select(`*, category:categories(*), images:business_images(*), owner:profiles!owner_id(full_name)`).eq('slug', slug).in('status', ['approved', 'pending', 'rejected']).single();
       if (!error && data) {
         setBusiness(data);
         setOwnerName((data as any).owner?.full_name || null);
@@ -319,6 +320,30 @@ export default function BusinessDetail({ slug }: Props) {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <PageViewTracker type="business" slug={slug} />
+
+      {/* Status preview banner */}
+      {business.status !== 'approved' && (
+        <div className={`mb-4 flex items-start gap-2.5 rounded-lg border px-4 py-3 text-sm ${
+          business.status === 'pending' ? 'border-yellow-300 bg-yellow-50 text-yellow-800' :
+          business.status === 'rejected' ? 'border-red-300 bg-red-50 text-red-800' :
+          'border-gray-300 bg-gray-50 text-gray-700'
+        }`}>
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-semibold">
+              {business.status === 'pending' && 'Menunggu Persetujuan Panitia'}
+              {business.status === 'rejected' && 'Pendaftaran Ditolak'}
+              {business.status === 'draft' && 'Draf (Belum Dikirim)'}
+            </p>
+            <p className="mt-0.5 text-xs opacity-80">
+              {business.status === 'pending' && 'Usaha ini sedang dalam antrian moderasi. Halaman ini dapat dilihat oleh pemilik dan admin.'}
+              {business.status === 'rejected' && (business.rejection_note ? `Alasan: ${business.rejection_note}` : 'Usaha ini ditolak oleh panitia. Hubungi admin untuk informasi lebih lanjut.')}
+              {business.status === 'draft' && 'Usaha ini masih berupa draf dan belum dikirim untuk ditinjau.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       <nav className="mb-4 flex items-center gap-1.5 text-sm text-gray-500">
         <a href="/" className="transition hover:text-paroki-700">Beranda</a><span>/</span>
         <a href="/direktori" className="transition hover:text-paroki-700">Direktori</a><span>/</span>
@@ -364,6 +389,7 @@ export default function BusinessDetail({ slug }: Props) {
           )}
           <ReportButton targetType="business" targetId={business.id} variant="full" className="rounded-lg border border-gray-200 px-3 py-3" />
         </div>
+        <ShareButtons title={business.name} className="mt-3" />
       </div>
 
       {business.description && (
@@ -496,6 +522,9 @@ export default function BusinessDetail({ slug }: Props) {
             {currentUserId && isVerified ? (
               <form onSubmit={handleSubmitReview} className="space-y-4">
                 <h3 className="font-display font-bold text-ink">Tulis Ulasan</h3>
+                <p className="rounded-lg bg-paroki-50 px-3 py-2 text-xs leading-relaxed text-paroki-700">
+                  🙏 Ulasan Anda tampil publik di komunitas paroki. Mohon gunakan bahasa yang sopan, jujur, dan konstruktif — seperti memberi saran kepada saudara seiman.
+                </p>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-gray-700">Rating</label>
                   <div className="flex items-center gap-1">

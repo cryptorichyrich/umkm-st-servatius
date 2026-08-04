@@ -5,6 +5,7 @@ import FavoriteButton from './FavoriteButton';
 import ViewCounter from './ViewCounter';
 import PageViewTracker from './PageViewTracker';
 import ReportButton from './ReportButton';
+import ShareButtons from './ShareButtons';
 
 interface Props { slug: string; }
 
@@ -141,6 +142,8 @@ export default function ProductDetail({ slug }: Props) {
               <MessageCircle className="h-5 w-5" />Tanya via WhatsApp
             </a>
           )}
+
+          <ShareButtons title={product.name} className="mt-4" />
 
           {/* E-commerce Links — "Beli dari Toko Lain" pattern */}
           {ecommerceLinks.length > 0 && (

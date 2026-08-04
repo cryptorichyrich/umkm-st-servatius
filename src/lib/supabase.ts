@@ -90,6 +90,7 @@ export interface Business {
   is_featured: boolean;
   view_count: number;
   rejection_note: string;
+  re_review_reason: string | null;
   created_at: string;
   updated_at: string;
   category?: Category;
@@ -122,6 +123,7 @@ export interface Product {
   seo_title: string;
   seo_description: string;
   sort_order: number;
+  re_review_reason: string | null;
   created_at: string;
   updated_at: string;
   business?: Business;

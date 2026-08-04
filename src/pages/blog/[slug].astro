@@ -1,0 +1,118 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BlogDetail from '../../components/react/BlogDetail.tsx';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+
+const baseUrl = 'https://umkm-st-servatius.fxwisdom1.workers.dev';
+
+// ── SEO helpers ──
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function truncate(s: string, max = 155): string {
+  if (s.length <= max) return s;
+  return s.slice(0, max - 3).trimEnd() + '...';
+}
+
+export async function getStaticPaths() {
+  if (!isSupabaseConfigured) {
+    return [{ params: { slug: 'dummy' }, props: { slug: 'dummy', post: null } }];
+  }
+
+  const { data } = await supabase
+    .from('blog_posts')
+    .select(`slug, title, excerpt, content, cover_image, published_at, updated_at,
+             business:businesses(name, slug, logo_url),
+             category:categories(name, slug)`)
+    .eq('status', 'approved')
+    .order('published_at', { ascending: false, nullsFirst: false });
+
+  const posts = data || [];
+
+  if (posts.length === 0) {
+    return [{ params: { slug: 'dummy' }, props: { slug: 'dummy', post: null } }];
+  }
+
+  return posts.map((p) => ({
+    params: { slug: p.slug },
+    props: { slug: p.slug, post: p },
+  }));
+}
+
+const { post } = Astro.props;
+
+// ── Extract business info (Supabase join may return array or object) ──
+const biz: any = post?.business;
+const businessName = Array.isArray(biz) ? biz[0]?.name : biz?.name;
+const businessSlug: string | undefined = Array.isArray(biz) ? biz[0]?.slug : biz?.slug;
+const catRaw: any = post?.category;
+const categoryName = Array.isArray(catRaw) ? catRaw[0]?.name : catRaw?.name;
+
+// ── Auto-generate SEO title ──
+const seoTitle = (businessName
+  ? `${post?.title} — ${businessName}`
+  : post?.title) || 'Artikel Blog';
+
+const fullSeoTitle = `${seoTitle} | Blog UMKM Paroki St. Servatius`;
+
+// ── Auto-generate SEO description ──
+let seoDesc: string | undefined;
+if (post) {
+  if (post.excerpt) {
+    seoDesc = truncate(post.excerpt);
+  } else if (post.content) {
+    seoDesc = truncate(stripHtml(post.content));
+  }
+}
+if (!seoDesc) seoDesc = 'Artikel dari Blog UMKM Paroki St. Servatius, Kampung Sawah.';
+
+// ── OG image: cover_image > default ──
+const ogImage = post?.cover_image || `${baseUrl}/og-default.jpg`;
+
+// ── BlogPosting JSON-LD ──
+const jsonLd = post ? {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: post.title,
+  description: seoDesc,
+  url: `${baseUrl}/blog/${post.slug}`,
+  ...(post.cover_image ? { image: post.cover_image } : {}),
+  ...(post.published_at ? { datePublished: post.published_at } : {}),
+  ...(post.updated_at ? { dateModified: post.updated_at } : {}),
+  author: businessName ? {
+    '@type': 'Organization',
+    name: businessName,
+    url: businessSlug ? `${baseUrl}/umkm/${businessSlug}` : undefined,
+  } : undefined,
+  publisher: {
+    '@type': 'Organization',
+    name: 'UMKM St. Servatius',
+    url: baseUrl,
+  },
+  mainEntityOfPage: {
+    '@type': 'WebPage',
+    '@id': `${baseUrl}/blog/${post.slug}`,
+  },
+  ...(categoryName ? { articleSection: categoryName } : {}),
+} : undefined;
+---
+
+<BaseLayout
+  title={fullSeoTitle}
+  description={seoDesc}
+  image={ogImage}
+  type="article"
+  jsonLd={jsonLd}
+>
+  <BlogDetail client:load />
+</BaseLayout>

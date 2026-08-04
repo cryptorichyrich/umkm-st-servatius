@@ -1,0 +1,117 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import NewsDetail from '../../components/react/NewsDetail.tsx';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+
+const baseUrl = 'https://umkm-st-servatius.fxwisdom1.workers.dev';
+
+// ── SEO helpers ──
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function truncate(s: string, max = 155): string {
+  if (s.length <= max) return s;
+  return s.slice(0, max - 3).trimEnd() + '...';
+}
+
+export async function getStaticPaths() {
+  if (!isSupabaseConfigured) {
+    return [{ params: { slug: 'dummy' }, props: { slug: 'dummy', article: null } }];
+  }
+
+  const { data } = await supabase
+    .from('news')
+    .select(`slug,title,excerpt,content,cover_image,published_at,
+             category:news_categories(name,slug,icon)`)
+    .eq('status', 'published');
+
+  const articles = data || [];
+
+  if (articles.length === 0) {
+    return [{ params: { slug: 'dummy' }, props: { slug: 'dummy', article: null } }];
+  }
+
+  return articles.map((a: any) => ({
+    params: { slug: a.slug },
+    props: { slug: a.slug, article: a },
+  }));
+}
+
+const { slug, article } = Astro.props;
+
+// ── Extract category info ──
+const cat: any = article?.category;
+const categoryName = Array.isArray(cat) ? cat[0]?.name : cat?.name;
+
+// ── Auto-generate SEO title ──
+const seoTitle = article?.title
+  ? `${article.title} | Berita UMKM St. Servatius`
+  : 'Berita | UMKM St. Servatius';
+
+// ── Auto-generate SEO description ──
+let seoDesc: string;
+if (article) {
+  const rawExcerpt = article.excerpt?.trim();
+  const rawContent = stripHtml(article.content || '').trim();
+  if (rawExcerpt) {
+    seoDesc = truncate(rawExcerpt);
+  } else if (rawContent) {
+    seoDesc = truncate(rawContent);
+  } else {
+    seoDesc = 'Berita UMKM Paroki St. Servatius, Kampung Sawah.';
+  }
+} else {
+  seoDesc = 'Berita UMKM Paroki St. Servatius, Kampung Sawah.';
+}
+
+// ── OG image: cover image > default ──
+const ogImage = article?.cover_image || `${baseUrl}/og-default.jpg`;
+
+// ── NewsArticle JSON-LD ──
+const jsonLd = article ? {
+  '@context': 'https://schema.org',
+  '@type': 'NewsArticle',
+  headline: article.title,
+  description: seoDesc,
+  url: `${baseUrl}/berita/${article.slug}`,
+  ...(article.cover_image ? { image: [article.cover_image] } : {}),
+  ...(article.published_at ? {
+    datePublished: article.published_at,
+    dateModified: article.published_at,
+  } : {}),
+  author: {
+    '@type': 'Organization',
+    name: 'UMKM St. Servatius',
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: 'UMKM St. Servatius',
+    url: baseUrl,
+  },
+  mainEntityOfPage: {
+    '@type': 'WebPage',
+    '@id': `${baseUrl}/berita/${article.slug}`,
+  },
+  ...(categoryName ? { articleSection: categoryName } : {}),
+} : undefined;
+---
+
+<BaseLayout
+  title={seoTitle}
+  description={seoDesc}
+  image={ogImage}
+  type="article"
+  jsonLd={jsonLd}
+>
+  <NewsDetail client:load slug={slug} />
+</BaseLayout>

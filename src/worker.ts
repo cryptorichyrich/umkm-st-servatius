@@ -109,6 +109,68 @@ export default {
       }
     }
 
+    // ── /berita/<slug> — serve from asset or template ──
+    if (segments[0] === 'berita' && segments[1]) {
+      const slug = segments[1];
+      if (!path.endsWith('/')) {
+        return Response.redirect(url.origin + path + '/' + url.search, 301);
+      }
+      const direct = await fetchAsset(`/berita/${slug}/index.html`);
+      if (direct.ok) {
+        return new Response(direct.body, { status: 200, headers: HTML_HEADERS });
+      }
+      // Try template fallback
+      const tplRes = await fetchAsset('/berita/berita-pertama/index.html');
+      if (tplRes.ok) {
+        let html = await tplRes.text();
+        html = html.replace(/berita-pertama/g, slug);
+        html = html.replace(
+          /<title>[^<]*<\/title>/,
+          `<title>${slug.replace(/-/g, ' ')} | UMKM St. Servatius</title>`,
+        );
+        return new Response(html, { status: 200, headers: HTML_HEADERS });
+      }
+    }
+
+    // ── /blog/<slug> — serve from asset or template ──
+    if (segments[0] === 'blog' && segments[1] && segments[1] !== 'kategori') {
+      const slug = segments[1];
+      if (!path.endsWith('/')) {
+        return Response.redirect(url.origin + path + '/' + url.search, 301);
+      }
+      const direct = await fetchAsset(`/blog/${slug}/index.html`);
+      if (direct.ok) {
+        return new Response(direct.body, { status: 200, headers: HTML_HEADERS });
+      }
+      // Try template fallback
+      const tplRes = await fetchAsset('/blog/artikel-pertama/index.html');
+      if (tplRes.ok) {
+        let html = await tplRes.text();
+        html = html.replace(/artikel-pertama/g, slug);
+        html = html.replace(
+          /<title>[^<]*<\/title>/,
+          `<title>${slug.replace(/-/g, ' ')} | Blog UMKM St. Servatius</title>`,
+        );
+        return new Response(html, { status: 200, headers: HTML_HEADERS });
+      }
+    }
+
+    // ── /berita/kategori/<slug> — serve listing shell ──
+    if (segments[0] === 'berita' && segments[1] === 'kategori') {
+      const listRes = await fetchAsset('/berita/index.html');
+      if (listRes.ok) {
+        return new Response(listRes.body, { status: 200, headers: HTML_HEADERS });
+      }
+    }
+
+    // ── /blog/kategori/<slug> — serve listing shell ──
+    if (segments[0] === 'blog' && segments[1] === 'kategori') {
+      const listRes = await fetchAsset('/blog/index.html');
+      if (listRes.ok) {
+        return new Response(listRes.body, { status: 200, headers: HTML_HEADERS });
+      }
+    }
+
     // ── /dashboard/<tab> — SPA fallback ──
     if (segments[0] === 'dashboard' && segments[1]) {
       const dashRes = await fetchAsset('/dashboard/index.html');

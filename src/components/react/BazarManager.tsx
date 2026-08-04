@@ -13,6 +13,11 @@ import {
   Calendar,
   MapPin,
   DollarSign,
+  Receipt,
+  ExternalLink,
+  AlertTriangle,
+  Search,
+  X,
 } from "lucide-react";
 import {
   supabase,
@@ -156,6 +161,17 @@ export default function BazarManager() {
   });
 
   const [newTableArah, setNewTableArah] = useState<TableArah>("selatan");
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // Assign modal state
+  const [assignModalTable, setAssignModalTable] = useState<BazarTable | null>(null);
+  const [assignSearch, setAssignSearch] = useState("");
+  const [assignFilterArea, setAssignFilterArea] = useState("");
+
+  // Pre-fetched rotation map for modal display
+  const [rotationMap, setRotationMap] = useState<
+    Map<string, { timesAssigned: number; lastAssigned: string | null }>
+  >(new Map());
 
   // -------------------------------------------------------------------------
   // Data fetching
@@ -178,11 +194,27 @@ export default function BazarManager() {
     }
   }, []);
 
+  function validateForm(): boolean {
+    const errs: Record<string, string> = {};
+    if (!form.nama.trim()) errs.nama = "Nama bazar wajib diisi";
+    if (!form.tanggal) errs.tanggal = "Tanggal wajib diisi";
+    if (!form.jam_mulai) errs.jam_mulai = "Jam mulai wajib diisi";
+    if (!form.jam_selesai) errs.jam_selesai = "Jam selesai wajib diisi";
+    if (!form.lokasi.trim()) errs.lokasi = "Lokasi wajib diisi";
+    // Bank: if rekening filled, nama + atas_nama required too
+    if (form.bank_rekening.trim()) {
+      if (!form.bank_nama.trim()) errs.bank_nama = "Nama bank wajib diisi";
+      if (!form.bank_atas_nama.trim()) errs.bank_atas_nama = "Atas nama wajib diisi";
+    }
+    setFormErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
+
   const fetchBusinesses = useCallback(async () => {
     try {
       const { data, error: err } = await supabase
         .from("businesses")
-        .select("id,name")
+        .select("id,name,slug,category_id,area,lingkungan,category:categories(name)")
         .eq("status", "approved")
         .order("name");
       if (err) throw err;
@@ -250,6 +282,23 @@ export default function BazarManager() {
       setTables((tablesRes.data ?? []) as unknown as BazarTable[]);
       setAssignments((assignmentsRes.data ?? []) as unknown as BazarAssignment[]);
       setWaitlist((waitlistRes.data ?? []) as unknown as BazarWaitlist[]);
+
+      // Fetch rotation history for ALL bazars (for modal badges)
+      const { data: allAssignments } = await supabase
+        .from("bazar_assignments")
+        .select("business_id, bazar:bazars(tanggal)");
+      const rMap = new Map<string, { timesAssigned: number; lastAssigned: string | null }>();
+      for (const a of (allAssignments ?? [])) {
+        const bid = (a as unknown as { business_id: string }).business_id;
+        const tanggal = (a as unknown as { bazar: { tanggal: string } | null }).bazar?.tanggal ?? null;
+        const entry = rMap.get(bid) ?? { timesAssigned: 0, lastAssigned: null };
+        entry.timesAssigned += 1;
+        if (tanggal && (!entry.lastAssigned || tanggal > entry.lastAssigned)) {
+          entry.lastAssigned = tanggal;
+        }
+        rMap.set(bid, entry);
+      }
+      setRotationMap(rMap);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Gagal memuat detail bazar");
     }
@@ -260,6 +309,7 @@ export default function BazarManager() {
   // -------------------------------------------------------------------------
 
   function openCreateForm() {
+    setFormErrors({});
     setForm({
       nama: "",
       tanggal: new Date().toISOString().slice(0, 10),
@@ -282,10 +332,7 @@ export default function BazarManager() {
   }
 
   async function handleCreateBazar() {
-    if (!form.nama.trim()) {
-      setError("Nama bazar wajib diisi");
-      return;
-    }
+    if (!validateForm()) return;
     setSaving(true);
     setError(null);
     try {
@@ -336,6 +383,7 @@ export default function BazarManager() {
   }
 
   function openEdit(b: Bazar) {
+    setFormErrors({});
     setEditingBazar(b);
     setView("edit");
     // Update URL to reflect bazar being edited
@@ -365,6 +413,7 @@ export default function BazarManager() {
 
   async function handleSaveBazar() {
     if (!editingBazar) return;
+    if (!validateForm()) return;
     setSaving(true);
     setError(null);
     try {
@@ -458,22 +507,51 @@ export default function BazarManager() {
   // -------------------------------------------------------------------------
 
   async function handleClone(b: Bazar) {
-    const newNama = prompt("Nama bazar baru:", `${b.nama} (Salinan)`);
-    if (!newNama?.trim()) return;
-    const newTanggal = prompt(
-      "Tanggal bazar baru (YYYY-MM-DD):",
-      new Date().toISOString().slice(0, 10)
-    );
-    if (!newTanggal) return;
     setError(null);
     try {
-      const { error: err } = await supabase.rpc("clone_bazar", {
-        p_source_id: b.id,
-        p_new_nama: newNama.trim(),
-        p_new_tanggal: newTanggal,
-      });
-      if (err) throw err;
+      // 1. Create new bazar: draft, empty name, copy settings
+      const { data: created, error: bErr } = await supabase
+        .from("bazars")
+        .insert({
+          nama: "",
+          tanggal: null,
+          jam_mulai: b.jam_mulai,
+          jam_selesai: b.jam_selesai,
+          lokasi: b.lokasi,
+          deskripsi: b.deskripsi,
+          regulasi_url: b.regulasi_url,
+          banner_pesan: b.banner_pesan,
+          banner_aktif: false,
+          status: "draft",
+          biaya_partisipasi: b.biaya_partisipasi,
+          bank_nama: b.bank_nama,
+          bank_rekening: b.bank_rekening,
+          bank_atas_nama: b.bank_atas_nama,
+          pembayaran_pesan: b.pembayaran_pesan,
+          anti_scam_pesan: b.anti_scam_pesan,
+        })
+        .select()
+        .single();
+      if (bErr) throw bErr;
+
+      // 2. Copy table layout (no assignments)
+      const srcTables = (b as unknown as { tables?: BazarTable[] }).tables ?? [];
+      if (srcTables.length > 0) {
+        const tableRows = srcTables.map((t) => ({
+          bazar_id: created.id,
+          nomor: t.nomor,
+          arah: t.arah,
+          tenda: t.tenda ?? tendaForNomor(t.nomor),
+        }));
+        const { error: tErr } = await supabase
+          .from("bazar_tables")
+          .insert(tableRows);
+        if (tErr) throw tErr;
+      }
+
       await fetchBazars();
+      // Auto-open the new clone for editing
+      openEdit({ ...created, tables: [] } as unknown as Bazar);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Gagal mengkloning bazar");
     }
@@ -590,6 +668,54 @@ export default function BazarManager() {
       );
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Gagal mengubah status");
+    }
+  }
+
+  async function handleApprovePayment(a: BazarAssignment) {
+    setError(null);
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      const { error: err } = await supabase
+        .from("bazar_assignments")
+        .update({
+          payment_status: "approved",
+          payment_approved_at: new Date().toISOString(),
+          payment_approved_by: user.user?.id ?? null,
+        })
+        .eq("id", a.id);
+      if (err) throw err;
+      setAssignments((prev) =>
+        prev.map((x) =>
+          x.id === a.id ? { ...x, payment_status: "approved" } : x
+        )
+      );
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Gagal menyetujui pembayaran");
+    }
+  }
+
+  async function handleRejectPayment(a: BazarAssignment) {
+    const reason = prompt("Alasan penolakan (opsional):");
+    if (reason === null) return; // user cancelled
+    setError(null);
+    try {
+      const { error: err } = await supabase
+        .from("bazar_assignments")
+        .update({
+          payment_status: "rejected",
+          payment_reject_note: reason.trim(),
+        })
+        .eq("id", a.id);
+      if (err) throw err;
+      setAssignments((prev) =>
+        prev.map((x) =>
+          x.id === a.id
+            ? { ...x, payment_status: "rejected", payment_reject_note: reason.trim() }
+            : x
+        )
+      );
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Gagal menolak pembayaran");
     }
   }
 
@@ -747,6 +873,17 @@ export default function BazarManager() {
       ? Math.round(omsetTotal / assignments.length)
       : 0;
 
+  // Payment summaries
+  const pendingPayments = assignments.filter(
+    (a) => a.payment_status === "pending_review"
+  );
+  const approvedPayments = assignments.filter(
+    (a) => a.payment_status === "approved"
+  );
+  const rejectedPayments = assignments.filter(
+    (a) => a.payment_status === "rejected"
+  );
+
   // -------------------------------------------------------------------------
   // Render helpers
   // -------------------------------------------------------------------------
@@ -828,6 +965,7 @@ export default function BazarManager() {
             <BazarFormFields
               form={form}
               setForm={setForm}
+              formErrors={formErrors}
             />
             <div className="mt-4 flex items-center gap-3">
               <button
@@ -1003,7 +1141,7 @@ export default function BazarManager() {
           <Calendar className="h-5 w-5 text-gold-500" />
           Detail Bazar
         </h2>
-        <BazarFormFields form={form} setForm={setForm} />
+        <BazarFormFields form={form} setForm={setForm} formErrors={formErrors} />
         <div className="mt-4 flex items-center gap-3">
           <button
             disabled={saving}
@@ -1186,27 +1324,17 @@ export default function BazarManager() {
                         </button>
                       </>
                     ) : (
-                      <select
-                        value=""
-                        onChange={(e) => {
-                          if (e.target.value) handleAssign(t, e.target.value);
+                      <button
+                        onClick={() => {
+                          setAssignModalTable(t);
+                          setAssignSearch("");
+                          setAssignFilterArea("");
                         }}
-                        className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-paroki-700 focus:outline-none"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-paroki-900 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-paroki-800"
                       >
-                        <option value="">Pilih UMKM...</option>
-                        {businesses
-                          .filter(
-                            (biz) =>
-                              !assignments.some(
-                                (a) => a.business_id === biz.id
-                              )
-                          )
-                          .map((biz) => (
-                            <option key={biz.id} value={biz.id}>
-                              {biz.name}
-                            </option>
-                          ))}
-                      </select>
+                        <Users className="h-3.5 w-3.5" />
+                        Pilih UMKM
+                      </button>
                     )}
                   </div>
                 </div>
@@ -1263,12 +1391,169 @@ export default function BazarManager() {
         </div>
       </section>
 
+      {/* Konfirmasi Pembayaran */}
+      {editingBazar?.bank_rekening && assignments.length > 0 && (
+        <section className="mb-6 rounded-lg border border-gold-300 bg-gold-50/30 p-6 shadow-sm">
+          <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-paroki-900">
+            <Receipt className="h-5 w-5 text-gold-600" />
+            Konfirmasi Pembayaran
+            {pendingPayments.length > 0 && (
+              <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-amber-200 px-2 py-0.5 text-xs font-bold text-amber-800">
+                {pendingPayments.length} menunggu
+              </span>
+            )}
+          </h2>
+
+          {/* Pending payments — need action */}
+          {pendingPayments.length > 0 && (
+            <div className="mb-4 space-y-2">
+              <p className="text-sm font-medium text-amber-700">
+                ⏳ Menunggu Verifikasi ({pendingPayments.length})
+              </p>
+              {pendingPayments.map((a) => (
+                <div
+                  key={a.id}
+                  className="flex flex-col gap-2 rounded-lg border border-amber-300 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-paroki-900">
+                        {a.business?.name ?? "UMKM"}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Meja {a.table?.nomor ?? "-"} · {formatIDR(editingBazar?.biaya_partisipasi ?? 0)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {a.payment_proof_url && (
+                      <a
+                        href={a.payment_proof_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-lg border border-paroki-300 px-3 py-1.5 text-xs font-medium text-paroki-700 transition hover:bg-paroki-50"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Lihat Bukti
+                      </a>
+                    )}
+                    <button
+                      onClick={() => handleApprovePayment(a)}
+                      className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                    >
+                      ✓ Setujui
+                    </button>
+                    <button
+                      onClick={() => handleRejectPayment(a)}
+                      className="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                    >
+                      ✕ Tolak
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Approved payments */}
+          {approvedPayments.length > 0 && (
+            <div className="mb-3 space-y-1">
+              <p className="text-sm font-medium text-emerald-700">
+                ✓ Diterima ({approvedPayments.length})
+              </p>
+              {approvedPayments.map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50/50 px-3 py-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-paroki-900">
+                      {a.business?.name ?? "UMKM"}
+                    </span>
+                    {a.payment_proof_url && (
+                      <a
+                        href={a.payment_proof_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-paroki-600 hover:underline"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Bukti
+                      </a>
+                    )}
+                  </div>
+                  <span className="text-xs text-emerald-700">
+                    {a.payment_approved_at
+                      ? formatTanggal(a.payment_approved_at.slice(0, 10))
+                      : ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Rejected payments */}
+          {rejectedPayments.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-red-700">
+                ✕ Ditolak ({rejectedPayments.length})
+              </p>
+              {rejectedPayments.map((a) => (
+                <div
+                  key={a.id}
+                  className="flex flex-col gap-1 rounded-lg border border-red-200 bg-red-50/50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-paroki-900">
+                      {a.business?.name ?? "UMKM"}
+                    </span>
+                    {a.payment_proof_url && (
+                      <a
+                        href={a.payment_proof_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-paroki-600 hover:underline"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Bukti
+                      </a>
+                    )}
+                    {a.payment_reject_note && (
+                      <span className="text-xs text-red-500">
+                        ({a.payment_reject_note})
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleApprovePayment(a)}
+                    className="self-start rounded-lg border border-emerald-300 px-2 py-1 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50 sm:self-auto"
+                  >
+                    Setujui ulang
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {pendingPayments.length === 0 &&
+            approvedPayments.length === 0 &&
+            rejectedPayments.length === 0 && (
+              <p className="text-sm text-gray-400">
+                Belum ada peserta yang mengunggah bukti pembayaran.
+              </p>
+            )}
+        </section>
+      )}
+
       {/* Waitlist */}
       <section className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-paroki-900">
+        <h2 className="mb-1 flex items-center gap-2 font-display text-lg font-bold text-paroki-900">
           <Clock className="h-5 w-5 text-gold-500" />
           Daftar Tunggu ({waitlist.length})
         </h2>
+        <p className="mb-4 text-xs text-gray-400">
+          UMKM yang ingin menggantikan peserta batal akan muncul di sini, urut berdasarkan siapa daftar lebih dulu. Klik "Promosikan" untuk assign ke meja kosong.
+        </p>
 
         {waitlist.length === 0 ? (
           <p className="text-sm text-gray-400">Tidak ada pendaftar waitlist.</p>
@@ -1312,6 +1597,25 @@ export default function BazarManager() {
           </div>
         )}
       </section>
+
+      {/* Assign UMKM Modal */}
+      {assignModalTable && (
+        <AssignModal
+          table={assignModalTable}
+          businesses={businesses}
+          assignedIds={new Set(assignments.map((a) => a.business_id))}
+          rotationMap={rotationMap}
+          search={assignSearch}
+          setSearch={setAssignSearch}
+          filterArea={assignFilterArea}
+          setFilterArea={setAssignFilterArea}
+          onAssign={(bizId) => {
+            handleAssign(assignModalTable, bizId);
+            setAssignModalTable(null);
+          }}
+          onClose={() => setAssignModalTable(null)}
+        />
+      )}
 
       {/* Omset Summary */}
       {editingBazar?.status === "completed" && (
@@ -1395,9 +1699,10 @@ interface FormFieldsProps {
       anti_scam_pesan: string;
     }>
   >;
+  formErrors: Record<string, string>;
 }
 
-function BazarFormFields({ form, setForm }: FormFieldsProps) {
+function BazarFormFields({ form, setForm, formErrors }: FormFieldsProps) {
   const statusOptions: BazarStatus[] = [
     "draft",
     "published",
@@ -1432,28 +1737,42 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
       {/* Nama */}
       <div className="sm:col-span-2">
         <label className="mb-1 block text-sm font-medium text-gray-600">
-          Nama Bazar
+          Nama Bazar <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
           value={form.nama}
           onChange={(e) => setForm((p) => ({ ...p, nama: e.target.value }))}
           placeholder="Bazar Natal 2026"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
+          className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none ${
+            formErrors.nama
+              ? "border-red-400 focus:border-red-500"
+              : "border-gray-300 focus:border-paroki-700"
+          }`}
         />
+        {formErrors.nama && (
+          <p className="mt-1 text-xs text-red-500">{formErrors.nama}</p>
+        )}
       </div>
 
       {/* Tanggal */}
       <div>
         <label className="mb-1 block text-sm font-medium text-gray-600">
-          Tanggal
+          Tanggal <span className="text-red-500">*</span>
         </label>
         <input
           type="date"
           value={form.tanggal}
           onChange={(e) => setForm((p) => ({ ...p, tanggal: e.target.value }))}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
+          className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none ${
+            formErrors.tanggal
+              ? "border-red-400 focus:border-red-500"
+              : "border-gray-300 focus:border-paroki-700"
+          }`}
         />
+        {formErrors.tanggal && (
+          <p className="mt-1 text-xs text-red-500">{formErrors.tanggal}</p>
+        )}
       </div>
 
       {/* Status */}
@@ -1479,7 +1798,7 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
       {/* Jam Mulai */}
       <div>
         <label className="mb-1 block text-sm font-medium text-gray-600">
-          Jam Mulai
+          Jam Mulai <span className="text-red-500">*</span>
         </label>
         <input
           type="time"
@@ -1487,14 +1806,21 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
           onChange={(e) =>
             setForm((p) => ({ ...p, jam_mulai: e.target.value }))
           }
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
+          className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none ${
+            formErrors.jam_mulai
+              ? "border-red-400 focus:border-red-500"
+              : "border-gray-300 focus:border-paroki-700"
+          }`}
         />
+        {formErrors.jam_mulai && (
+          <p className="mt-1 text-xs text-red-500">{formErrors.jam_mulai}</p>
+        )}
       </div>
 
       {/* Jam Selesai */}
       <div>
         <label className="mb-1 block text-sm font-medium text-gray-600">
-          Jam Selesai
+          Jam Selesai <span className="text-red-500">*</span>
         </label>
         <input
           type="time"
@@ -1502,22 +1828,36 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
           onChange={(e) =>
             setForm((p) => ({ ...p, jam_selesai: e.target.value }))
           }
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
+          className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none ${
+            formErrors.jam_selesai
+              ? "border-red-400 focus:border-red-500"
+              : "border-gray-300 focus:border-paroki-700"
+          }`}
         />
+        {formErrors.jam_selesai && (
+          <p className="mt-1 text-xs text-red-500">{formErrors.jam_selesai}</p>
+        )}
       </div>
 
       {/* Lokasi */}
       <div className="sm:col-span-2">
         <label className="mb-1 block text-sm font-medium text-gray-600">
-          Lokasi
+          Lokasi <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
           value={form.lokasi}
           onChange={(e) => setForm((p) => ({ ...p, lokasi: e.target.value }))}
           placeholder="Halaman parkiran Utara Gereja"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
+          className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none ${
+            formErrors.lokasi
+              ? "border-red-400 focus:border-red-500"
+              : "border-gray-300 focus:border-paroki-700"
+          }`}
         />
+        {formErrors.lokasi && (
+          <p className="mt-1 text-xs text-red-500">{formErrors.lokasi}</p>
+        )}
       </div>
 
       {/* Deskripsi */}
@@ -1724,7 +2064,7 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
       {/* Nama Bank */}
       <div>
         <label className="mb-1 block text-sm font-medium text-gray-600">
-          Nama Bank Tujuan
+          Nama Bank Tujuan {form.bank_rekening.trim() && <span className="text-red-500">*</span>}
         </label>
         <input
           type="text"
@@ -1733,8 +2073,15 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
             setForm((p) => ({ ...p, bank_nama: e.target.value }))
           }
           placeholder="BCA / Mandiri / BRI"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
+          className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none ${
+            formErrors.bank_nama
+              ? "border-red-400 focus:border-red-500"
+              : "border-gray-300 focus:border-paroki-700"
+          }`}
         />
+        {formErrors.bank_nama && (
+          <p className="mt-1 text-xs text-red-500">{formErrors.bank_nama}</p>
+        )}
       </div>
 
       {/* Nomor Rekening */}
@@ -1756,7 +2103,7 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
       {/* Atas Nama */}
       <div>
         <label className="mb-1 block text-sm font-medium text-gray-600">
-          Atas Nama
+          Atas Nama {form.bank_rekening.trim() && <span className="text-red-500">*</span>}
         </label>
         <input
           type="text"
@@ -1765,8 +2112,15 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
             setForm((p) => ({ ...p, bank_atas_nama: e.target.value }))
           }
           placeholder="Panitia Bazar Paroki"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
+          className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none ${
+            formErrors.bank_atas_nama
+              ? "border-red-400 focus:border-red-500"
+              : "border-gray-300 focus:border-paroki-700"
+          }`}
         />
+        {formErrors.bank_atas_nama && (
+          <p className="mt-1 text-xs text-red-500">{formErrors.bank_atas_nama}</p>
+        )}
       </div>
 
       {/* Pesan Pembayaran Custom */}
@@ -1803,6 +2157,253 @@ function BazarFormFields({ form, setForm }: FormFieldsProps) {
           Tampil dengan latar merah di dashboard peserta. Kosongkan untuk disembunyikan.
         </p>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sub-component: Assign UMKM Modal
+// ---------------------------------------------------------------------------
+
+interface AssignModalProps {
+  table: BazarTable;
+  businesses: Business[];
+  assignedIds: Set<string>;
+  rotationMap: Map<string, { timesAssigned: number; lastAssigned: string | null }>;
+  search: string;
+  setSearch: (v: string) => void;
+  filterArea: string;
+  setFilterArea: (v: string) => void;
+  onAssign: (businessId: string) => void;
+  onClose: () => void;
+}
+
+function AssignModal({
+  table,
+  businesses,
+  assignedIds,
+  rotationMap,
+  search,
+  setSearch,
+  filterArea,
+  setFilterArea,
+  onAssign,
+  onClose,
+}: AssignModalProps) {
+  // Unique areas for filter dropdown
+  const areas = Array.from(
+    new Set(businesses.map((b) => b.area).filter(Boolean))
+  ).sort();
+
+  // Available businesses = not already assigned to this bazar
+  const available = businesses.filter((b) => !assignedIds.has(b.id));
+
+  // Apply search + area filter
+  const filtered = available.filter((b) => {
+    const matchSearch =
+      !search ||
+      b.name.toLowerCase().includes(search.toLowerCase()) ||
+      (b.area ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (b.category?.name ?? "").toLowerCase().includes(search.toLowerCase());
+    const matchArea = !filterArea || b.area === filterArea;
+    return matchSearch && matchArea;
+  });
+
+  // Sort by rotation fairness (least assigned first, oldest last-assigned first)
+  const sorted = [...filtered].sort((a, b) => {
+    const ra = rotationMap.get(a.id) ?? { timesAssigned: 0, lastAssigned: null };
+    const rb = rotationMap.get(b.id) ?? { timesAssigned: 0, lastAssigned: null };
+    if (ra.timesAssigned !== rb.timesAssigned)
+      return ra.timesAssigned - rb.timesAssigned;
+    if (!ra.lastAssigned && !rb.lastAssigned) return 0;
+    if (!ra.lastAssigned) return -1;
+    if (!rb.lastAssigned) return 1;
+    return ra.lastAssigned < rb.lastAssigned ? -1 : 1;
+  });
+
+  // Top 3 fair picks
+  const fairPicks = sorted.slice(0, 3);
+  const restList = sorted.slice(3);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+          <div>
+            <h3 className="font-display text-lg font-bold text-paroki-900">
+              Pilih UMKM untuk Meja {table.nomor}
+            </h3>
+            <p className="text-xs text-gray-500">
+              {ARAH_LABELS[table.arah]} · {available.length} tersedia
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Search + Filter */}
+        <div className="flex flex-col gap-2 border-b border-gray-100 px-5 py-3 sm:flex-row">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cari nama UMKM, wilayah, kategori..."
+              autoFocus
+              className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm focus:border-paroki-700 focus:outline-none"
+            />
+          </div>
+          <select
+            value={filterArea}
+            onChange={(e) => setFilterArea(e.target.value)}
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-paroki-700 focus:outline-none"
+          >
+            <option value="">Semua Wilayah</option>
+            {areas.map((a) => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Scrollable list */}
+        <div className="flex-1 overflow-y-auto px-5 py-3">
+          {/* Fair rotation suggestions */}
+          {fairPicks.length > 0 && !search && !filterArea && (
+            <div className="mb-3">
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+                <CheckCircle className="h-3.5 w-3.5" />
+                Saran Rotasi Adil (paling jarang ikut)
+              </p>
+              <div className="space-y-1">
+                {fairPicks.map((b, idx) => {
+                  const rot = rotationMap.get(b.id);
+                  return (
+                    <BusinessPickRow
+                      key={`fair-${b.id}`}
+                      business={b}
+                      rank={idx + 1}
+                      rot={rot}
+                      onAssign={onAssign}
+                    />
+                  );
+                })}
+              </div>
+              {restList.length > 0 && (
+                <p className="mt-3 mb-1 text-xs font-medium text-gray-400">
+                  ─── Semua UMKM Lainnya ({restList.length}) ───
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Rest of list (or full filtered list when searching) */}
+          <div className="space-y-1">
+            {(search || filterArea ? sorted : restList).map((b) => {
+              const rot = rotationMap.get(b.id);
+              return (
+                <BusinessPickRow
+                  key={b.id}
+                  business={b}
+                  rank={null}
+                  rot={rot}
+                  onAssign={onAssign}
+                />
+              );
+            })}
+          </div>
+
+          {filtered.length === 0 && (
+            <div className="py-8 text-center text-sm text-gray-400">
+              Tidak ada UMKM yang cocok.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sub-sub-component: Business pick row inside modal
+// ---------------------------------------------------------------------------
+
+function BusinessPickRow({
+  business,
+  rank,
+  rot,
+  onAssign,
+}: {
+  business: Business;
+  rank: number | null;
+  rot?: { timesAssigned: number; lastAssigned: string | null };
+  onAssign: (id: string) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2 transition hover:border-paroki-300 hover:bg-paroki-50/30">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        {rank && (
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">
+            {rank}
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="truncate text-sm font-semibold text-paroki-900">
+              {business.name}
+            </span>
+            {business.category?.name && (
+              <span className="hidden shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500 sm:inline">
+                {business.category.name}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3 text-xs text-gray-400">
+            {business.area && (
+              <span className="flex items-center gap-0.5">
+                <MapPin className="h-3 w-3" />
+                {business.area}
+              </span>
+            )}
+            {rot && (
+              <span>
+                {rot.timesAssigned > 0
+                  ? `${rot.timesAssigned}× ikut bazar`
+                  : "Belum pernah ikut"}
+              </span>
+            )}
+          </div>
+        </div>
+        {/* Detail link */}
+        <a
+          href={`/umkm/${business.slug}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 rounded-md px-2 py-1 text-xs text-gray-400 transition hover:text-paroki-600"
+          title="Lihat detail UMKM"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+        </a>
+      </div>
+      <button
+        onClick={() => onAssign(business.id)}
+        className="shrink-0 rounded-lg bg-paroki-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-paroki-800"
+      >
+        Pilih
+      </button>
     </div>
   );
 }

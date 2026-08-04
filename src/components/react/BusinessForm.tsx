@@ -64,6 +64,8 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
   const [uploadingKtp, setUploadingKtp] = useState(false);
   const [uploadingCatalog, setUploadingCatalog] = useState(false);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [originalLogo, setOriginalLogo] = useState<string>('');
+  const [originalGallery, setOriginalGallery] = useState<string[]>([]);
   const [userId, setUserId] = useState('');
 
   // Fetch categories + existing business (if edit mode)
@@ -149,6 +151,9 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
           .eq('business_id', businessId)
           .order('sort_order', { ascending: true });
         setGalleryImages((bizImgs as { image_url: string }[])?.map((i) => i.image_url) || []);
+        // Track originals to detect image changes on save
+        setOriginalLogo(biz.logo_url || '');
+        setOriginalGallery((bizImgs as { image_url: string }[])?.map((i) => i.image_url) || []);
       }
 
       setLoading(false);
@@ -287,7 +292,7 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
     }
   };
 
-  const buildPayload = (status: 'draft') => {
+  const buildPayload = (status?: string) => {
     return {
       name: form.name.trim(),
       slug: generateSlug(form.name),
@@ -306,7 +311,8 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
       logo_url: form.logo_url,
       ktp_url: form.ktp_url,
       catalog_url: form.catalog_url,
-      status,
+      status: status ?? 'draft',
+      re_review_reason: null as string | null,
     };
   };
 
@@ -329,11 +335,49 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
     try {
       let savedBizId = businessId;
       if (isEdit && businessId) {
+        // Detect image changes on an approved listing
+        const logoChanged = form.logo_url !== originalLogo;
+        const galleryChanged =
+          galleryImages.length !== originalGallery.length ||
+          !galleryImages.every((url, i) => originalGallery[i] === url);
+        const imagesChanged = logoChanged || galleryChanged;
+
+        let saveStatus: string;
+        let reReviewReason: string | null = null;
+
+        if (currentStatus === 'approved' && imagesChanged) {
+          // Images changed on approved listing → needs re-review
+          saveStatus = 'pending';
+          reReviewReason = 'Perubahan gambar (logo/galeri) — perlu tinjauan ulang panitia.';
+        } else if (currentStatus === 'approved') {
+          // Text-only changes on approved listing → stay approved
+          saveStatus = 'approved';
+        } else {
+          saveStatus = 'draft';
+        }
+
+        const payload = buildPayload(saveStatus);
+        if (saveStatus === 'pending') {
+          payload.re_review_reason = reReviewReason;
+        } else {
+          payload.re_review_reason = null;
+        }
+
         const { error: updateErr } = await supabase
           .from('businesses')
-          .update(buildPayload('draft'))
+          .update(payload)
           .eq('id', businessId);
         if (updateErr) throw updateErr;
+
+        // Show info to user about re-review
+        if (saveStatus === 'pending' && reReviewReason) {
+          alert(
+            'ℹ️ Perubahan gambar terdeteksi!\n\n' +
+            'Listing Anda sementara tidak tampil publik dan akan ditinjau ulang oleh panitia ' +
+            'untuk memastikan gambar tidak mengandung konten yang tidak pantas. ' +
+            'Proses ini biasanya cepat. Terima kasih atas pengertiannya!'
+          );
+        }
       } else {
         const {
           data: { session },
@@ -955,7 +999,18 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
         {/* Action buttons */}
         {currentStatus === 'approved' ? (
           <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-            ✅ Usaha ini sudah disetujui dan tampil di direktori publik. Perubahan yang Anda simpan akan langsung tampil.
+            ✅ Usaha ini sudah disetujui dan tampil di direktori publik. Perubahan teks kontak/deskripsi langsung tampil.
+            {(() => {
+              const imgChanged = form.logo_url !== originalLogo ||
+                galleryImages.length !== originalGallery.length ||
+                !galleryImages.every((url, i) => originalGallery[i] === url);
+              if (!imgChanged) return null;
+              return (
+                <div className="mt-2 rounded-md border border-yellow-300 bg-yellow-50 px-3 py-2 text-xs text-yellow-800">
+                  ⚠️ <strong>Perubahan gambar terdeteksi!</strong> Saat disimpan, listing akan ditinjau ulang oleh panitia dan sementara tidak tampil publik.
+                </div>
+              );
+            })()}
           </div>
         ) : null}
         <div className="flex flex-col gap-3 pt-2 sm:flex-row">

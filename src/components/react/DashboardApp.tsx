@@ -3,6 +3,7 @@ import { supabase, type Business, type Profile, type BusinessStatus, type Produc
 import { Eye, EyeOff, Store } from 'lucide-react';
 import FavoriteButton from './FavoriteButton';
 import BazarSchedule from './BazarSchedule';
+import BlogEditor from './BlogEditor';
 
 // ─────────────────────────────────────────────
 // Types
@@ -19,7 +20,7 @@ interface FavoriteProductRow extends Favorite {
   product?: Product & { business?: { id: string; name: string; slug: string } };
 }
 
-type TabKey = 'usaha' | 'verifikasi' | 'favorit' | 'pengaturan' | 'bazar';
+type TabKey = 'usaha' | 'verifikasi' | 'favorit' | 'pengaturan' | 'bazar' | 'artikel';
 
 // ─────────────────────────────────────────────
 // Status badge helper (preserved from original)
@@ -120,7 +121,7 @@ function TabLink({
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
 interface DashboardAppProps {
-  initialTab?: 'usaha' | 'verifikasi' | 'favorit' | 'pengaturan' | 'bazar';
+  initialTab?: 'usaha' | 'verifikasi' | 'favorit' | 'pengaturan' | 'bazar' | 'artikel';
 }
 
 export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps) {
@@ -466,6 +467,11 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
               🎪 Bazar
             </TabLink>
           )}
+          {businesses.length > 0 && (
+            <TabLink href="/dashboard/artikel" active={activeTab === 'artikel'}>
+              ✍️ Tulis Artikel
+            </TabLink>
+          )}
         </div>
       </div>
 
@@ -502,7 +508,9 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
                     {businesses.map((b) => (
                       <tr key={b.id} className="hover:bg-paroki-50/50">
                         <td className="px-4 py-3">
-                          <div className="font-medium text-paroki-900">{b.name}</div>
+                          <a href={`/umkm/${b.slug}`} target="_blank" rel="noopener noreferrer" className="font-medium text-paroki-900 transition hover:text-gold-600 hover:underline">
+                            {b.name}
+                          </a>
                           {b.status === 'rejected' && b.rejection_note && (
                             <div className="mt-1 max-w-xs text-xs text-red-600">
                               Catatan: {b.rejection_note}
@@ -569,7 +577,11 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <h3 className="font-medium text-paroki-900">{b.name}</h3>
+                        <h3 className="font-medium">
+                          <a href={`/umkm/${b.slug}`} target="_blank" rel="noopener noreferrer" className="text-paroki-900 transition hover:text-gold-600 hover:underline">
+                            {b.name}
+                          </a>
+                        </h3>
                         <p className="mt-0.5 text-xs text-paroki-500">
                           {b.category ? `${b.category.icon} ${b.category.name}` : 'Tanpa kategori'}
                           {' · '}
@@ -894,6 +906,11 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
       {activeTab === 'bazar' && businesses.length > 0 && (
         <BazarSchedule businessId={businesses[0].id} businessName={businesses[0].name} />
       )}
+
+      {/* ═══════════════════════════════════════════════════════════
+          TAB 6: ARTIKEL (Tulis Blog)
+      ═══════════════════════════════════════════════════════════ */}
+      {activeTab === 'artikel' && <BlogEditor />}
     </div>
   );
 }

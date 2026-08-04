@@ -22,7 +22,7 @@ export async function GET() {
   const headers = { apikey: SUPABASE_KEY };
 
   // Fetch all data in parallel
-  const [businessesRes, productsRes, categoriesRes] = await Promise.all([
+  const [businessesRes, productsRes, categoriesRes, newsRes, blogRes, newsCatRes] = await Promise.all([
     fetch(
       `${SUPABASE_URL}/rest/v1/businesses?select=slug,updated_at&status=eq.approved`,
       { headers },
@@ -35,11 +35,26 @@ export async function GET() {
       `${SUPABASE_URL}/rest/v1/categories?select=slug`,
       { headers },
     ),
+    fetch(
+      `${SUPABASE_URL}/rest/v1/news?select=slug,published_at&status=eq.published`,
+      { headers },
+    ),
+    fetch(
+      `${SUPABASE_URL}/rest/v1/blog_posts?select=slug,published_at&status=eq.approved`,
+      { headers },
+    ),
+    fetch(
+      `${SUPABASE_URL}/rest/v1/news_categories?select=slug`,
+      { headers },
+    ),
   ]);
 
   const businesses = businessesRes.ok ? await businessesRes.json() : [];
   const products = productsRes.ok ? await productsRes.json() : [];
   const categories = categoriesRes.ok ? await categoriesRes.json() : [];
+  const newsItems = newsRes.ok ? await newsRes.json() : [];
+  const blogPosts = blogRes.ok ? await blogRes.json() : [];
+  const newsCats = newsCatRes.ok ? await newsCatRes.json() : [];
 
   const entries: SitemapEntry[] = [];
 
@@ -47,6 +62,8 @@ export async function GET() {
   entries.push({ loc: `${BASE_URL}/`, changefreq: 'daily', priority: '0.8' });
   entries.push({ loc: `${BASE_URL}/direktori`, changefreq: 'daily', priority: '0.8' });
   entries.push({ loc: `${BASE_URL}/produk`, changefreq: 'daily', priority: '0.7' });
+  entries.push({ loc: `${BASE_URL}/berita`, changefreq: 'daily', priority: '0.7' });
+  entries.push({ loc: `${BASE_URL}/blog`, changefreq: 'daily', priority: '0.7' });
   entries.push({ loc: `${BASE_URL}/daftar`, changefreq: 'monthly', priority: '0.3' });
   entries.push({ loc: `${BASE_URL}/masuk`, changefreq: 'monthly', priority: '0.3' });
 
@@ -81,6 +98,41 @@ export async function GET() {
         loc: `${BASE_URL}/kategori/${xmlEscape(c.slug)}`,
         changefreq: 'weekly',
         priority: '0.6',
+      });
+    }
+  }
+
+  // News detail pages
+  for (const n of newsItems) {
+    if (n.slug) {
+      entries.push({
+        loc: `${BASE_URL}/berita/${xmlEscape(n.slug)}`,
+        lastmod: n.published_at,
+        changefreq: 'weekly',
+        priority: '0.7',
+      });
+    }
+  }
+
+  // News category pages
+  for (const nc of newsCats) {
+    if (nc.slug) {
+      entries.push({
+        loc: `${BASE_URL}/berita/kategori/${xmlEscape(nc.slug)}`,
+        changefreq: 'weekly',
+        priority: '0.5',
+      });
+    }
+  }
+
+  // Blog detail pages
+  for (const bp of blogPosts) {
+    if (bp.slug) {
+      entries.push({
+        loc: `${BASE_URL}/blog/${xmlEscape(bp.slug)}`,
+        lastmod: bp.published_at,
+        changefreq: 'weekly',
+        priority: '0.7',
       });
     }
   }

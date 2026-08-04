@@ -15,6 +15,8 @@ import {
   Inbox,
   AlertCircle,
   Flag,
+  Eye,
+  Newspaper,
 } from 'lucide-react';
 import {
   supabase,
@@ -27,6 +29,8 @@ import {
   type ReportStatus,
 } from '../../lib/supabase';
 import BazarManager from './BazarManager';
+import NewsManager from './NewsManager';
+import BlogModeration from './BlogModeration';
 
 // ─────────────────────────────────────────────
 // Status badge
@@ -131,7 +135,9 @@ type TabKey =
   | 'users'
   | 'reviews'
   | 'laporan'
-  | 'bazar';
+  | 'bazar'
+  | 'berita'
+  | 'moderasi-blog';
 
 const VALID_TABS: TabKey[] = [
   'moderasi',
@@ -143,14 +149,18 @@ const VALID_TABS: TabKey[] = [
   'reviews',
   'laporan',
   'bazar',
+  'berita',
+  'moderasi-blog',
 ];
 
 function getTabFromURL(): TabKey {
   if (typeof window === 'undefined') return 'moderasi';
   // Path-based routing: /admin/<tab> instead of /admin/?tab=<tab>
+  // Also handles deep-links like /admin/bazar/{id} → tab='bazar'
   const segments = window.location.pathname.replace(/\/+$/, '').split('/');
-  const last = segments[segments.length - 1];
-  if (last && VALID_TABS.includes(last as TabKey)) return last as TabKey;
+  for (const seg of segments) {
+    if (VALID_TABS.includes(seg as TabKey)) return seg as TabKey;
+  }
   // Legacy: also check query param for backward compatibility
   const param = new URLSearchParams(window.location.search).get('tab');
   if (param && VALID_TABS.includes(param as TabKey)) return param as TabKey;
@@ -647,6 +657,8 @@ export default function AdminPanel() {
         p_business_id: businessId,
       });
       if (rpcErr) throw rpcErr;
+      // Clear re_review_reason on approve
+      await supabase.from('businesses').update({ re_review_reason: null }).eq('id', businessId);
       setPendingBiz((prev) => prev.filter((b) => b.id !== businessId));
       await fetchAll();
     } catch (err) {
@@ -1445,6 +1457,8 @@ export default function AdminPanel() {
     { key: 'reviews', label: 'Ulasan', icon: Star },
     { key: 'laporan', label: 'Laporan', icon: Flag },
     { key: 'bazar', label: 'Bazar', icon: Store },
+    { key: 'berita', label: 'Berita', icon: Newspaper },
+    { key: 'moderasi-blog', label: 'Moderasi Blog', icon: FileText },
   ];
 
   // ───────────────────────────────────────────
@@ -1582,6 +1596,15 @@ export default function AdminPanel() {
                 key={b.id}
                 className="rounded-2xl border border-paroki-200 bg-white p-5 shadow-sm"
               >
+                {/* Re-review badge */}
+                {b.re_review_reason && (
+                  <div className="mb-3 flex items-center gap-2 rounded-lg border border-gold-300 bg-gold-50 px-3 py-2">
+                    <AlertCircle className="h-4 w-4 shrink-0 text-gold-600" />
+                    <span className="text-xs font-semibold text-gold-800">
+                      📸 Tinjau Ulang — {b.re_review_reason}
+                    </span>
+                  </div>
+                )}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">
                     <h3 className="text-lg font-semibold text-paroki-900">
@@ -1646,6 +1669,13 @@ export default function AdminPanel() {
                     </div>
                   ) : (
                     <div className="flex shrink-0 gap-2">
+                      <button
+                        onClick={() => openBizDetail(b)}
+                        className="flex items-center gap-1.5 rounded-lg border border-paroki-200 px-4 py-2 text-sm font-medium text-paroki-700 transition hover:bg-paroki-50"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Lihat
+                      </button>
                       <button
                         onClick={() => handleApprove(b.id)}
                         disabled={actingId === b.id}
@@ -2145,9 +2175,11 @@ export default function AdminPanel() {
               </div>
             </>
           )}
+        </div>
+      )}
 
-          {/* Business detail / edit / delete modal */}
-          {detailBiz && (
+      {/* Business detail / edit / delete modal — top-level so it works on ALL tabs */}
+      {detailBiz && (
             <div
               className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
               onClick={closeBizDetail}
@@ -2435,8 +2467,6 @@ export default function AdminPanel() {
               </div>
             </div>
           )}
-        </div>
-      )}
 
       {/* ─────────────────────────────── */}
       {/* Kategori tab */}
@@ -3218,6 +3248,20 @@ export default function AdminPanel() {
       {/* ─────────────────────────────────────────── */}
       {activeTab === 'bazar' && (
         <BazarManager />
+      )}
+
+      {/* ─────────────────────────────────────────── */}
+      {/* BERITA TAB (Admin only) */}
+      {/* ─────────────────────────────────────────── */}
+      {activeTab === 'berita' && profile?.role === 'admin' && (
+        <NewsManager />
+      )}
+
+      {/* ─────────────────────────────────────────── */}
+      {/* MODERASI BLOG TAB (Admin + Blogger) */}
+      {/* ─────────────────────────────────────────── */}
+      {activeTab === 'moderasi-blog' && (profile?.role === 'admin' || profile?.role === 'blogger') && (
+        <BlogModeration />
       )}
 
       {/* ─────────────────────────────────────────── */}

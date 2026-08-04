@@ -159,13 +159,28 @@ export default function BazarSchedule({
     try {
       const today = new Date().toISOString().slice(0, 10);
 
-      const [bazarsRes, waitlistRes] = await Promise.all([
-        supabase
-          .from("bazars")
-          .select("*")
-          .eq("status", "published")
-          .gt("tanggal", today)
-          .order("tanggal"),
+      // Step 1: Find published bazars where at least one assigned participant
+      // has declined (status = "absent"), meaning a spot opened up.
+      const { data: absentData, error: absentErr } = await supabase
+        .from("bazar_assignments")
+        .select("bazar_id, bazar:bazars!inner(*)")
+        .eq("status", "absent")
+        .gt("bazar.tanggal", today);
+
+      if (absentErr) throw absentErr;
+
+      // Deduplicate bazars that have absent participants
+      const bazarMap = new Map<string, Bazar>();
+      for (const row of absentData ?? []) {
+        const b = (row as unknown as { bazar: Bazar }).bazar;
+        if (b && b.status === "published" && !bazarMap.has(b.id)) {
+          bazarMap.set(b.id, b);
+        }
+      }
+      const openBazars = Array.from(bazarMap.values());
+
+      // Step 2: Get current user's waitlist entries
+      const [waitlistRes] = await Promise.all([
         supabase
           .from("bazar_waitlist")
           .select("bazar_id")
@@ -173,10 +188,7 @@ export default function BazarSchedule({
           .eq("status", "waiting"),
       ]);
 
-      if (bazarsRes.error) throw bazarsRes.error;
-      if (waitlistRes.error) throw waitlistRes.error;
-
-      setWaitlistBazars((bazarsRes.data ?? []) as unknown as Bazar[]);
+      setWaitlistBazars(openBazars);
 
       const wlSet = new Set(
         ((waitlistRes.data ?? []) as { bazar_id: string }[]).map(
@@ -426,7 +438,7 @@ export default function BazarSchedule({
             Belum ada jadwal bazar untuk Anda
           </p>
           <p className="mt-1 text-sm text-gray-400">
-            Cek bazar mendatang di bawah dan gabung daftar tunggu
+            Anda akan ditugaskan ke bazar berikutnya oleh panitia
           </p>
         </div>
       ) : (
@@ -570,7 +582,7 @@ export default function BazarSchedule({
                   {a.status === "confirmed" && bazar.bank_rekening && (
                     <div className="mt-4 border-t border-gray-100 pt-4">
                       {/* Payment status badge */}
-                      {a.payment_status === "approved" ? (
+                      {a.payment_status === "approved" && (
                         <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
                           <CheckCircle className="h-5 w-5 shrink-0 text-green-600" />
                           <div>
@@ -582,7 +594,8 @@ export default function BazarSchedule({
                             </p>
                           </div>
                         </div>
-                      ) : a.payment_status === "pending_review" ? (
+                      )}
+                      {a.payment_status === "pending_review" && (
                         <div className="flex items-center gap-2 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3">
                           <Clock className="h-5 w-5 shrink-0 text-yellow-600" />
                           <div>
@@ -594,11 +607,65 @@ export default function BazarSchedule({
                             </p>
                           </div>
                         </div>
-                      ) : (
+                      )}
+                      {a.payment_status === "rejected" && (
+                        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+                          <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+                          <div>
+                            <p className="text-xs font-medium text-red-700">
+                              Bukti Pembayaran Ditolak
+                            </p>
+                            {a.payment_reject_note && (
+                              <p className="text-xs text-red-500">
+                                {a.payment_reject_note}
+                              </p>
+                            )}
+                            <p className="mt-0.5 text-xs text-red-400">
+                              Silakan upload ulang bukti transfer.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Proof image — ALWAYS visible if uploaded */}
+                      {a.payment_proof_url && (
+                        <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 overflow-hidden">
+                          <p className="border-b border-gray-100 px-3 py-1.5 text-xs font-medium text-gray-500">
+                            Bukti Transfer
+                          </p>
+                          {a.payment_proof_url.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
+                            <a
+                              href={a.payment_proof_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block"
+                            >
+                              <img
+                                src={a.payment_proof_url}
+                                alt="Bukti transfer"
+                                className="max-h-64 w-full object-contain"
+                              />
+                            </a>
+                          ) : (
+                            <a
+                              href={a.payment_proof_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 px-3 py-3 text-sm text-paroki-600 hover:underline"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              Lihat bukti transfer (PDF)
+                            </a>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Bank details + upload form — only if no proof, or rejected */}
+                      {(!a.payment_proof_url || a.payment_status === "rejected") && (
                         <>
                           {/* Custom payment message */}
                           {bazar.pembayaran_pesan && (
-                            <div className="mb-3 rounded-lg border border-paroki-200 bg-paroki-50/50 px-4 py-3">
+                            <div className="mt-3 rounded-lg border border-paroki-200 bg-paroki-50/50 px-4 py-3">
                               <p className="text-sm text-paroki-700">
                                 {bazar.pembayaran_pesan}
                               </p>
@@ -606,7 +673,7 @@ export default function BazarSchedule({
                           )}
 
                           {/* Bank details card */}
-                          <div className="rounded-lg border-2 border-paroki-300 bg-white overflow-hidden">
+                          <div className="mt-3 rounded-lg border-2 border-paroki-300 bg-white overflow-hidden">
                             <div className="flex items-center gap-2 bg-paroki-900 px-4 py-2.5">
                               <CreditCard className="h-4 w-4 text-gold-400" />
                               <span className="font-display text-sm font-bold text-white">
@@ -665,71 +732,57 @@ export default function BazarSchedule({
 
                           {/* Upload proof */}
                           <div className="mt-3">
-                            {a.payment_proof_url ? (
-                              <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
-                                <CheckCircle className="h-4 w-4 shrink-0 text-green-500" />
-                                <a
-                                  href={a.payment_proof_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-paroki-600 hover:underline"
-                                >
-                                  Lihat bukti transfer →
-                                </a>
-                              </div>
-                            ) : (
-                              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-paroki-300 bg-paroki-50/30 px-4 py-3 text-sm font-medium text-paroki-700 transition hover:bg-paroki-50">
-                                <Upload className="h-4 w-4" />
-                                Upload Bukti Transfer
-                                <input
-                                  type="file"
-                                  accept="image/*,application/pdf"
-                                  className="hidden"
-                                  onChange={async (e) => {
-                                    const file = e.target.files?.[0];
-                                    if (!file) return;
-                                    setActionLoading(a.id);
-                                    const fname = `${a.id}-${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
-                                    const { error: ulErr } = await supabase.storage
-                                      .from("bazar-files")
-                                      .upload(fname, file);
-                                    if (ulErr) {
-                                      setError("Gagal upload: " + ulErr.message);
-                                      setActionLoading(null);
-                                      return;
-                                    }
-                                    const { data: pub } = supabase.storage
-                                      .from("bazar-files")
-                                      .getPublicUrl(fname);
-                                    const { error: updErr } = await supabase
-                                      .from("bazar_assignments")
-                                      .update({
-                                        payment_proof_url: pub.publicUrl,
-                                        payment_status: "pending_review",
-                                        payment_uploaded_at: new Date().toISOString(),
-                                      })
-                                      .eq("id", a.id);
+                            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-paroki-300 bg-paroki-50/30 px-4 py-3 text-sm font-medium text-paroki-700 transition hover:bg-paroki-50">
+                              <Upload className="h-4 w-4" />
+                              {a.payment_status === "rejected" ? "Upload Ulang Bukti Transfer" : "Upload Bukti Transfer"}
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                className="hidden"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  setActionLoading(a.id);
+                                  const fname = `${a.id}-${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
+                                  const { error: ulErr } = await supabase.storage
+                                    .from("bazar-files")
+                                    .upload(fname, file);
+                                  if (ulErr) {
+                                    setError("Gagal upload: " + ulErr.message);
                                     setActionLoading(null);
-                                    if (updErr) {
-                                      setError("Gagal menyimpan: " + updErr.message);
-                                      return;
-                                    }
-                                    setAssignments((prev) =>
-                                      prev.map((x) =>
-                                        x.id === a.id
-                                          ? {
-                                              ...x,
-                                              payment_proof_url: pub.publicUrl,
-                                              payment_status: "pending_review",
-                                              payment_uploaded_at: new Date().toISOString(),
-                                            }
-                                          : x
-                                      )
-                                    );
-                                  }}
-                                />
-                              </label>
-                            )}
+                                    return;
+                                  }
+                                  const { data: pub } = supabase.storage
+                                    .from("bazar-files")
+                                    .getPublicUrl(fname);
+                                  const { error: updErr } = await supabase
+                                    .from("bazar_assignments")
+                                    .update({
+                                      payment_proof_url: pub.publicUrl,
+                                      payment_status: "pending_review",
+                                      payment_uploaded_at: new Date().toISOString(),
+                                    })
+                                    .eq("id", a.id);
+                                  setActionLoading(null);
+                                  if (updErr) {
+                                    setError("Gagal menyimpan: " + updErr.message);
+                                    return;
+                                  }
+                                  setAssignments((prev) =>
+                                    prev.map((x) =>
+                                      x.id === a.id
+                                        ? {
+                                            ...x,
+                                            payment_proof_url: pub.publicUrl,
+                                            payment_status: "pending_review",
+                                            payment_uploaded_at: new Date().toISOString(),
+                                          }
+                                        : x
+                                    )
+                                  );
+                                }}
+                              />
+                            </label>
                             {actionLoading === a.id && (
                               <p className="mt-1 text-center text-xs text-gray-400">
                                 <Loader2 className="mr-1 inline h-3 w-3 animate-spin" />
@@ -814,15 +867,18 @@ export default function BazarSchedule({
         </div>
       )}
 
-      {/* Waitlist section */}
+      {/* Waitlist section — only shows bazars with open spots from absent participants */}
       {waitlistBazars.length > 0 && (
         <section className="mt-8">
           <div className="mb-4 flex items-center gap-2">
             <Users className="h-5 w-5 text-gold-500" />
             <h2 className="font-display text-lg font-bold text-paroki-900">
-              Bazar Mendatang
+              Lowongan Tersedia
             </h2>
           </div>
+          <p className="mb-3 text-sm text-gray-500">
+            Ada peserta bazar yang tidak bisa hadir. Daftar segera sebelum panitia menutup lowongan!
+          </p>
 
           <div className="space-y-3">
             {waitlistBazars.map((b) => {

@@ -1,0 +1,47 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import NewsGrid from '../../components/react/NewsGrid.tsx';
+
+const baseUrl = 'https://umkm-st-servatius.fxwisdom1.workers.dev';
+---
+
+<BaseLayout
+  title="Berita"
+  description="Berita dan informasi terbaru dari UMKM Paroki St. Servatius, Kampung Sawah."
+  jsonLd={{
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Berita | UMKM St. Servatius',
+    description: 'Berita dan informasi terbaru dari UMKM Paroki St. Servatius, Kampung Sawah.',
+    url: `${baseUrl}/berita`,
+    isPartOf: {
+      '@type': 'WebSite',
+      name: 'UMKM St. Servatius',
+      url: baseUrl,
+    },
+    mainEntity: {
+      '@type': 'ItemList',
+      name: 'Berita UMKM Paroki St. Servatius',
+    },
+  }}
+>
+  <section class="mx-auto max-w-6xl px-4 py-8">
+    <nav class="mb-4 text-sm text-paroki-500">
+      <a href="/" class="hover:text-paroki-700">Home</a>
+      <span class="mx-2">/</span>
+      <span class="text-paroki-700">Berita</span>
+    </nav>
+
+    <div class="mb-8">
+      <h1 class="flex items-center gap-2.5 font-display text-3xl font-bold tracking-tight text-ink">
+        <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-paroki-50 text-paroki-700">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8V6Z"/></svg>
+        </span>
+        Berita
+      </h1>
+      <p class="mt-1.5 text-paroki-600">Informasi dan kabar terbaru dari komunitas UMKM Paroki St. Servatius.</p>
+    </div>
+
+    <NewsGrid client:load />
+  </section>
+</BaseLayout>
