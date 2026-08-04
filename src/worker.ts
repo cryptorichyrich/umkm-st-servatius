@@ -1,12 +1,9 @@
 /**
- * Cloudflare Worker — simplified, bulletproof asset routing.
+ * Cloudflare Worker — asset routing with proper ASSETS binding usage.
  * 
- * Design: For all dynamic routes, try ASSETS.fetch(originalRequest) FIRST.
- * If that returns 200, serve it. If not, try /path/index.html.
- * If still nothing, use SPA template fallback. NEVER return 404 for
- * known dynamic route prefixes (produk/umkm/berita/blog).
- *
- * ponytail: All HTML responses get no-store to prevent CF edge caching stale 404s.
+ * Key insight: env.ASSETS.fetch(request) with the ORIGINAL request
+ * handles /path/ → /path/index.html automatically. Creating new Request
+ * objects with /index.html appended causes 307 redirect loops.
  */
 export interface Env {
   SUPABASE_URL: string;
@@ -23,9 +20,6 @@ const NF_HEADERS: Record<string, string> = {
   'Content-Type': 'text/plain',
   'Cache-Control': 'no-store, max-age=0',
 };
-
-// Routes that should NEVER return 404 — always SPA fallback
-const SPA_ROUTES = ['produk', 'umkm', 'berita', 'blog', 'kategori', 'admin', 'dashboard'];
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -51,114 +45,108 @@ export default {
     }
 
     // ── File assets (JS, CSS, images, fonts, etc.) ──
-    // These have file extensions and should be served directly by ASSETS.
     if (path.includes('.')) {
-      return env.ASSETS.fetch(request);
+      const res = await env.ASSETS.fetch(request);
+      // Add immutable cache for hashed assets
+      if (res.ok && path.startsWith('/_astro/')) {
+        const headers = new Headers(res.headers);
+        headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+        return new Response(res.body, { status: res.status, headers });
+      }
+      return res;
     }
 
+    // ── Trailing slash normalization ──
     const segments = path.split('/').filter(Boolean);
-
-    // ── Trailing slash normalization (add slash if missing) ──
     if (segments.length > 0 && !path.endsWith('/')) {
       return Response.redirect(url.origin + path + '/' + url.search, 301);
     }
 
-    // ── Helper: try to fetch an asset path from ASSETS binding ──
-    async function tryAsset(assetPath: string): Promise<Response | null> {
+    // ── FIRST: Try ASSETS with original request (handles /path/ → index.html) ──
+    // This works for all pre-rendered pages (produk, umkm, berita, blog, etc.)
+    const directRes = await env.ASSETS.fetch(request);
+    if (directRes.ok) {
+      // Return with no-store headers for HTML
+      const headers = new Headers(directRes.headers);
+      headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      return new Response(directRes.body, { status: 200, headers });
+    }
+
+    // ── Helper: fetch asset with modified URL ──
+    async function tryTemplate(tplPath: string): Promise<string | null> {
       try {
-        const res = await env.ASSETS.fetch(new Request(url.origin + assetPath, { method: 'GET' }));
-        if (res.ok) return res;
+        const tplUrl = new URL(tplPath, url.origin);
+        const tplReq = new Request(tplUrl, { method: 'GET', redirect: 'manual' });
+        const res = await env.ASSETS.fetch(tplReq);
+        // redirect: 'manual' so we get the actual response, not follow redirects
+        if (res.status >= 200 && res.status < 400) {
+          return await res.text();
+        }
+        // Try without redirect: manual
+        const tplReq2 = new Request(tplUrl, { method: 'GET' });
+        const res2 = await env.ASSETS.fetch(tplReq2);
+        if (res2.ok) {
+          return await res2.text();
+        }
         return null;
       } catch {
         return null;
       }
     }
 
-    // ── Helper: serve HTML with proper headers ──
-    function htmlResponse(body: BodyInit, headers?: Record<string, string>): Response {
-      return new Response(body, { status: 200, headers: { ...HTML_HEADERS, ...headers } });
-    }
-
-    // ── Dynamic route handlers ──
+    // ── Template fallback for dynamic routes ──
     if (segments.length >= 2) {
       const [prefix, slug] = segments;
 
-      // Skip non-dynamic prefixes (static dirs)
-      if (SPA_ROUTES.includes(prefix)) {
-        // Try direct asset first: /produk/slug/ → /produk/slug/index.html
-        const directPath = path.endsWith('/') 
-          ? `${path}index.html` 
-          : `${path}/index.html`;
-        const direct = await tryAsset(directPath);
-        if (direct) {
-          return htmlResponse(direct.body);
-        }
-
-        // For detail pages: try template fallback
-        const TEMPLATES: Record<string, string[]> = {
-          umkm: ['/umkm/bengkel-motor-tarik/index.html', '/umkm/katering-bu-maria/index.html'],
-          produk: ['/produk/aksesoris-mobil-led-bengkel-motor-tarik/index.html'],
-          berita: ['/berita/berita-pertama/index.html'],
-          blog: ['/blog/artikel-pertama/index.html'],
-        };
-
-        // Category listing pages: /berita/kategori/slug → serve listing shell
-        if (slug === 'kategori' && segments[2]) {
-          const listRes = await tryAsset(`/${prefix}/index.html`);
-          if (listRes) return htmlResponse(listRes.body);
-        }
-
-        // Template fallback: swap slug in HTML
-        const templates = TEMPLATES[prefix];
-        if (templates) {
-          for (const tpl of templates) {
-            const tplRes = await tryAsset(tpl);
-            if (tplRes) {
-              let html = await tplRes.text();
-              // Replace the template slug with the actual slug
-              const tplSlug = tpl.split('/')[2];
-              html = html.split(tplSlug).join(slug);
-              // Fix title
-              html = html.replace(
-                /<title>[^<]*<\/title>/,
-                `<title>${slug.replace(/-/g, ' ')} | UMKM St. Servatius</title>`,
-              );
-              return htmlResponse(html);
-            }
+      // Category listing pages: /berita/kategori/slug → serve listing shell
+      if (slug === 'kategori' && segments[2]) {
+        if (prefix === 'berita' || prefix === 'blog') {
+          const listHtml = await tryTemplate(`/${prefix}/index.html`);
+          if (listHtml) {
+            return new Response(listHtml, { status: 200, headers: HTML_HEADERS });
           }
         }
+      }
 
-        // SPA fallback for admin/dashboard sub-routes
-        if (prefix === 'admin' || prefix === 'dashboard') {
-          const spaRes = await tryAsset(`/${prefix}/index.html`);
-          if (spaRes) {
-            let html = await spaRes.text();
-            html = html.replace(
+      // Template slugs for detail pages
+      const TEMPLATES: Record<string, string[]> = {
+        umkm: ['/umkm/bengkel-motor-tarik/index.html', '/umkm/katering-bu-maria/index.html'],
+        produk: ['/produk/aksesoris-mobil-led-bengkel-motor-tarik/index.html'],
+        berita: ['/berita/berita-pertama/index.html', '/berita/dummy/index.html'],
+        blog: ['/blog/artikel-pertama/index.html', '/blog/dummy/index.html'],
+      };
+
+      const templates = TEMPLATES[prefix];
+      if (templates && prefix !== 'kategori') {
+        for (const tpl of templates) {
+          const html = await tryTemplate(tpl);
+          if (html) {
+            // Swap template slug with actual slug
+            const tplSlug = tpl.split('/')[2];
+            let out = html.split(tplSlug).join(slug);
+            out = out.replace(
               /<title>[^<]*<\/title>/,
-              `<title>${slug.charAt(0).toUpperCase() + slug.slice(1)} | UMKM St. Servatius</title>`,
+              `<title>${slug.replace(/-/g, ' ')} | UMKM St. Servatius</title>`,
             );
-            return htmlResponse(html);
+            return new Response(out, { status: 200, headers: HTML_HEADERS });
           }
+        }
+      }
+
+      // SPA fallback for admin/dashboard sub-routes
+      if (prefix === 'admin' || prefix === 'dashboard') {
+        const spaHtml = await tryTemplate(`/${prefix}/index.html`);
+        if (spaHtml) {
+          let out = spaHtml.replace(
+            /<title>[^<]*<\/title>/,
+            `<title>${slug.charAt(0).toUpperCase() + slug.slice(1)} | UMKM St. Servatius</title>`,
+          );
+          return new Response(out, { status: 200, headers: HTML_HEADERS });
         }
       }
     }
 
-    // ── Root-level routes (/produk, /umkm, /berita, etc.) ──
-    // Try as directory index
-    const indexPath = path.endsWith('/') ? `${path}index.html` : `${path}/index.html`;
-    const indexRes = await tryAsset(indexPath);
-    if (indexRes) {
-      return htmlResponse(indexRes.body);
-    }
-
-    // ── Last resort: try original request to ASSETS ──
-    try {
-      const res = await env.ASSETS.fetch(request);
-      if (res.ok) return res;
-    } catch {
-      // fall through
-    }
-
+    // ── Last resort 404 ──
     return new Response('Not found', { status: 404, headers: NF_HEADERS });
   },
 };
