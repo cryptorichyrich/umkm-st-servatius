@@ -1,3 +1,5 @@
+export const prerender = false;
+
 const BASE_URL = 'https://umkm-st-servatius.fxwisdom1.workers.dev';
 const SUPABASE_URL = 'https://vfqcydqmwhfelqizxzbi.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';

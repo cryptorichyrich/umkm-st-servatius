@@ -1,4 +1,6 @@
 ---
+export const prerender = false;
+
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BusinessDetail from '../../components/react/BusinessDetail.tsx';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
@@ -11,37 +13,19 @@ function truncate(s: string, max = 155): string {
   return s.slice(0, max - 3).trimEnd() + '...';
 }
 
-export async function getStaticPaths() {
-  const demoSlugs = ['katering-bu-maria', 'tailor-pak-budi'];
+const slug = Astro.params.slug!;
 
-  if (!isSupabaseConfigured) {
-    return demoSlugs.map((slug) => ({
-      params: { slug },
-      props: { slug, business: null },
-    }));
-  }
+// ── Fetch single business at request time ──
+const { data: business } = isSupabaseConfigured
+  ? await supabase
+      .from('businesses')
+      .select(`slug,name,description,address,area,phone,whatsapp,instagram,logo_url,updated_at,category:categories(name,slug)`)
+      .eq('slug', slug).eq('status', 'approved').single()
+  : { data: null };
 
-  const { data } = await supabase
-    .from('businesses')
-    .select(`slug,name,description,address,area,phone,whatsapp,
-             instagram,logo_url,updated_at,
-             category:categories(name,slug)`)
-    .eq('status', 'approved');
-
-  const bySlug: Record<string, any> = {};
-  for (const b of data || []) {
-    bySlug[b.slug] = b;
-  }
-
-  const allSlugs = [...new Set([...Object.keys(bySlug), ...demoSlugs])];
-
-  return allSlugs.map((slug) => ({
-    params: { slug },
-    props: { slug, business: bySlug[slug] || null },
-  }));
+if (!business) {
+  return Astro.redirect('/404');
 }
-
-const { slug, business } = Astro.props;
 
 const catRaw: any = business?.category;
 const categoryName = Array.isArray(catRaw) ? catRaw[0]?.name : catRaw?.name;

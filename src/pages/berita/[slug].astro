@@ -1,4 +1,6 @@
 ---
+export const prerender = false;
+
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import NewsDetail from '../../components/react/NewsDetail.tsx';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
@@ -24,30 +26,19 @@ function truncate(s: string, max = 155): string {
   return s.slice(0, max - 3).trimEnd() + '...';
 }
 
-export async function getStaticPaths() {
-  if (!isSupabaseConfigured) {
-    return [{ params: { slug: 'dummy' }, props: { slug: 'dummy', article: null } }];
-  }
+const slug = Astro.params.slug!;
 
-  const { data } = await supabase
-    .from('news')
-    .select(`slug,title,excerpt,content,cover_image,published_at,
-             category:news_categories(name,slug,icon)`)
-    .eq('status', 'published');
+// ── Fetch single news article at request time ──
+const { data: article } = isSupabaseConfigured
+  ? await supabase
+      .from('news')
+      .select(`slug,title,excerpt,content,cover_image,published_at,category:news_categories(name,slug,icon)`)
+      .eq('slug', slug).eq('status', 'published').single()
+  : { data: null };
 
-  const articles = data || [];
-
-  if (articles.length === 0) {
-    return [{ params: { slug: 'dummy' }, props: { slug: 'dummy', article: null } }];
-  }
-
-  return articles.map((a: any) => ({
-    params: { slug: a.slug },
-    props: { slug: a.slug, article: a },
-  }));
+if (!article) {
+  return Astro.redirect('/404');
 }
-
-const { slug, article } = Astro.props;
 
 // ── Extract category info ──
 const cat: any = article?.category;

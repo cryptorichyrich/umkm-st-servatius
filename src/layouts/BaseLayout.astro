@@ -28,6 +28,12 @@ const fullTitle = isHomepage ? siteName : `${title} | ${siteName}`;
 const canonicalUrl = canonical || Astro.url.href;
 const ogImage = image || `${baseUrl}/og-default.jpg`;
 const year = new Date().getFullYear();
+
+// Inject Supabase config for client-side
+// In SSR: use the hardcoded publishable key (it's public, not secret)
+// In client: window.__SUPABASE__ is set by this inline script
+const sbUrl = 'https://vfqcydqmwhfelqizxzbi.supabase.co';
+const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
 ---
 
 <!doctype html>
@@ -84,7 +90,9 @@ const year = new Date().getFullYear();
     )}
 
     <!-- Load Supabase config from Worker runtime env (dynamic, not baked at build) -->
-    <script is:inline src="/__env.js"></script>
+    <script is:inline define:vars={{ sbUrl, sbKey }}>
+      window.__SUPABASE__ = { url: sbUrl, key: sbKey };
+    </script>
   </head>
   <body>
     <!-- Header — clean white bar -->

@@ -1,4 +1,6 @@
 ---
+export const prerender = false;
+
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ProductDetail from '../../components/react/ProductDetail.tsx';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
@@ -26,31 +28,19 @@ function formatIDR(n: number): string {
   return 'Rp' + new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(n);
 }
 
-export async function getStaticPaths() {
-  if (!isSupabaseConfigured) {
-    return [{ params: { slug: 'dummy' }, props: { slug: 'dummy', product: null } }];
-  }
+const slug = Astro.params.slug!;
 
-  const { data } = await supabase
-    .from('products')
-    .select(`slug,name,description,rich_description,seo_title,seo_description,
-             price,price_note,image_url,updated_at,
-             business:businesses(name,slug,category:categories(name,slug))`)
-    .eq('is_available', true);
+// ── Fetch single product at request time ──
+const { data: product } = isSupabaseConfigured
+  ? await supabase
+      .from('products')
+      .select(`slug,name,description,rich_description,seo_title,seo_description,price,price_note,image_url,updated_at,business:businesses(name,slug,category:categories(name,slug))`)
+      .eq('slug', slug).eq('is_available', true).single()
+  : { data: null };
 
-  const products = data || [];
-
-  if (products.length === 0) {
-    return [{ params: { slug: 'dummy' }, props: { slug: 'dummy', product: null } }];
-  }
-
-  return products.map((p) => ({
-    params: { slug: p.slug },
-    props: { slug: p.slug, product: p },
-  }));
+if (!product) {
+  return Astro.redirect('/404');
 }
-
-const { slug, product } = Astro.props;
 
 // ── Extract business info (Supabase join may return array or object) ──
 const biz: any = product?.business;

@@ -25,17 +25,22 @@ let latestBlog: any[] = [];
 let stats = { businesses: 0, products: 0, categories: 0 };
 
 if (isSupabaseConfigured) {
-  const [newsRes, blogRes, bizCountRes, prodCountRes] = await Promise.all([
-    supabase.from('news').select('slug,title,excerpt,cover_image,published_at,category:news_categories(name,icon)').eq('status', 'published').order('published_at', { ascending: false }).limit(3),
-    supabase.from('blog_posts').select('slug,title,excerpt,cover_image,published_at,business:businesses(name,slug),category:categories(name,icon)').eq('status', 'approved').order('published_at', { ascending: false }).limit(3),
-    supabase.from('businesses').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
-    supabase.from('products').select('id', { count: 'exact', head: true }).eq('is_available', true),
-  ]);
-  latestNews = newsRes.data || [];
-  latestBlog = blogRes.data || [];
-  stats.businesses = bizCountRes.count || 0;
-  stats.products = prodCountRes.count || 0;
-  stats.categories = defaultCategories.length;
+  try {
+    const [newsRes, blogRes, bizCountRes, prodCountRes] = await Promise.all([
+      supabase.from('news').select('slug,title,excerpt,cover_image,published_at,category:news_categories(name,icon)').eq('status', 'published').order('published_at', { ascending: false }).limit(3),
+      supabase.from('blog_posts').select('slug,title,excerpt,cover_image,published_at,business:businesses(name,slug),category:categories(name,icon)').eq('status', 'approved').order('published_at', { ascending: false }).limit(3),
+      supabase.from('businesses').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
+      supabase.from('products').select('id', { count: 'exact', head: true }).eq('is_available', true),
+    ]);
+    latestNews = newsRes?.data || [];
+    latestBlog = blogRes?.data || [];
+    stats.businesses = bizCountRes?.count || 0;
+    stats.products = prodCountRes?.count || 0;
+    stats.categories = defaultCategories.length;
+  } catch (e) {
+    // Supabase error — render page with empty data
+    console.error('Homepage Supabase error:', e);
+  }
 }
 
 function stripHtml(html: string): string {

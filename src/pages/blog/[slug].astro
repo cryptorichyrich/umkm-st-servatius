@@ -1,4 +1,6 @@
 ---
+export const prerender = false;
+
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BlogDetail from '../../components/react/BlogDetail.tsx';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
@@ -24,32 +26,19 @@ function truncate(s: string, max = 155): string {
   return s.slice(0, max - 3).trimEnd() + '...';
 }
 
-export async function getStaticPaths() {
-  if (!isSupabaseConfigured) {
-    return [{ params: { slug: 'dummy' }, props: { slug: 'dummy', post: null } }];
-  }
+const slug = Astro.params.slug!;
 
-  const { data } = await supabase
-    .from('blog_posts')
-    .select(`slug, title, excerpt, content, cover_image, published_at, updated_at,
-             business:businesses(name, slug, logo_url),
-             category:categories(name, slug)`)
-    .eq('status', 'approved')
-    .order('published_at', { ascending: false, nullsFirst: false });
+// ── Fetch single blog post at request time ──
+const { data: post } = isSupabaseConfigured
+  ? await supabase
+      .from('blog_posts')
+      .select(`slug, title, excerpt, content, cover_image, published_at, updated_at, business:businesses(name, slug, logo_url), category:categories(name, slug)`)
+      .eq('slug', slug).eq('status', 'approved').single()
+  : { data: null };
 
-  const posts = data || [];
-
-  if (posts.length === 0) {
-    return [{ params: { slug: 'dummy' }, props: { slug: 'dummy', post: null } }];
-  }
-
-  return posts.map((p) => ({
-    params: { slug: p.slug },
-    props: { slug: p.slug, post: p },
-  }));
+if (!post) {
+  return Astro.redirect('/404');
 }
-
-const { post } = Astro.props;
 
 // ── Extract business info (Supabase join may return array or object) ──
 const biz: any = post?.business;

@@ -1,32 +1,40 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-// Runtime config: injected by the Worker (SSR) via window.__SUPABASE__
-// Falls back to import.meta.env for local dev / static builds
+// Client-side gets config from window.__SUPABASE__ (injected by BaseLayout)
+// Server-side (SSR) uses the publishable key directly — it's public, not secret
 declare global {
   interface Window {
     __SUPABASE__?: { url: string; key: string };
   }
 }
 
+const SUPABASE_URL = 'https://vfqcydqmwhfelqizxzbi.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
+
 function getConfig() {
   if (typeof window !== 'undefined' && window.__SUPABASE__) {
     return window.__SUPABASE__;
   }
-  // SSR / local dev fallback
-  return {
-    url: import.meta.env.PUBLIC_SUPABASE_URL as string,
-    key: import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string,
-  };
+  return { url: SUPABASE_URL, key: SUPABASE_KEY };
 }
 
 const config = getConfig();
 
 export const isSupabaseConfigured = Boolean(config.url && config.key);
 
+// SSR-safe: disable session persistence on server (no localStorage)
+const isBrowser = typeof window !== 'undefined';
+
 export const supabase: SupabaseClient = createClient(
   config.url || 'https://placeholder.supabase.co',
   config.key || 'public-anon-key-placeholder',
-  { auth: { persistSession: true, autoRefreshToken: true } },
+  {
+    auth: {
+      persistSession: isBrowser,
+      autoRefreshToken: isBrowser,
+      detectSessionInUrl: isBrowser,
+    },
+  },
 );
 
 // Database types
