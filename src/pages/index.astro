@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BusinessGrid from '../components/react/BusinessGrid.tsx';
 import CategoryIcon from '../components/CategoryIcon.astro';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const defaultCategories = [
   { name: 'Kuliner & Minuman', slug: 'kuliner-minuman' },
@@ -15,6 +16,35 @@ const defaultCategories = [
   { name: 'Otomotif', slug: 'otomotif' },
   { name: 'Lainnya', slug: 'lainnya' },
 ];
+
+// Fetch latest news + blog for homepage sections
+const baseUrl = 'https://umkm-st-servatius.fxwisdom1.workers.dev';
+
+let latestNews: any[] = [];
+let latestBlog: any[] = [];
+let stats = { businesses: 0, products: 0, categories: 0 };
+
+if (isSupabaseConfigured) {
+  const [newsRes, blogRes, bizCountRes, prodCountRes] = await Promise.all([
+    supabase.from('news').select('slug,title,excerpt,cover_image,published_at,category:news_categories(name,icon)').eq('status', 'published').order('published_at', { ascending: false }).limit(3),
+    supabase.from('blog_posts').select('slug,title,excerpt,cover_image,published_at,business:businesses(name,slug),category:categories(name,icon)').eq('status', 'approved').order('published_at', { ascending: false }).limit(3),
+    supabase.from('businesses').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
+    supabase.from('products').select('id', { count: 'exact', head: true }).eq('is_available', true),
+  ]);
+  latestNews = newsRes.data || [];
+  latestBlog = blogRes.data || [];
+  stats.businesses = bizCountRes.count || 0;
+  stats.products = prodCountRes.count || 0;
+  stats.categories = defaultCategories.length;
+}
+
+function stripHtml(html: string): string {
+  return (html || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function formatDate(d: string): string {
+  return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 ---
 
 <BaseLayout
@@ -24,22 +54,22 @@ const defaultCategories = [
       '@context': 'https://schema.org',
       '@type': 'WebSite',
       name: 'UMKM St. Servatius',
-      url: 'https://umkm-st-servatius.fxwisdom1.workers.dev',
+      url: baseUrl,
       description: 'Direktori UMKM Paroki St. Servatius — Temukan usaha dan jasa umat paroki',
     },
     {
       '@context': 'https://schema.org',
       '@type': 'Organization',
       name: 'UMKM St. Servatius',
-      url: 'https://umkm-st-servatius.fxwisdom1.workers.dev',
+      url: baseUrl,
       description: 'Direktori usaha dan jasa UMKM umat Paroki St. Servatius, Kampung Sawah.',
       areaServed: 'Paroki Santo Servatius, Kampung Sawah',
     },
   ]}
 >
-  <!-- Hero — light, clean, with green accent stripe -->
+  <!-- ═══ Hero ═══ -->
   <section class="border-b border-gray-100 bg-paroki-50">
-    <div class="mx-auto max-w-6xl px-4 py-16 md:py-20">
+    <div class="mx-auto max-w-6xl px-4 py-14 md:py-20">
       <div class="max-w-2xl">
         <div class="mb-5 flex items-center gap-2.5">
           <span class="h-px w-8 bg-gold-500"></span>
@@ -51,26 +81,50 @@ const defaultCategories = [
         <p class="mt-4 max-w-xl text-base leading-relaxed text-gray-600 md:text-lg">
           Temukan kuliner, jasa, dan kerajinan dari sesama umat paroki. Belanja dari tetangga, bertumbuh bersama.
         </p>
-        <div class="mt-7 flex flex-col gap-3 sm:flex-row">
-          <a
-            href="/direktori"
-            class="inline-flex items-center justify-center gap-2 rounded-lg bg-gold-500 px-6 py-3 font-bold text-white transition hover:bg-gold-600 active:translate-y-px"
-          >
-            Jelajahi Direktori
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          </a>
-          <a
-            href="/daftar"
-            class="inline-flex items-center justify-center rounded-lg border border-paroki-300 bg-white px-6 py-3 font-semibold text-paroki-800 transition hover:border-paroki-500 hover:bg-paroki-50 active:translate-y-px"
-          >
-            Daftarkan Usaha Anda
-          </a>
+
+        <!-- Search bar -->
+        <form action="/direktori" method="get" class="mt-7 flex gap-2">
+          <div class="relative flex-1">
+            <svg class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.34-4.34"/></svg>
+            <input type="text" name="q" placeholder="Cari usaha, jasa, atau produk..." class="w-full rounded-xl border border-gray-200 bg-white py-3.5 pl-12 pr-4 text-sm text-ink outline-none transition placeholder:text-gray-400 focus:border-gold-400 focus:ring-2 focus:ring-gold-200" />
+          </div>
+          <button type="submit" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gold-500 px-6 py-3.5 font-bold text-white transition hover:bg-gold-600 active:translate-y-px">
+            Cari
+          </button>
+        </form>
+
+        <div class="mt-5 flex flex-wrap gap-2">
+          <a href="/direktori" class="inline-flex items-center gap-1.5 rounded-full border border-paroki-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-paroki-700 transition hover:border-gold-400 hover:text-gold-700">Jelajahi Direktori</a>
+          <a href="/daftar" class="inline-flex items-center gap-1.5 rounded-full border border-paroki-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-paroki-700 transition hover:border-gold-400 hover:text-gold-700">Daftarkan Usaha</a>
+          <a href="/#kategori" class="inline-flex items-center gap-1.5 rounded-full border border-paroki-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-paroki-700 transition hover:border-gold-400 hover:text-gold-700">Lihat Kategori</a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Categories -->
+  <!-- ═══ Stats bar ═══ -->
+  {stats.businesses > 0 && (
+    <section class="border-b border-gray-100 bg-white">
+      <div class="mx-auto max-w-6xl px-4 py-6">
+        <div class="grid grid-cols-3 gap-4">
+          <div class="text-center">
+            <div class="font-display text-2xl font-extrabold text-paroki-800 md:text-3xl">{stats.businesses}+</div>
+            <div class="mt-0.5 text-xs font-medium text-gray-500 md:text-sm">UMKM Terdaftar</div>
+          </div>
+          <div class="text-center border-x border-gray-100">
+            <div class="font-display text-2xl font-extrabold text-paroki-800 md:text-3xl">{stats.products}+</div>
+            <div class="mt-0.5 text-xs font-medium text-gray-500 md:text-sm">Produk & Jasa</div>
+          </div>
+          <div class="text-center">
+            <div class="font-display text-2xl font-extrabold text-paroki-800 md:text-3xl">7</div>
+            <div class="mt-0.5 text-xs font-medium text-gray-500 md:text-sm">Wilayah Paroki</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- ═══ Categories ═══ -->
   <section id="kategori" class="mx-auto max-w-6xl px-4 py-14 md:py-16">
     <div class="mb-7 flex items-end justify-between">
       <div>
@@ -93,7 +147,7 @@ const defaultCategories = [
     </div>
   </section>
 
-  <!-- Featured UMKM -->
+  <!-- ═══ Featured UMKM ═══ -->
   <section class="mx-auto max-w-6xl px-4 pb-14 md:pb-16">
     <div class="mb-7 flex items-end justify-between">
       <h2 class="font-display text-2xl font-bold text-ink">UMKM Pilihan</h2>
@@ -105,7 +159,93 @@ const defaultCategories = [
     <BusinessGrid client:load mode="featured" limit={8} />
   </section>
 
-  <!-- CTA — green section -->
+  <!-- ═══ Berita Terbaru ═══ -->
+  {latestNews.length > 0 && (
+    <section id="berita-terbaru" class="bg-paroki-50/60">
+      <div class="mx-auto max-w-6xl px-4 py-14 md:py-16">
+        <div class="mb-7 flex items-end justify-between">
+          <div>
+            <h2 class="font-display text-2xl font-bold text-ink">Berita Terbaru</h2>
+            <p class="mt-1 text-sm text-gray-500">Pengumuman dan kabar komunitas paroki.</p>
+          </div>
+          <a href="/berita" class="inline-flex items-center gap-1 text-sm font-semibold text-paroki-700 transition hover:text-paroki-900">
+            Semua berita
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+          </a>
+        </div>
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {latestNews.map((item) => {
+            const cat = Array.isArray(item.category) ? item.category[0] : item.category;
+            return (
+              <a href={`/berita/${item.slug}`} class="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
+                {item.cover_image && (
+                  <div class="aspect-video overflow-hidden bg-gray-100">
+                    <img src={item.cover_image} alt={item.title} loading="lazy" class="h-full w-full object-cover transition group-hover:scale-105" />
+                  </div>
+                )}
+                <div class="p-5">
+                  {cat?.name && (
+                    <span class="mb-2 inline-flex items-center gap-1 rounded-full bg-paroki-50 px-2.5 py-0.5 text-[11px] font-semibold text-paroki-700">
+                      <span>{cat.icon || '📰'}</span> {cat.name}
+                    </span>
+                  )}
+                  <h3 class="font-display text-base font-bold leading-snug text-ink transition group-hover:text-paroki-700">{item.title}</h3>
+                  {item.excerpt && <p class="mt-1.5 line-clamp-2 text-sm leading-relaxed text-gray-500">{stripHtml(item.excerpt)}</p>}
+                  {item.published_at && <p class="mt-3 text-xs text-gray-400">{formatDate(item.published_at)}</p>}
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- ═══ Blog Terbaru ═══ -->
+  {latestBlog.length > 0 && (
+    <section id="blog-terbaru" class="mx-auto max-w-6xl px-4 py-14 md:py-16">
+      <div class="mb-7 flex items-end justify-between">
+        <div>
+          <h2 class="font-display text-2xl font-bold text-ink">Artikel dari UMKM</h2>
+          <p class="mt-1 text-sm text-gray-500">Tips, cerita, dan inspirasi dari pelaku usaha.</p>
+        </div>
+        <a href="/blog" class="inline-flex items-center gap-1 text-sm font-semibold text-paroki-700 transition hover:text-paroki-900">
+          Semua artikel
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+        </a>
+      </div>
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {latestBlog.map((item) => {
+          const biz = Array.isArray(item.business) ? item.business[0] : item.business;
+          const cat = Array.isArray(item.category) ? item.category[0] : item.category;
+          return (
+            <a href={`/blog/${item.slug}`} class="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
+              {item.cover_image && (
+                <div class="aspect-video overflow-hidden bg-gray-100">
+                  <img src={item.cover_image} alt={item.title} loading="lazy" class="h-full w-full object-cover transition group-hover:scale-105" />
+                </div>
+              )}
+              <div class="p-5">
+                {cat?.name && (
+                  <span class="mb-2 inline-flex items-center gap-1 rounded-full bg-gold-50 px-2.5 py-0.5 text-[11px] font-semibold text-gold-700">
+                    <span>{cat.icon || '📦'}</span> {cat.name}
+                  </span>
+                )}
+                <h3 class="font-display text-base font-bold leading-snug text-ink transition group-hover:text-paroki-700">{item.title}</h3>
+                {item.excerpt && <p class="mt-1.5 line-clamp-2 text-sm leading-relaxed text-gray-500">{stripHtml(item.excerpt)}</p>}
+                <div class="mt-3 flex items-center gap-2 text-xs text-gray-400">
+                  {biz?.name && <span class="font-medium text-gray-600">{biz.name}</span>}
+                  {item.published_at && <span>· {formatDate(item.published_at)}</span>}
+                </div>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+  )}
+
+  <!-- ═══ CTA ═══ -->
   <section class="bg-paroki-900">
     <div class="mx-auto max-w-6xl px-4 py-14">
       <div class="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
