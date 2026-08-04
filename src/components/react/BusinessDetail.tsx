@@ -302,7 +302,7 @@ export default function BusinessDetail({ slug }: Props) {
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-gray-50 text-gray-400"><Search className="h-7 w-7" /></div>
         <h1 className="font-display text-2xl font-bold text-ink">Usaha Tidak Ditemukan</h1>
         <p className="mt-2 text-gray-500">Usaha yang Anda cari mungkin belum terdaftar atau sudah dihapus.</p>
-        <a href="/direktori" className="mt-6 inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-5 py-2.5 font-bold text-white transition hover:bg-gold-600 active:translate-y-px">
+        <a href="/umkm" className="mt-6 inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-5 py-2.5 font-bold text-white transition hover:bg-gold-600 active:translate-y-px">
           <ArrowLeft className="h-4 w-4" /> Kembali ke Direktori
         </a>
       </div>
@@ -346,7 +346,7 @@ export default function BusinessDetail({ slug }: Props) {
 
       <nav className="mb-4 flex items-center gap-1.5 text-sm text-gray-500">
         <a href="/" className="transition hover:text-paroki-700">Beranda</a><span>/</span>
-        <a href="/direktori" className="transition hover:text-paroki-700">Direktori</a><span>/</span>
+        <a href="/umkm" className="transition hover:text-paroki-700">UMKM</a><span>/</span>
         <span className="font-medium text-gray-700">{business.name}</span>
       </nav>
 

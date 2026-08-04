@@ -42,6 +42,13 @@ export default {
       return env.ASSETS.fetch(assetReq);
     }
 
+    // ── /direktori → /umkm redirect (renamed) ──
+    if (segments[0] === 'direktori') {
+      const rest = segments.slice(1).join('/');
+      const target = rest ? `/umkm/${rest}${url.search}` : `/umkm${url.search}`;
+      return Response.redirect(url.origin + target, 301);
+    }
+
     // ── /umkm/<slug> — serve from asset or template ──
     if (segments[0] === 'umkm' && segments[1]) {
       const slug = segments[1];

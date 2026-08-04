@@ -669,7 +669,7 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
                 Anda belum memiliki favorit. Jelajahi direktori untuk menyimpan usaha/produk favorit Anda!
               </p>
               <a
-                href="/direktori"
+                href="/umkm"
                 className="mt-4 inline-flex items-center rounded-lg bg-paroki-600 px-4 py-2 text-sm font-semibold text-white hover:bg-paroki-700"
               >
                 Jelajahi Direktori

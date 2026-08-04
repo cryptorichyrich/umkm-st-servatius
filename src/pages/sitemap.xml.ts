@@ -60,7 +60,7 @@ export async function GET() {
 
   // Static pages
   entries.push({ loc: `${BASE_URL}/`, changefreq: 'daily', priority: '0.8' });
-  entries.push({ loc: `${BASE_URL}/direktori`, changefreq: 'daily', priority: '0.8' });
+  entries.push({ loc: `${BASE_URL}/umkm`, changefreq: 'daily', priority: '0.8' });
   entries.push({ loc: `${BASE_URL}/produk`, changefreq: 'daily', priority: '0.7' });
   entries.push({ loc: `${BASE_URL}/berita`, changefreq: 'daily', priority: '0.7' });
   entries.push({ loc: `${BASE_URL}/blog`, changefreq: 'daily', priority: '0.7' });
