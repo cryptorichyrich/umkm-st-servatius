@@ -24,3 +24,8 @@ pnpm-debug.log*
 
 # Astro
 .astro/
+
+# Wrangler local state
+.wrangler/state/
+.wrangler/deploy/
+
