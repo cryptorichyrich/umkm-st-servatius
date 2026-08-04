@@ -38,6 +38,15 @@ export default function ProductGrid({
   const [hasMore, setHasMore] = useState(true);
   const PAGE_SIZE = limit;
 
+  // Read search query from URL params (?q=...)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && mode === 'all') {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('q');
+      if (q) setSearch(q);
+    }
+  }, [mode]);
+
   useEffect(() => {
     if (mode === 'all') {
       supabase.from('categories').select('*').order('name').then(({ data }) => {

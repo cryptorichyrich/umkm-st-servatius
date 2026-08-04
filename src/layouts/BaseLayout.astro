@@ -193,6 +193,21 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
       </div>
     </header>
 
+    <!-- Global search bar (below navbar, on every page) -->
+    <div class="border-b border-gray-100 bg-white">
+      <div class="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2.5">
+        <form action="/produk" method="get" class="flex flex-1 items-center gap-2">
+          <div class="relative flex-1">
+            <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.34-4.34"/></svg>
+            <input type="text" name="q" placeholder="Cari produk, jasa, atau usaha..." class="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-4 text-sm text-ink outline-none transition placeholder:text-gray-400 focus:border-gold-400 focus:bg-white focus:ring-2 focus:ring-gold-100" />
+          </div>
+          <button type="submit" class="inline-flex shrink-0 items-center justify-center rounded-xl bg-paroki-800 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-paroki-900 active:translate-y-px">
+            Cari
+          </button>
+        </form>
+      </div>
+    </div>
+
     <!-- Main content -->
     <main class="min-h-screen">
       <slot />
