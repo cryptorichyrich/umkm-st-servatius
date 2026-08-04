@@ -1,23 +1,11 @@
 ---
-export const prerender = true;
+export const prerender = false;
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import AdminPanel from '../../components/react/AdminPanel.tsx';
-
-export function getStaticPaths() {
-  return [
-    { params: { path: 'berita' } },
-    { params: { path: 'moderasi-blog' } },
-    { params: { path: 'umkm' } },
-    { params: { path: 'bazar' } },
-    { params: { path: 'verifikasi' } },
-    { params: { path: 'profil' } },
-    { params: { path: 'pengaturan' } },
-  ];
-}
 
 const title = 'Admin Panel';
 ---
 
 <BaseLayout title={title} noindex>
-  <AdminPanel client:load />
+  <AdminPanel client:only="react" />
 </BaseLayout>
