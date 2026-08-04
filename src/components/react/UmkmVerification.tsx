@@ -57,6 +57,12 @@ export default function UmkmVerification() {
     category_id: '',
   });
 
+  // Wilayah & Lingkungan
+  const [wilayahList, setWilayahList] = useState<{ id: string; name: string }[]>([]);
+  const [lingkunganList, setLingkunganList] = useState<{ id: string; name: string; wilayah_id: string }[]>([]);
+  const [selectedWilayah, setSelectedWilayah] = useState('');
+  const [selectedLingkungan, setSelectedLingkungan] = useState('');
+
   // ── Fetch auth + profile on mount ──
   useEffect(() => {
     (async () => {
@@ -91,18 +97,31 @@ export default function UmkmVerification() {
     })();
   }, []);
 
-  // ── Fetch categories on mount ──
+  // ── Fetch categories + wilayah/lingkungan on mount ──
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from('categories')
-        .select('*')
-        .order('sort_order', { ascending: true })
-        .order('name', { ascending: true });
-      setCategories((data || []) as Category[]);
+      const [{ data: catData }, { data: wData }, { data: lData }] = await Promise.all([
+        supabase.from('categories').select('*').order('sort_order', { ascending: true }).order('name', { ascending: true }),
+        supabase.from('wilayah').select('id, name').order('name'),
+        supabase.from('lingkungan').select('id, name, wilayah_id').order('name'),
+      ]);
+      setCategories((catData || []) as Category[]);
+      setWilayahList((wData || []) as { id: string; name: string }[]);
+      setLingkunganList((lData || []) as { id: string; name: string; wilayah_id: string }[]);
       setLoadingCats(false);
     })();
   }, []);
+
+  // ── Reset lingkungan when wilayah changes ──
+  useEffect(() => {
+    setSelectedLingkungan('');
+  }, [selectedWilayah]);
+
+  // ── Filtered lingkungan ──
+  const filteredLingkungan = lingkunganList.filter((l) => {
+    const matchedWilayah = wilayahList.find((w) => w.name === selectedWilayah);
+    return matchedWilayah ? l.wilayah_id === matchedWilayah.id : false;
+  });
 
   // ── Get current user ID ──
   const getUserId = useCallback(async (): Promise<string | null> => {
@@ -226,6 +245,14 @@ export default function UmkmVerification() {
       setError('Kategori wajib dipilih.');
       return;
     }
+    if (!selectedWilayah) {
+      setError('Wilayah wajib dipilih.');
+      return;
+    }
+    if (!selectedLingkungan) {
+      setError('Lingkungan wajib dipilih.');
+      return;
+    }
 
     const userId = await getUserId();
     if (!userId) {
@@ -246,6 +273,8 @@ export default function UmkmVerification() {
         business_address: form.business_address.trim(),
         business_phone: form.business_phone.trim(),
         category_id: form.category_id,
+        wilayah: selectedWilayah,
+        lingkungan: selectedLingkungan,
       };
 
       // Only include KK Gereja if not member-verified
@@ -589,6 +618,47 @@ export default function UmkmVerification() {
                 <option key={c.id} value={c.id}>
                   {c.icon} {c.name}
                 </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Wilayah + Lingkungan — cascading dropdowns */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="umkm_wilayah" className={labelClass}>
+              Wilayah <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="umkm_wilayah"
+              value={selectedWilayah}
+              onChange={(e) => setSelectedWilayah(e.target.value)}
+              required
+              className={inputClass}
+            >
+              <option value="">Pilih Wilayah...</option>
+              {wilayahList.map((w) => (
+                <option key={w.id} value={w.name}>{w.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="umkm_lingkungan" className={labelClass}>
+              Lingkungan <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="umkm_lingkungan"
+              value={selectedLingkungan}
+              onChange={(e) => setSelectedLingkungan(e.target.value)}
+              required
+              disabled={!selectedWilayah}
+              className={`${inputClass} disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400`}
+            >
+              <option value="">
+                {selectedWilayah ? 'Pilih Lingkungan...' : 'Pilih wilayah dulu...'}
+              </option>
+              {filteredLingkungan.map((l) => (
+                <option key={l.id} value={l.name}>{l.name}</option>
               ))}
             </select>
           </div>

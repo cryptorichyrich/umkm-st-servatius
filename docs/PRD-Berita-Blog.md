@@ -1,7 +1,7 @@
 # PRD: Sistem Berita & Blog UMKM St. Servatius
 
-> **Versi:** 1.0 — 4 Agustus 2026
-> **Status:** Draft untuk review
+> **Versi:** 2.0 — 4 Agustus 2026
+> **Status:** Implemented — Phase 1-4 complete, gaps closing
 > **Author:** Hermes (untuk Bio)
 
 ---
@@ -437,14 +437,49 @@ Ini gap yang sudah ada sebelumnya tapi akan semakin relevan dengan konten dinami
 | X5 | **Comment system di blog** — pembaca bisa komentar? | Medium | Bisa reuse reviews table pattern atau buat baru. Tanyakan ke Bio. |
 | X6 | **Multi-author attribution** — artikel ditulis atas nama UMKM atau orang? | Low | Default: atas nama UMKM (business.name). Bisa tambah author field opsional. |
 
-### 11.3 Questions for Bio
+### 11.3 Resolved Decisions (Answers)
 
-1. **Comment di Blog?** — Apakah pembaca bisa komentar di artikel blog? Atau read-only?
-2. **Blog attribution** — Artikel ditulis atas nama UMKM (business) atau atas nama personal (profile.full_name)?
-3. **Blogger role** — Siapa yang akan jadi blogger? Apakah admin tunggal atau beberapa orang?
-4. **Berita: multi-admin?** — Apakah hanya 1 admin yang manage berita, atau beberapa?
-5. **Blog draft limit** — Apakah ada batas jumlah draft per UMKM?
-6. **Berita notification** — Apakah berita baru perlu kirim broadcast (WA/email) ke semua member?
+| # | Question | Decision | Rationale |
+|---|----------|----------|-----------|
+| Q1 | **Comment di Blog?** | ❌ **No — read-only** untuk Phase 1. | Komentar butuh moderasi tambahan + anti-spam. Blog UMKM adalah profesional content, bukan forum. Defer ke Phase 5 jika ada permintaan. |
+| Q2 | **Blog attribution** | **Atas nama UMKM (business.name)**, bukan personal. | Artikel dikaitkan dengan usaha — pembaca tahu UMKM mana yang menulis. Link ke `/umkm/[slug]` di byline. |
+| Q3 | **Blogger role** | **Admin tunggal untuk sekarang.** Role `blogger` tersedia jika butuh delegasi. | Platform masih kecil. Admin bisa handle moderasi. Assign `blogger` ke user lain via Admin → Pengguna → edit role jika beban bertambah. |
+| Q4 | **Berita: multi-admin?** | **Semua admin** bisa manage berita (role-based, bukan user-specific). | Konsisten dengan semua modul lain. Tidak perlu ownership tracking untuk berita. |
+| Q5 | **Blog draft limit** | **Max 10 draft per UMKM.** | Cegah spam/abuse. User harus publish atau hapus draft lama sebelum buat baru. Implementasi: count check sebelum insert. |
+| Q6 | **Berita notification** | ❌ **No broadcast untuk Phase 1.** Badge count di navbar saja. | WA broadcast = cost + kompleksitas opt-in. Homepage "Berita Terbaru" section sudah cukup sebagai discovery. Tambah Telegram bot broadcast di Phase 5 jika diminta. |
+
+### 11.4 Remaining Gaps to Close (Action Items)
+
+| # | Gap | Priority | Action | Owner |
+|---|-----|----------|--------|-------|
+| **G3** | Draft autosave | Medium | **LocalStorage autosave** setiap 30 detik di BlogEditor. Key: `blog_draft_{postId}`. Restore prompt saat reload. | Hermes — next sprint |
+| **G8** | XSS sanitization | **High** | **Sanitize saat save** (client-side): strip `<script>`, `on*` attributes, `javascript:` URLs. Gunakan simple regex strip (zero-dependency, sesuai ponytail) sebelum insert ke DB. Double-defense: Supabase RLS + content security policy header di worker. | Hermes — immediate |
+| **G2** | Admin notif badge | Low | **Badge count** di Admin nav untuk pending blog posts. Query: `SELECT count(*) FROM blog_posts WHERE status='pending'`. Poll setiap 60 detik. | Defer |
+| **X1** | Global search | Medium | **Search bar di homepage** (sudah ada untuk produk/UMKM). Extend untuk query `news` + `blog_posts` tables. UNION search results. | Phase 5 |
+| **G5** | Inline image cleanup | Low | Orphan images di `article-images` saat post dihapus. **Skip untuk sekarang** — storage cost minimal. Cron job purge bisa ditambah kemudian. | Defer |
+
+### 11.5 XSS Sanitization Spec (G8 — Immediate)
+
+```typescript
+// src/lib/sanitize.ts — zero-dependency HTML sanitizer
+// Strip dangerous elements/attributes before saving WYSIWYG content
+
+export function sanitizeHtml(html: string): string {
+  return html
+    // Remove <script> blocks entirely
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    // Remove <iframe>, <object>, <embed>
+    .replace(/<\/?(iframe|object|embed)\b[^>]*>/gi, '')
+    // Remove on* event handler attributes (onclick, onload, onerror, etc.)
+    .replace(/\s+on\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    // Remove javascript: URLs in href/src
+    .replace(/(href|src)\s*=\s*["']javascript:[^"']*["']/gi, '')
+    // Remove data: URLs in src (prevent data URI exploits, except for images)
+    .replace(/src\s*=\s*["']data:(?!image\/)[^"']*["']/gi, '');
+}
+```
+
+**Usage:** Call `sanitizeHtml(content)` sebelum `supabase.from('news').insert()` atau `blog_posts.insert/update`.
 
 ---
 

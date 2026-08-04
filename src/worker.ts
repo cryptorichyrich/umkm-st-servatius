@@ -1,5 +1,7 @@
 /**
  * Cloudflare Worker — fixed ASSETS.fetch with proper Request objects.
+ * Uses Cache API to serve HTML through edge cache with short TTL,
+ * and NEVER caches 404s.
  */
 export interface Env {
   SUPABASE_URL: string;

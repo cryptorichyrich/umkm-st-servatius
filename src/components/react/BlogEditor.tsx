@@ -628,28 +628,28 @@ export default function BlogEditor() {
             </select>
           </div>
 
-          {/* Category select (auto-set, can override) */}
+          {/* Category — auto-set from UMKM, read-only */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-paroki-700">
               Kategori Artikel
             </label>
-            <select
-              value={form.category_id}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, category_id: e.target.value }))
-              }
-              className="w-full rounded-lg border border-paroki-200 bg-white px-4 py-2.5 text-sm text-paroki-800 outline-none focus:border-paroki-500 focus:ring-2 focus:ring-paroki-200"
-            >
-              <option value="">Tanpa kategori</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.icon} {c.name}
-                </option>
-              ))}
-            </select>
-            {form.business_id && businesses.find((b) => b.id === form.business_id)?.category && (
-              <p className="mt-1 text-xs text-paroki-400">
-                Otomatis dari kategori UMKM: {businesses.find((b) => b.id === form.business_id)?.category?.name}
+            {form.business_id ? (
+              <div className="flex items-center gap-2 rounded-lg border border-paroki-200 bg-paroki-50/60 px-4 py-2.5 text-sm text-paroki-800">
+                {(() => {
+                  const biz = businesses.find((b) => b.id === form.business_id);
+                  const cat = categories.find((c) => c.id === biz?.category_id);
+                  return (
+                    <>
+                      <span className="text-base">{cat?.icon || '📦'}</span>
+                      <span className="font-medium">{cat?.name || biz?.category?.name || 'Tanpa kategori'}</span>
+                      <span className="ml-auto text-xs text-paroki-400">Otomatis dari kategori UMKM</span>
+                    </>
+                  );
+                })()}
+              </div>
+            ) : (
+              <p className="rounded-lg border border-dashed border-paroki-200 bg-paroki-50/30 px-4 py-2.5 text-sm text-paroki-400">
+                Pilih UMKM dulu untuk menentukan kategori artikel.
               </p>
             )}
           </div>

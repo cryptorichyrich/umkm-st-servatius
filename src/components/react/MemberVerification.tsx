@@ -8,6 +8,7 @@ import {
   Loader2,
   X,
   ArrowLeft,
+  MapPin,
 } from 'lucide-react';
 
 interface MemberVerificationProps {
@@ -20,7 +21,22 @@ interface UploadedFile {
   isImage: boolean;
 }
 
+interface Wilayah {
+  id: string;
+  name: string;
+}
+
+interface LingkunganRow {
+  id: string;
+  name: string;
+  wilayah_id: string;
+}
+
 const ACCEPT_TYPES = 'image/jpeg,image/png,image/webp,application/pdf';
+
+const inputClass =
+  'w-full rounded-lg border border-paroki-200 bg-white px-4 py-2.5 text-sm text-paroki-900 outline-none transition focus:border-paroki-400 focus:ring-2 focus:ring-paroki-200';
+const labelClass = 'mb-1.5 block text-sm font-medium text-paroki-800';
 
 export default function MemberVerification({ onRequestSubmitted }: MemberVerificationProps) {
   const [kkFile, setKkFile] = useState<UploadedFile | null>(null);
@@ -31,7 +47,13 @@ export default function MemberVerification({ onRequestSubmitted }: MemberVerific
   const [dragOver, setDragOver] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // ── Check auth on mount ──
+  // Wilayah & Lingkungan
+  const [wilayahList, setWilayahList] = useState<Wilayah[]>([]);
+  const [lingkunganList, setLingkunganList] = useState<LingkunganRow[]>([]);
+  const [selectedWilayah, setSelectedWilayah] = useState('');
+  const [selectedLingkungan, setSelectedLingkungan] = useState('');
+
+  // ── Check auth + load data on mount ──
   useEffect(() => {
     (async () => {
       const {
@@ -41,9 +63,29 @@ export default function MemberVerification({ onRequestSubmitted }: MemberVerific
         window.location.href = '/masuk';
         return;
       }
+
+      // Fetch wilayah + lingkungan in parallel
+      const [{ data: wilayahData }, { data: lingData }] = await Promise.all([
+        supabase.from('wilayah').select('id, name').order('name'),
+        supabase.from('lingkungan').select('id, name, wilayah_id').order('name'),
+      ]);
+      setWilayahList((wilayahData || []) as Wilayah[]);
+      setLingkunganList((lingData || []) as LingkunganRow[]);
+
       setLoading(false);
     })();
   }, []);
+
+  // ── Reset lingkungan when wilayah changes ──
+  useEffect(() => {
+    setSelectedLingkungan('');
+  }, [selectedWilayah]);
+
+  // ── Filtered lingkungan based on selected wilayah ──
+  const filteredLingkungan = lingkunganList.filter((l) => {
+    const matchedWilayah = wilayahList.find((w) => w.name === selectedWilayah);
+    return matchedWilayah ? l.wilayah_id === matchedWilayah.id : false;
+  });
 
   // ── Get current user ID ──
   const getUserId = useCallback(async (): Promise<string | null> => {
@@ -131,6 +173,14 @@ export default function MemberVerification({ onRequestSubmitted }: MemberVerific
       setError('Foto KK Gereja wajib diupload.');
       return;
     }
+    if (!selectedWilayah) {
+      setError('Wilayah wajib dipilih.');
+      return;
+    }
+    if (!selectedLingkungan) {
+      setError('Lingkungan wajib dipilih.');
+      return;
+    }
 
     const userId = await getUserId();
     if (!userId) {
@@ -145,6 +195,8 @@ export default function MemberVerification({ onRequestSubmitted }: MemberVerific
         request_type: 'member',
         status: 'pending',
         kk_gereja_url: kkFile.url,
+        wilayah: selectedWilayah,
+        lingkungan: selectedLingkungan,
       });
       if (insertErr) throw insertErr;
 
@@ -244,6 +296,53 @@ export default function MemberVerification({ onRequestSubmitted }: MemberVerific
           </ul>
         </div>
 
+        {/* ── Wilayah & Lingkungan — cascading dropdowns ── */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="wilayah" className={labelClass}>
+              Wilayah <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <select
+                id="wilayah"
+                value={selectedWilayah}
+                onChange={(e) => setSelectedWilayah(e.target.value)}
+                required
+                className={`${inputClass} appearance-none pr-9`}
+              >
+                <option value="">Pilih Wilayah...</option>
+                {wilayahList.map((w) => (
+                  <option key={w.id} value={w.name}>{w.name}</option>
+                ))}
+              </select>
+              <MapPin className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paroki-400" />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="lingkungan" className={labelClass}>
+              Lingkungan <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <select
+                id="lingkungan"
+                value={selectedLingkungan}
+                onChange={(e) => setSelectedLingkungan(e.target.value)}
+                required
+                disabled={!selectedWilayah}
+                className={`${inputClass} appearance-none pr-9 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400`}
+              >
+                <option value="">
+                  {selectedWilayah ? 'Pilih Lingkungan...' : 'Pilih wilayah dulu...'}
+                </option>
+                {filteredLingkungan.map((l) => (
+                  <option key={l.id} value={l.name}>{l.name}</option>
+                ))}
+              </select>
+              <MapPin className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paroki-400" />
+            </div>
+          </div>
+        </div>
+
         {/* Upload zone */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-paroki-800">
@@ -338,7 +437,7 @@ export default function MemberVerification({ onRequestSubmitted }: MemberVerific
         {/* Submit button */}
         <button
           type="submit"
-          disabled={submitting || !kkFile}
+          disabled={submitting || !kkFile || !selectedWilayah || !selectedLingkungan}
           className="w-full rounded-lg border-2 border-paroki-300 bg-white px-4 py-2.5 text-sm font-semibold text-paroki-700 transition hover:border-paroki-500 hover:bg-paroki-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {submitting ? (
