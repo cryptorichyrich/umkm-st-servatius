@@ -12,6 +12,11 @@ const HTML_HEADERS: Record<string, string> = {
   'Cache-Control': 'no-cache, no-store, must-revalidate',
 };
 
+const NF_HEADERS: Record<string, string> = {
+  'Content-Type': 'text/plain',
+  'Cache-Control': 'no-store, max-age=0',
+};
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -212,6 +217,6 @@ export default {
       return new Response(idxRes2.body, { status: 200, headers: HTML_HEADERS });
     }
 
-    return new Response('Not found', { status: 404, headers: { 'Content-Type': 'text/plain' } });
+    return new Response('Not found', { status: 404, headers: NF_HEADERS });
   },
 };
