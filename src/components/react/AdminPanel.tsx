@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, type FormEvent } from 'react';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense, type FormEvent } from 'react';
 import {
   ShieldCheck,
   Clock,
@@ -28,9 +28,16 @@ import {
   type Report,
   type ReportStatus,
 } from '../../lib/supabase';
-import BazarManager from './BazarManager';
-import NewsManager from './NewsManager';
-import BlogModeration from './BlogModeration';
+// Lazy-load heavy admin sub-components — only fetched when tab is opened
+const BazarManager = lazy(() => import('./BazarManager'));
+const NewsManager = lazy(() => import('./NewsManager'));
+const BlogModeration = lazy(() => import('./BlogModeration'));
+
+const TabFallback = () => (
+  <div className="flex items-center justify-center py-20">
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-paroki-200 border-t-paroki-600" />
+  </div>
+);
 
 // ─────────────────────────────────────────────
 // Status badge
@@ -3247,21 +3254,27 @@ export default function AdminPanel() {
       {/* BAZAR TAB */}
       {/* ─────────────────────────────────────────── */}
       {activeTab === 'bazar' && (
-        <BazarManager />
+        <Suspense fallback={<TabFallback />}>
+          <BazarManager />
+        </Suspense>
       )}
 
       {/* ─────────────────────────────────────────── */}
       {/* BERITA TAB (Admin only) */}
       {/* ─────────────────────────────────────────── */}
       {activeTab === 'berita' && profile?.role === 'admin' && (
-        <NewsManager />
+        <Suspense fallback={<TabFallback />}>
+          <NewsManager />
+        </Suspense>
       )}
 
       {/* ─────────────────────────────────────────── */}
       {/* MODERASI BLOG TAB (Admin + Blogger) */}
       {/* ─────────────────────────────────────────── */}
       {activeTab === 'moderasi-blog' && (profile?.role === 'admin' || profile?.role === 'blogger') && (
-        <BlogModeration />
+        <Suspense fallback={<TabFallback />}>
+          <BlogModeration />
+        </Suspense>
       )}
 
       {/* ─────────────────────────────────────────── */}
