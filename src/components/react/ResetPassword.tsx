@@ -144,7 +144,7 @@ export default function ResetPassword() {
             <input
               type={showPassword ? 'text' : 'password'}
               required
-              minLength={6}
+              minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
@@ -162,7 +162,7 @@ export default function ResetPassword() {
             <input
               type={showConfirm ? 'text' : 'password'}
               required
-              minLength={6}
+              minLength={8}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"

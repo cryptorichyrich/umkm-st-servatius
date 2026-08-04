@@ -5,7 +5,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import NewsDetail from '../../components/react/NewsDetail.tsx';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
-const baseUrl = 'https://umkm-st-servatius.fxwisdom1.workers.dev';
+const baseUrl = Astro.url.origin;
 
 // ── SEO helpers ──
 function stripHtml(html: string): string {

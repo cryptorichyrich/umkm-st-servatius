@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BusinessGrid from '../../components/react/BusinessGrid.tsx';
+const baseUrl = Astro.url.origin;
 ---
 
 <BaseLayout
@@ -11,11 +12,11 @@ import BusinessGrid from '../../components/react/BusinessGrid.tsx';
     '@type': 'CollectionPage',
     name: 'UMKM St. Servatius',
     description: 'Jelajahi semua usaha dan jasa dari umat paroki. Cari berdasarkan nama, kategori, atau wilayah.',
-    url: 'https://umkm-st-servatius.fxwisdom1.workers.dev/umkm',
+    url: `${baseUrl}/umkm`,
     isPartOf: {
       '@type': 'WebSite',
       name: 'UMKM St. Servatius',
-      url: 'https://umkm-st-servatius.fxwisdom1.workers.dev',
+      url: baseUrl,
     },
     mainEntity: {
       '@type': 'ItemList',

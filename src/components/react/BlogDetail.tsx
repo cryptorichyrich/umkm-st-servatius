@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Search, ArrowLeft, Store, Eye, AlertCircle } from 'lucide-react';
+import { Search, ArrowLeft, Store, Eye, AlertCircle, Clock } from 'lucide-react';
 import { sanitizeHtml } from '../../lib/sanitize';
 import ShareButtons from './ShareButtons';
 
@@ -9,8 +9,15 @@ function formatDate(date: string | null): string {
   return new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+function readingTime(html: string): number {
+  const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const words = text ? text.split(' ').length : 0;
+  return Math.max(1, Math.ceil(words / 200));
+}
+
 export default function BlogDetail() {
   const [post, setPost] = useState<any>(null);
+  const [related, setRelated] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewIncremented, setViewIncremented] = useState(false);
 
@@ -30,6 +37,18 @@ export default function BlogDetail() {
 
       if (!error && data) {
         setPost(data);
+        // Fetch related posts (same category, exclude current)
+        if (data.category_id) {
+          const { data: rel } = await supabase
+            .from('blog_posts')
+            .select('slug, title, cover_image, published_at, business:businesses(name)')
+            .eq('category_id', data.category_id)
+            .eq('status', 'approved')
+            .neq('id', data.id)
+            .order('published_at', { ascending: false })
+            .limit(3);
+          setRelated(rel || []);
+        }
       }
       setLoading(false);
     })();
@@ -144,6 +163,10 @@ export default function BlogDetail() {
           <Eye className="h-4 w-4" />
           {(post.view_count || 0)} dibaca
         </span>
+        <span className="inline-flex items-center gap-1 text-gray-400">
+          <Clock className="h-4 w-4" />
+          {readingTime(post.content || '')} min baca
+        </span>
       </div>
 
       {/* Cover image */}
@@ -186,6 +209,33 @@ export default function BlogDetail() {
               <Store className="h-4 w-4" />
               Lihat Profil UMKM
             </a>
+          </div>
+        </div>
+      )}
+
+      {/* Related articles */}
+      {related.length > 0 && (
+        <div className="mt-8 border-t border-gray-100 pt-6">
+          <h2 className="font-display text-lg font-bold text-ink mb-4">Artikel Terkait</h2>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {related.map((rp) => {
+              const rpBiz = Array.isArray(rp.business) ? rp.business[0] : rp.business;
+              return (
+                <a
+                  key={rp.slug}
+                  href={`/blog/${rp.slug}`}
+                  className="group rounded-xl border border-gray-200 bg-white p-3 transition hover:border-paroki-300 hover:shadow-soft"
+                >
+                  {rp.cover_image ? (
+                    <img src={rp.cover_image} alt={rp.title} className="mb-3 aspect-[16/9] w-full rounded-lg object-cover" />
+                  ) : (
+                    <div className="mb-3 aspect-[16/9] w-full rounded-lg bg-paroki-50" />
+                  )}
+                  <h3 className="line-clamp-2 text-sm font-semibold text-ink group-hover:text-paroki-700">{rp.title}</h3>
+                  {rpBiz?.name && <p className="mt-1 text-xs text-gray-400">{rpBiz.name}</p>}
+                </a>
+              );
+            })}
           </div>
         </div>
       )}

@@ -1,5 +1,7 @@
-export async function GET() {
-  const baseUrl = 'https://umkm-st-servatius.fxwisdom1.workers.dev';
+export const prerender = false;
+
+export async function GET({ url }: { url: URL }) {
+  const baseUrl = url.origin;
 
   const body = `User-agent: *
 Allow: /

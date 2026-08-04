@@ -119,7 +119,7 @@ export default function AuthForm({ mode }: Props) {
           </a>
         </div>
         <div className="relative">
-          <input id="password" type={showPassword ? 'text' : 'password'} required minLength={6} value={password}
+          <input id="password" type={showPassword ? 'text' : 'password'} required minLength={8} value={password}
             onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
             className={inputClass} />
           {eyeBtn(showPassword, () => setShowPassword(!showPassword))}
@@ -130,7 +130,7 @@ export default function AuthForm({ mode }: Props) {
         <div>
           <label htmlFor="confirm_password" className={labelClass}>Ulangi Kata Sandi</label>
           <div className="relative">
-            <input id="confirm_password" type={showConfirm ? 'text' : 'password'} required minLength={6} value={confirmPassword}
+            <input id="confirm_password" type={showConfirm ? 'text' : 'password'} required minLength={8} value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••"
               className={`${inputClass} ${confirmPassword && password !== confirmPassword ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : confirmPassword && password === confirmPassword ? 'border-green-300 focus:border-green-400 focus:ring-green-100' : ''}`}
             />

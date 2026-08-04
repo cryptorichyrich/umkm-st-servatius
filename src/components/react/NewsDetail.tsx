@@ -8,6 +8,7 @@ import {
   Archive,
   ArrowLeft,
   Loader2,
+  Clock,
 } from 'lucide-react';
 import { sanitizeHtml } from '../../lib/sanitize';
 import ShareButtons from './ShareButtons';
@@ -51,6 +52,12 @@ function formatDate(dateStr: string | null): string {
     month: 'long',
     year: 'numeric',
   });
+}
+
+function readingTime(html: string): number {
+  const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const words = text ? text.split(' ').length : 0;
+  return Math.max(1, Math.ceil(words / 200));
 }
 
 export default function NewsDetail({ slug: propSlug }: Props) {
@@ -216,6 +223,12 @@ export default function NewsDetail({ slug: propSlug }: Props) {
             <Eye className="h-4 w-4" />
             {localViews} dilihat
           </span>
+          {article.content && (
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="h-4 w-4" />
+              {readingTime(article.content)} min baca
+            </span>
+          )}
         </div>
 
         {/* Cover image */}

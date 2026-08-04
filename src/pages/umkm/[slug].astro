@@ -5,7 +5,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import BusinessDetail from '../../components/react/BusinessDetail.tsx';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
-const baseUrl = 'https://umkm-st-servatius.fxwisdom1.workers.dev';
+const baseUrl = Astro.url.origin;
 
 // ── SEO helpers ──
 function truncate(s: string, max = 155): string {

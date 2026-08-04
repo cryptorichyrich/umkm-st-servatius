@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BlogGrid from '../../components/react/BlogGrid.tsx';
+const baseUrl = Astro.url.origin;
 ---
 
 <BaseLayout
@@ -11,11 +12,11 @@ import BlogGrid from '../../components/react/BlogGrid.tsx';
     '@type': 'CollectionPage',
     name: 'Blog UMKM St. Servatius',
     description: 'Artikel dan cerita dari UMKM Paroki St. Servatius.',
-    url: 'https://umkm-st-servatius.fxwisdom1.workers.dev/blog',
+    url: `${baseUrl}/blog`,
     isPartOf: {
       '@type': 'WebSite',
       name: 'UMKM St. Servatius',
-      url: 'https://umkm-st-servatius.fxwisdom1.workers.dev',
+      url: baseUrl,
     },
     mainEntity: {
       '@type': 'Blog',

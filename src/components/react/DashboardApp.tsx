@@ -844,7 +844,7 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
                   <input
                     type={showNewPassword ? 'text' : 'password'}
                     required
-                    minLength={6}
+                    minLength={8}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="••••••••"
@@ -868,7 +868,7 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
                 <input
                   type={showNewPassword ? 'text' : 'password'}
                   required
-                  minLength={6}
+                  minLength={8}
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
                   placeholder="••••••••"

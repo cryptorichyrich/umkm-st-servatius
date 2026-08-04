@@ -18,7 +18,7 @@ const defaultCategories = [
 ];
 
 // Fetch latest news + blog for homepage sections
-const baseUrl = 'https://umkm-st-servatius.fxwisdom1.workers.dev';
+const baseUrl = Astro.url.origin;
 
 let latestNews: any[] = [];
 let latestBlog: any[] = [];

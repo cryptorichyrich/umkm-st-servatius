@@ -19,6 +19,8 @@ const { data: category } = isSupabaseConfigured
 if (!category) {
   return Astro.redirect('/404');
 }
+
+const baseUrl = Astro.url.origin;
 ---
 
 <BaseLayout
@@ -29,11 +31,11 @@ if (!category) {
     '@type': 'CollectionPage',
     name: `${category.name} — UMKM Paroki St. Servatius`,
     description: `Usaha ${category.name} dari umat paroki.`,
-    url: `https://umkm-st-servatius.fxwisdom1.workers.dev/kategori/${category.slug}`,
+    url: `${baseUrl}/kategori/${category.slug}`,
     isPartOf: {
       '@type': 'WebSite',
       name: 'UMKM St. Servatius',
-      url: 'https://umkm-st-servatius.fxwisdom1.workers.dev',
+      url: baseUrl,
     },
     mainEntity: {
       '@type': 'ItemList',

@@ -1,5 +1,13 @@
 ---
 import '../styles/global.css';
+import '@fontsource/plus-jakarta-sans/500.css';
+import '@fontsource/plus-jakarta-sans/600.css';
+import '@fontsource/plus-jakarta-sans/700.css';
+import '@fontsource/plus-jakarta-sans/800.css';
+import '@fontsource/source-sans-3/400.css';
+import '@fontsource/source-sans-3/500.css';
+import '@fontsource/source-sans-3/600.css';
+import '@fontsource/source-sans-3/700.css';
 
 interface Props {
   title?: string;
@@ -22,7 +30,7 @@ const {
 } = Astro.props;
 
 const siteName = 'UMKM St. Servatius';
-const baseUrl = 'https://umkm-st-servatius.fxwisdom1.workers.dev';
+const baseUrl = Astro.url.origin;
 const isHomepage = !title || title === siteName;
 const fullTitle = isHomepage ? siteName : `${title} | ${siteName}`;
 const canonicalUrl = canonical || Astro.url.href;
@@ -61,6 +69,9 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
     <!-- Sitemap -->
     <link rel="sitemap" href="/sitemap.xml" />
 
+    <!-- RSS Feed -->
+    <link rel="alternate" type="application/rss+xml" title="Blog UMKM St. Servatius" href="/rss.xml" />
+
     <!-- Open Graph -->
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
@@ -76,13 +87,7 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
 
-    <!-- Fonts: Plus Jakarta Sans (display) + Source Sans 3 (body) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <!-- Fonts: self-hosted via @fontsource (no external CDN) -->
 
     <!-- JSON-LD structured data -->
     {jsonLd && (
@@ -146,6 +151,8 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
           id="mobile-menu-btn"
           class="rounded-lg p-2 text-gray-600 transition hover:bg-gray-100 md:hidden"
           aria-label="Buka menu"
+          aria-expanded="false"
+          aria-controls="mobile-menu"
         >
           <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16" />
@@ -217,7 +224,31 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
     <script>
       const btn = document.getElementById('mobile-menu-btn');
       const menu = document.getElementById('mobile-menu');
-      btn?.addEventListener('click', () => menu?.classList.toggle('hidden'));
+
+      function setMenuOpen(open: boolean) {
+        if (!menu || !btn) return;
+        menu.classList.toggle('hidden', !open);
+        btn.setAttribute('aria-expanded', String(open));
+      }
+
+      btn?.addEventListener('click', () => {
+        const isOpen = menu?.classList.contains('hidden') === false;
+        setMenuOpen(!isOpen);
+      });
+
+      // Close mobile menu when a link inside it is clicked
+      menu?.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setMenuOpen(false)));
+
+      // Escape closes mobile menu and all dropdowns
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          setMenuOpen(false);
+          document.querySelectorAll('.nav-dd-menu').forEach((m) => {
+            m.classList.add('invisible', 'opacity-0', 'translate-y-1');
+            m.classList.remove('opacity-100', 'translate-y-0');
+          });
+        }
+      });
 
       // Generic dropdown handler — works for ALL .nav-dropdown elements
       document.querySelectorAll('.nav-dropdown').forEach((dd) => {
@@ -228,10 +259,12 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
         const open = () => {
           ddMenu.classList.remove('invisible', 'opacity-0', 'translate-y-1');
           ddMenu.classList.add('opacity-100', 'translate-y-0');
+          ddBtn?.setAttribute('aria-expanded', 'true');
         };
         const close = () => {
           ddMenu.classList.add('invisible', 'opacity-0', 'translate-y-1');
           ddMenu.classList.remove('opacity-100', 'translate-y-0');
+          ddBtn?.setAttribute('aria-expanded', 'false');
         };
 
         ddBtn.addEventListener('click', (e) => {
@@ -247,6 +280,8 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
         });
         dd.addEventListener('mouseenter', open);
         dd.addEventListener('mouseleave', close);
+        // Keyboard: Enter/Space already handled by <button>, Escape closes
+        ddBtn.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
       });
 
       // Close all dropdowns on outside click
