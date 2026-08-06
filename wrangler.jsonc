@@ -2,8 +2,11 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "umkm-st-servatius",
   "compatibility_date": "2026-08-01",
-  "vars": {
-    "SUPABASE_URL": "https://vfqcydqmwhfelqizxzbi.supabase.co",
-    "SUPABASE_ANON_KEY": "sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4"
-  }
+  "pages_build_output_dir": "dist",
+  "r2_buckets": [
+    {
+      "binding": "R2_BUCKET",
+      "bucket_name": "umkm-assets"
+    }
+  ]
 }
