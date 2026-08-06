@@ -514,8 +514,7 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
         </div>
       )}
 
-      {/* Reviews Section — hidden from business owner */}
-      {!isOwner && (
+      {/* Reviews Section */}
       <div className="mt-8">
         <h2 className="mb-4 flex items-center gap-2 font-display text-xl font-bold text-ink">
           <Star className="h-5 w-5 text-gray-400" />Ulasan Pelanggan
@@ -558,8 +557,8 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
           <div className="mb-6 rounded-lg border border-gray-200 bg-white p-5 text-sm text-gray-500">Belum ada ulasan untuk usaha ini.</div>
         )}
 
-        {/* Review Form / Auth Prompt */}
-        {authChecked && (
+        {/* Review Form / Auth Prompt — hidden from business owner */}
+        {authChecked && !isOwner && (
           <div className="mb-6 rounded-lg border border-gray-200 bg-white p-5">
             {currentUserId && isVerified ? (
               <form onSubmit={handleSubmitReview} className="space-y-4">
@@ -786,7 +785,6 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
           </div>
         )}
       </div>
-      )}
 
       <div className="mt-10 rounded-xl bg-paroki-50 p-6 md:p-8">
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
