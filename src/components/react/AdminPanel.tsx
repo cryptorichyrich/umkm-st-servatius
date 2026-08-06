@@ -91,6 +91,8 @@ interface UserProfile {
   has_pirt: boolean | null;
   has_halal: boolean | null;
   harapan_gabung: string | null;
+  wilayah: string | null;
+  lingkungan: string | null;
 }
 
 interface VerificationRequest {
@@ -112,6 +114,9 @@ interface VerificationRequest {
   reviewed_at: string | null;
   reviewed_by: string | null;
   created_at: string;
+  biduk_number: string | null;
+  wilayah: string | null;
+  lingkungan: string | null;
 }
 
 interface ReviewRow {
@@ -1103,21 +1108,11 @@ export default function AdminPanel() {
     setVerifActionId(req.id);
     setError(null);
     try {
-      // Verify the user
-      const { error: rpcErr } = await supabase.rpc('verify_user', {
-        p_user_id: req.user_id,
-        p_status: 'verified',
+      // Use approve_member_verification — copies BIDUK/wilayah/lingkungan to profiles
+      const { error: rpcErr } = await supabase.rpc('approve_member_verification', {
+        p_request_id: req.id,
       });
       if (rpcErr) throw rpcErr;
-      // Update the request record
-      const { error: updateErr } = await supabase
-        .from('verification_requests')
-        .update({
-          status: 'approved',
-          reviewed_at: new Date().toISOString(),
-        })
-        .eq('id', req.id);
-      if (updateErr) throw updateErr;
       await Promise.all([fetchVerifRequests(), fetchUsers()]);
     } catch (err) {
       alert(
@@ -1862,6 +1857,36 @@ export default function AdminPanel() {
                       {isExpanded ? '▲ Sembunyikan Profil' : '▼ Lihat Profil User'}
                     </button>
                   </div>
+
+                  {/* Member verification cross-check data */}
+                  {(req.biduk_number || req.wilayah || req.lingkungan) && (
+                    <div className="mt-3 rounded-xl border border-gold-200 bg-gold-50/40 p-3">
+                      <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-paroki-700">
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        Data Verifikasi Member
+                      </div>
+                      <div className="grid grid-cols-1 gap-1.5 text-sm text-paroki-600 sm:grid-cols-3">
+                        {req.biduk_number && (
+                          <div>
+                            <span className="text-xs text-paroki-400">No. BIDUK: </span>
+                            <span className="font-semibold text-paroki-800">{req.biduk_number}</span>
+                          </div>
+                        )}
+                        {req.wilayah && (
+                          <div>
+                            <span className="text-xs text-paroki-400">Wilayah: </span>
+                            <span className="font-medium">{req.wilayah}</span>
+                          </div>
+                        )}
+                        {req.lingkungan && (
+                          <div>
+                            <span className="text-xs text-paroki-400">Lingkungan: </span>
+                            <span className="font-medium">{req.lingkungan}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Expanded user profile */}
                   {isExpanded && (
@@ -3471,63 +3496,22 @@ export default function AdminPanel() {
                   </p>
                 </div>
 
-                {/* Omset — private admin info */}
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-paroki-500">Omset Tahunan</label>
-                  <p className="text-sm text-paroki-800">
-                    {detailUser.omset_range ? (
-                      {
-                        '< 50jt': 'Belum ada omset / < Rp 50 juta',
-                        '50-300jt': 'Rp 50 juta – Rp 300 juta',
-                        '300jt-2.5M': 'Rp 300 juta – Rp 2.5 miliar',
-                        '> 2.5M': '> Rp 2.5 miliar',
-                      }[detailUser.omset_range] || detailUser.omset_range
-                    ) : (
-                      <span className="text-gray-400">Belum diisi</span>
-                    )}
-                  </p>
-                </div>
-
-                {/* NIB — private admin info */}
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-paroki-500">NIB</label>
-                  <p className="text-sm text-paroki-800">
-                    {detailUser.has_nib ? (
-                      <span className="inline-flex items-center gap-1 text-green-700">✓ Punya NIB</span>
-                    ) : (
-                      <span className="text-gray-400">Tidak ada</span>
-                    )}
-                  </p>
-                </div>
-
-                {/* PIRT — private admin info */}
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-paroki-500">PIRT</label>
-                  <p className="text-sm text-paroki-800">
-                    {detailUser.has_pirt ? (
-                      <span className="inline-flex items-center gap-1 text-green-700">✓ Punya PIRT</span>
-                    ) : (
-                      <span className="text-gray-400">Tidak ada</span>
-                    )}
-                  </p>
-                </div>
-
-                {/* Halal — private admin info */}
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-paroki-500">Sertifikasi Halal</label>
-                  <p className="text-sm text-paroki-800">
-                    {detailUser.has_halal ? (
-                      <span className="inline-flex items-center gap-1 text-green-700">✓ Halal Certified</span>
-                    ) : (
-                      <span className="text-gray-400">Tidak ada</span>
-                    )}
-                  </p>
-                </div>
-
-                {/* BIDUK number */}
+                {/* BIDUK number — member verification cross-check */}
                 <div>
                   <label className="mb-1 block text-xs font-medium text-paroki-500">No. BIDUK</label>
                   <p className="text-sm text-paroki-800">{detailUser.biduk_number || <span className="text-gray-400">Belum diisi</span>}</p>
+                </div>
+
+                {/* Wilayah */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-paroki-500">Wilayah</label>
+                  <p className="text-sm text-paroki-800">{detailUser.wilayah || <span className="text-gray-400">Belum diisi</span>}</p>
+                </div>
+
+                {/* Lingkungan */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-paroki-500">Lingkungan</label>
+                  <p className="text-sm text-paroki-800">{detailUser.lingkungan || <span className="text-gray-400">Belum diisi</span>}</p>
                 </div>
               </div>
 
