@@ -135,8 +135,12 @@ body {
   background-color: #0e120f;
 }
 
-/* Surfaces */
+/* Surfaces — including opacity variants used for header, image overlays, etc. */
 .dark .bg-white { background-color: #1a1f1b !important; }
+.dark .bg-white\/95 { background-color: rgba(26, 31, 27, 0.95) !important; }
+.dark .bg-white\/90 { background-color: rgba(26, 31, 27, 0.9) !important; }
+.dark .bg-white\/80 { background-color: rgba(26, 31, 27, 0.8) !important; }
+.dark .bg-white\/70 { background-color: rgba(26, 31, 27, 0.7) !important; }
 .dark .bg-gray-50 { background-color: #141715 !important; }
 .dark .bg-gray-100 { background-color: #1a1f1b !important; }
 .dark .bg-gray-200 { background-color: #262d27 !important; }
