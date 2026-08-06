@@ -504,7 +504,7 @@ export default function AdminPanel() {
   const fetchPending = useCallback(async () => {
     const { data, error } = await supabase
       .from('businesses')
-      .select(`*, category:categories(*)`)
+      .select(`*, category:categories(*), images:business_images(*)`)
       .eq('status', 'pending')
       .order('created_at', { ascending: true });
     if (error) throw error;
@@ -1756,6 +1756,91 @@ export default function AdminPanel() {
                     </div>
                   )}
                 </div>
+
+                {/* Owner / pengaju info */}
+                {(() => {
+                  const owner = userList.find((u) => u.id === b.owner_id);
+                  const verifDoc = verifRequests.find((v) => v.user_id === b.owner_id);
+                  const hasOwnerInfo = owner || verifDoc;
+                  if (!hasOwnerInfo) return null;
+                  return (
+                    <div className="mt-4 rounded-xl border border-paroki-100 bg-paroki-50/50 p-3">
+                      <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-paroki-700">
+                        <Users className="h-3.5 w-3.5" />
+                        Data Pengaju
+                      </div>
+                      <div className="grid grid-cols-1 gap-1.5 text-sm text-paroki-600 sm:grid-cols-2">
+                        {owner && (
+                          <>
+                            <div>
+                              <span className="text-xs text-paroki-400">Nama: </span>
+                              <span className="font-semibold text-paroki-800">{owner.full_name || '(Tanpa nama)'}</span>
+                            </div>
+                            <div>
+                              <span className="text-xs text-paroki-400">Telepon: </span>
+                              <span className="font-medium">{owner.phone || '-'}</span>
+                            </div>
+                            <div>
+                              <span className="text-xs text-paroki-400">Verifikasi: </span>
+                              <VerificationStatusBadge status={owner.verification_status} />
+                            </div>
+                            {owner.biduk_number && (
+                              <div>
+                                <span className="text-xs text-paroki-400">BIDUK: </span>
+                                <span className="font-semibold text-paroki-800">{owner.biduk_number}</span>
+                              </div>
+                            )}
+                            {owner.wilayah && (
+                              <div>
+                                <span className="text-xs text-paroki-400">Wilayah: </span>
+                                <span className="font-medium">{owner.wilayah}</span>
+                              </div>
+                            )}
+                            {owner.lingkungan && (
+                              <div>
+                                <span className="text-xs text-paroki-400">Lingkungan: </span>
+                                <span className="font-medium">{owner.lingkungan}</span>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                      {/* Verification documents from verifikasi request */}
+                      {(verifDoc?.ktp_url || verifDoc?.kk_gereja_url || verifDoc?.catalog_url) && (
+                        <div className="mt-3">
+                          <div className="mb-1.5 text-xs font-medium text-paroki-500">Dokumen Verifikasi:</div>
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                            {verifDoc.kk_gereja_url && (
+                              <DocThumbnail url={verifDoc.kk_gereja_url} label="KK Gereja" />
+                            )}
+                            {verifDoc.ktp_url && (
+                              <DocThumbnail url={verifDoc.ktp_url} label="KTP" />
+                            )}
+                            {verifDoc.catalog_url && (
+                              <DocThumbnail url={verifDoc.catalog_url} label="Katalog Produk" />
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Business logo + images */}
+                      {(b.logo_url || (b.images && b.images.length > 0)) && (
+                        <div className="mt-3">
+                          <div className="mb-1.5 text-xs font-medium text-paroki-500">Foto Usaha:</div>
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                            {b.logo_url && (
+                              <DocThumbnail url={b.logo_url} label="Logo" />
+                            )}
+                            {b.images?.map((img) => (
+                              <DocThumbnail key={img.id} url={img.image_url} label={img.caption || 'Foto'} />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             ))
           )}
