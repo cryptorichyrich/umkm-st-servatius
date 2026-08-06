@@ -130,26 +130,29 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
       </div>
     </div>
 
-    <!-- Main header — Vatican-style with hanging centered logo -->
+    <!-- Main header — brand left, menu right -->
     <header class="sticky top-0 z-50 border-b border-perak-200 bg-white/95 shadow-soft backdrop-blur-md">
       <div class="h-0.5 w-full bg-gradient-to-r from-paroki-700 via-gold-400 to-merah-700"></div>
       <nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <!-- Left: Brand text -->
-        <a href="/" class="flex flex-col leading-tight">
-          <span class="font-display text-base font-extrabold tracking-tight text-ink md:text-lg">UMKM St. Servatius</span>
-          <span class="text-xs font-medium text-paroki-600 md:text-[13px]">Paroki Kampung Sawah</span>
+        <!-- Left: Brand + Logo -->
+        <a href="/" class="flex items-center gap-2.5">
+          <img src="/logo-umkm-hires.png" alt="Logo UMKM St. Servatius" class="h-11 w-11 shrink-0 object-contain drop-shadow-sm md:h-12 md:w-12" />
+          <div class="flex flex-col leading-tight">
+            <span class="font-display text-base font-extrabold tracking-tight text-ink md:text-lg">UMKM St. Servatius</span>
+            <span class="text-[11px] font-medium text-paroki-600 md:text-xs">Paroki Kampung Sawah</span>
+          </div>
         </a>
 
-        <!-- Right: Nav links + auth (pushed right, center stays clear for logo) -->
+        <!-- Right: Nav links + auth, all pushed right -->
         <div class="hidden items-center gap-2 md:flex">
-          <div class="flex items-center gap-0 border-r border-perak-200 pr-3">
-            <a href="/umkm" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">UMKM</a>
-            <a href="/produk" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">Produk</a>
-            <a href="/bazar" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">Bazar</a>
+          <div class="flex items-center gap-0">
+            <a href="/umkm" class="rounded-lg px-3 py-2 text-sm font-semibold text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">UMKM</a>
+            <a href="/produk" class="rounded-lg px-3 py-2 text-sm font-semibold text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">Produk</a>
+            <a href="/bazar" class="rounded-lg px-3 py-2 text-sm font-semibold text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">Bazar</a>
 
             <!-- Dropdown: Artikel [Berita, Blog] -->
             <div class="relative nav-dropdown" id="dd-artikel">
-              <button class="nav-dd-btn flex items-center gap-1 rounded-lg px-3.5 py-2 text-sm font-semibold text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">
+              <button class="nav-dd-btn flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">
                 Artikel
                 <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
               </button>
@@ -166,6 +169,8 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
             </div>
           </div>
 
+          <div class="mx-1 h-6 w-px bg-perak-200"></div>
+
           <div id="nav-auth-buttons" class="nav-guest-only flex items-center gap-2">
             <a href="/masuk" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-perak-600 transition hover:bg-paroki-50 hover:text-paroki-800">Masuk</a>
             <a href="/daftar" class="inline-flex items-center gap-1.5 rounded-xl bg-gold-500 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-gold-600 hover:shadow-md active:translate-y-px">Daftar</a>
@@ -174,39 +179,19 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
           <div id="nav-auth-area" class="hidden"></div>
         </div>
 
-        <!-- Right: Theme toggle + Mobile menu button -->
-        <div class="flex items-center gap-1 md:gap-0">
-          <button
-            id="theme-toggle"
-            class="rounded-xl p-2 text-perak-700 transition hover:bg-perak-100 dark:text-perak-700 dark:hover:bg-perak-200"
-            aria-label="Ganti tema"
-          >
-            <svg class="h-5 w-5 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-            </svg>
-            <svg class="hidden h-5 w-5 dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-            </svg>
-          </button>
-
-          <button
-            id="mobile-menu-btn"
-            class="rounded-xl p-2 text-perak-700 transition hover:bg-perak-100 md:hidden"
-            aria-label="Buka menu"
-            aria-expanded="false"
-            aria-controls="mobile-menu"
-          >
-            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16" />
-            </svg>
-          </button>
-        </div>
+        <!-- Mobile: hamburger only -->
+        <button
+          id="mobile-menu-btn"
+          class="rounded-xl p-2 text-perak-700 transition hover:bg-perak-100 md:hidden"
+          aria-label="Buka menu"
+          aria-expanded="false"
+          aria-controls="mobile-menu"
+        >
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16" />
+          </svg>
+        </button>
       </nav>
-
-      <!-- Hanging centered logo (Vatican-style medallion) -->
-      <a href="/" class="absolute bottom-0 left-1/2 z-50 flex -translate-x-1/2 translate-y-1/2 flex-col items-center" aria-label="UMKM St. Servatius — Beranda">
-        <img src="/logo-umkm-hires.png" alt="Logo UMKM St. Servatius" class="h-14 w-14 object-contain drop-shadow-md transition hover:scale-105 md:h-20 md:w-20" />
-      </a>
 
       <!-- Mobile menu -->
       <div id="mobile-menu" class="hidden border-t border-perak-200 bg-white px-4 py-3 md:hidden">
@@ -227,7 +212,7 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
 
     <!-- Global search bar (hidden on homepage + admin) -->
     {!hideSearch && (
-      <div class="border-b border-perak-200 bg-perak-50 pt-10 md:pt-12">
+      <div class="border-b border-perak-200 bg-perak-50 py-3">
         <div class="mx-auto max-w-6xl px-4 pb-2">
           <form action="/produk" method="get" class="flex items-center gap-2 py-2">
             <div class="relative flex-1">
@@ -277,6 +262,25 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
             <span class="text-xs font-semibold uppercase tracking-wider text-gold-300">Informasi</span>
             <a href="/syarat-ketentuan" class="text-paroki-100 transition hover:text-gold-200">Syarat &amp; Ketentuan</a>
             <a href="/kebijakan-privasi" class="text-paroki-100 transition hover:text-gold-200">Kebijakan Privasi</a>
+            <!-- Theme toggle -->
+            <div class="mt-1 flex items-center gap-2">
+              <span class="text-xs font-semibold uppercase tracking-wider text-gold-300">Tema</span>
+              <button
+                id="theme-toggle"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-paroki-700 bg-paroki-800 px-2.5 py-1 text-xs font-medium text-paroki-100 transition hover:bg-paroki-700"
+                aria-label="Ganti tema terang/gelap"
+              >
+                <svg class="hidden h-3.5 w-3.5 dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="4"/>
+                  <path stroke-linecap="round" d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+                </svg>
+                <svg class="h-3.5 w-3.5 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
+                </svg>
+                <span class="dark:hidden">Gelap</span>
+                <span class="hidden dark:inline">Terang</span>
+              </button>
+            </div>
           </div>
         </div>
         <div class="mt-8 border-t border-gold-400/20 pt-5">
@@ -364,7 +368,7 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
         });
       });
 
-      // ── Theme toggle ──
+      // ── Theme toggle (in footer) ──
       const themeBtn = document.getElementById('theme-toggle');
       themeBtn?.addEventListener('click', () => {
         const isDark = document.documentElement.classList.toggle('dark');

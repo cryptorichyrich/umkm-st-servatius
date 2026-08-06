@@ -19,7 +19,6 @@
 */
 @theme {
   /* ═══ GREEN (paroki) — Deep Forest Liturgical ═══ */
-  /* Trust · Community · Growth — the structural backbone */
   --color-paroki-50:  #f0f7f3;
   --color-paroki-100: #dceee3;
   --color-paroki-200: #badcc8;
@@ -33,7 +32,6 @@
   --color-paroki-950: #002815;
 
   /* ═══ GOLD — Royal Warm Gold ═══ */
-  /* Dignity · Celebration · Premium — gold leaf, not brass */
   --color-gold-50:  #fdf9ed;
   --color-gold-100: #f9efce;
   --color-gold-200: #f3dd9c;
@@ -46,7 +44,6 @@
   --color-gold-900: #613a18;
 
   /* ═══ RED (merah) — Cardinal Crimson ═══ */
-  /* Passion · Urgency · Feast — altar vestments, not fire alarm */
   --color-merah-50:  #fdf4f4;
   --color-merah-100: #fce8e8;
   --color-merah-200: #f8cfcf;
@@ -59,7 +56,6 @@
   --color-merah-900: #5b1a1d;
 
   /* ═══ SILVER (perak) — Brushed Pewter ═══ */
-  /* Calm · Refined · Neutral — cool undertone, aged elegance */
   --color-perak-50:  #f8fafb;
   --color-perak-100: #f0f3f5;
   --color-perak-200: #e2e7eb;
@@ -81,41 +77,45 @@
   --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
-/* ═══ Dark Mode Token Overrides ═══ */
-/* Override the CSS variables so all utility classes that reference them adapt */
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — Semantic Approach
+   Brand colors (paroki, gold, merah) stay the SAME at every shade.
+   Only lighten the dark brand shades used as TEXT on dark surfaces.
+   Neutrals (perak) shift to dark. Gray-* overrides for React components.
+   ═══════════════════════════════════════════════════════════ */
 .dark {
-  --color-paroki-50:  #0a1f14;
-  --color-paroki-100: #0e2a1b;
-  --color-paroki-200: #143a26;
-  --color-paroki-300: #2a5a42;
-  --color-paroki-400: #3d7a5e;
-  --color-paroki-500: #59a57e;
-  --color-paroki-600: #6dbd95;
-  --color-paroki-700: #8dc3a7;
-  --color-paroki-800: #badcc8;
-  --color-paroki-900: #dceee3;
-  --color-paroki-950: #f0f7f3;
+  /* Perak (neutral) → dark scale for surfaces, borders */
+  --color-perak-50:  #141715;
+  --color-perak-100: #1a1f1b;
+  --color-perak-200: #262d27;
+  --color-perak-300: #363f38;
+  --color-perak-400: #4d5650;
+  --color-perak-500: #67736a;
+  --color-perak-600: #859188;
+  --color-perak-700: #a4adb0;
+  --color-perak-800: #c8cfd0;
+  --color-perak-900: #e4e8e6;
 
-  --color-perak-50:  #14181a;
-  --color-perak-100: #1a2025;
-  --color-perak-200: #283038;
-  --color-perak-300: #3a444e;
-  --color-perak-400: #525e6a;
-  --color-perak-500: #6b7886;
-  --color-perak-600: #8a96a3;
-  --color-perak-700: #a8b3bc;
-  --color-perak-800: #cdd4da;
-  --color-perak-900: #e2e7eb;
+  /* Paroki — lighten dark shades for TEXT visibility on dark bg.
+     900 stays dark (footer bg is already dark — perfect for dark mode). */
+  --color-paroki-50:  #0c1b12;
+  --color-paroki-100: #112619;
+  --color-paroki-200: #1a3525;
+  --color-paroki-300: #2a5040;
+  --color-paroki-400: #3d7560;
+  --color-paroki-500: #4a9d6e;
+  --color-paroki-600: #368a5f;
+  --color-paroki-700: #4a9d6e;
+  --color-paroki-800: #59b07f;
 
+  /* Gold — brighten for visibility */
+  --color-gold-400: #eab84a;
+  --color-gold-500: #d9a030;
   --color-gold-300: #f3dd9c;
-  --color-gold-400: #ecc56a;
-  --color-gold-500: #e0ac3e;
 
-  --color-merah-400: #e47276;
-  --color-merah-500: #cf444a;
-
-  --color-ink: #e4e7e5;
-  --color-ink-soft: #9ca3a0;
+  /* Ink — light text */
+  --color-ink: #e8ebe6;
+  --color-ink-soft: #9ba39a;
 
   color-scheme: dark;
 }
@@ -129,48 +129,65 @@ body {
   font-family: var(--font-sans);
 }
 
+/* ═══ Dark Mode: Surface + Neutral Overrides ═══ */
+/* These target hardcoded Tailwind utility classes used in React components. */
 .dark body {
-  background-color: #12160e;
+  background-color: #0e120f;
 }
 
-/* Dark mode overrides for hardcoded Tailwind color utilities used in React components */
-.dark .bg-white { background-color: #1a1f15 !important; }
-.dark .bg-gray-50 { background-color: #14181a !important; }
-.dark .bg-gray-100 { background-color: #1a2025 !important; }
-.dark .bg-gray-200 { background-color: #283038 !important; }
+/* Surfaces */
+.dark .bg-white { background-color: #1a1f1b !important; }
+.dark .bg-gray-50 { background-color: #141715 !important; }
+.dark .bg-gray-100 { background-color: #1a1f1b !important; }
+.dark .bg-gray-200 { background-color: #262d27 !important; }
 
-.dark .text-gray-400 { color: #6b7886 !important; }
-.dark .text-gray-500 { color: #8a96a3 !important; }
-.dark .text-gray-600 { color: #a8b3bc !important; }
-.dark .text-gray-700 { color: #cdd4da !important; }
-.dark .text-gray-800 { color: #e2e7eb !important; }
-.dark .text-gray-900 { color: #f0f3f5 !important; }
+/* Text */
+.dark .text-gray-400 { color: #67736a !important; }
+.dark .text-gray-500 { color: #859188 !important; }
+.dark .text-gray-600 { color: #a4adb0 !important; }
+.dark .text-gray-700 { color: #c8cfd0 !important; }
+.dark .text-gray-800 { color: #e4e8e6 !important; }
+.dark .text-gray-900 { color: #f0f3f0 !important; }
 
-.dark .border-gray-100 { border-color: #1a2025 !important; }
-.dark .border-gray-200 { border-color: #283038 !important; }
-.dark .border-gray-300 { border-color: #3a444e !important; }
+/* Borders */
+.dark .border-gray-100 { border-color: #1a1f1b !important; }
+.dark .border-gray-200 { border-color: #262d27 !important; }
+.dark .border-gray-300 { border-color: #363f38 !important; }
 
-.dark .divide-gray-50 > * { border-color: #14181a !important; }
-.dark .divide-gray-100 > * { border-color: #1a2025 !important; }
+/* Dividers */
+.dark .divide-gray-50 > * { border-color: #141715 !important; }
+.dark .divide-gray-100 > * { border-color: #1a1f1b !important; }
+.dark .divide-gray-200 > * { border-color: #262d27 !important; }
 
-.dark .ring-gray-200 { --tw-ring-color: #283038 !important; }
+/* Ring */
+.dark .ring-gray-200 { --tw-ring-color: #262d27 !important; }
 
-/* Dark mode for form inputs */
-.dark input,
+/* Form inputs */
+.dark input:not([type="checkbox"]):not([type="radio"]),
 .dark textarea,
 .dark select {
-  background-color: #1a2025 !important;
-  border-color: #283038 !important;
-  color: #e2e7eb !important;
+  background-color: #1a1f1b !important;
+  border-color: #262d27 !important;
+  color: #e4e8e6 !important;
 }
 .dark input::placeholder,
 .dark textarea::placeholder {
-  color: #525e6a !important;
+  color: #4d5650 !important;
 }
 
-/* Dark mode shadow */
-.dark .shadow-soft { box-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.2); }
-.dark .shadow-soft-lg { box-shadow: 0 2px 6px rgba(0,0,0,0.3), 0 12px 28px rgba(0,0,0,0.25); }
+/* Accent hover backgrounds */
+.dark .hover\:bg-paroki-50:hover { background-color: #0c1b12 !important; }
+
+/* Shadows */
+.dark .shadow-soft { box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25); }
+.dark .shadow-soft-lg { box-shadow: 0 2px 6px rgba(0,0,0,0.35), 0 12px 28px rgba(0,0,0,0.3); }
+.dark .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+.dark .shadow-md { box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+.dark .shadow-lg { box-shadow: 0 2px 10px rgba(0,0,0,0.35); }
+.dark .shadow-xl { box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+
+/* Backdrop adjustments */
+.dark .backdrop-blur-md { backdrop-filter: blur(12px) brightness(0.7); }
 
 h1, h2, h3 {
   font-family: var(--font-display);
