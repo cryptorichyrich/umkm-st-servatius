@@ -1142,7 +1142,7 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
               <input type="checkbox" checked={form.has_pirt}
                 onChange={(e) => setForm((p) => ({ ...p, has_pirt: e.target.checked }))}
                 className="mt-0.5 h-4 w-4 rounded border-gray-300 text-paroki-700 focus:ring-paroki-400" />
-              <span className="text-sm text-ink-soft">Saya memiliki <strong>PIRT</strong> (Sertifikat Laik Higiene Sanitasi)</span>
+              <span className="text-sm text-ink-soft">Saya memiliki <strong>PIRT</strong> (Pangan Industri Rumah Tangga)</span>
             </label>
             <label className="flex items-start gap-2.5 cursor-pointer">
               <input type="checkbox" checked={form.has_halal}
