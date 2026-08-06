@@ -1,8 +1,136 @@
 import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
 import MapPicker from './MapPicker';
-import { supabase, type Category, type Wilayah, type Lingkungan } from '../../lib/supabase';
+import { supabase, type Category } from '../../lib/supabase';
 import { CheckCircle, Clock, XCircle } from 'lucide-react';
 import PhotoGalleryUploader from './PhotoGalleryUploader';
+
+// ── Operating hours structured editor ──
+const DAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+
+function OperatingHoursEditor({ value, onChange, labelClass, inputClass }: {
+  value: string;
+  onChange: (val: string) => void;
+  labelClass: string;
+  inputClass: string;
+}) {
+  // Parse existing text into per-day entries
+  const [mode, setMode] = useState<'same' | 'custom'>('same');
+  const [sameHours, setSameHours] = useState({ open: '08:00', close: '17:00', days: 'Senin–Sabtu' });
+  const [customHours, setCustomHours] = useState<Record<string, { open: string; close: string; closed: boolean }>>(
+    Object.fromEntries(DAYS.map(d => [d, { open: '08:00', close: '17:00', closed: false }]))
+  );
+
+  // Try parse existing value on mount
+  useEffect(() => {
+    if (!value) return;
+    // Simple heuristic: if it looks like "Senin-Sabtu, 08:00-17:00"
+    const m = value.match(/(.+?),\s*(\d{1,2}[:.]?\d*)\s*[-–]\s*(\d{1,2}[:.]?\d*)/);
+    if (m) {
+      setSameHours({ days: m[1].trim(), open: m[2].replace('.', ':'), close: m[3].replace('.', ':') });
+    } else {
+      // Just use as-is
+      setSameHours(prev => ({ ...prev, days: value }));
+    }
+  }, []);
+
+  const buildText = () => {
+    if (mode === 'same') {
+      if (!sameHours.open || !sameHours.close) return sameHours.days || '';
+      return `${sameHours.days}, ${sameHours.open}–${sameHours.close}`;
+    }
+    // Custom: group consecutive days with same hours
+    const entries = DAYS.map(d => ({ day: d, ...customHours[d] }));
+    const groups: string[] = [];
+    let i = 0;
+    while (i < entries.length) {
+      const e = entries[i];
+      if (e.closed) { i++; continue; }
+      let j = i + 1;
+      while (j < entries.length && !entries[j].closed && entries[j].open === e.open && entries[j].close === e.close) j++;
+      const range = j - i > 1 ? `${e.day}–${entries[j - 1].day}` : e.day;
+      groups.push(`${range} ${e.open}–${e.close}`);
+      i = j;
+    }
+    // Find closed days
+    const closedDays = entries.filter(e => e.closed).map(e => e.day);
+    if (closedDays.length) {
+      const closedRange = closedDays.length > 1 ? closedDays.join(', ') : closedDays[0];
+      groups.push(`${closedRange} tutup`);
+    }
+    return groups.join(', ');
+  };
+
+  useEffect(() => { onChange(buildText()); }, [mode, sameHours, customHours]);
+
+  return (
+    <div>
+      <label className={labelClass}>Jam Operasional</label>
+
+      {/* Mode toggle */}
+      <div className="mb-3 flex gap-1 rounded-lg bg-gray-100 p-1">
+        <button type="button" onClick={() => setMode('same')}
+          className={`flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition ${mode === 'same' ? 'bg-white text-paroki-800 shadow-sm' : 'text-gray-500'}`}>
+          Jam Sama Setiap Hari
+        </button>
+        <button type="button" onClick={() => setMode('custom')}
+          className={`flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition ${mode === 'custom' ? 'bg-white text-paroki-800 shadow-sm' : 'text-gray-500'}`}>
+          Jam Berbeda Per Hari
+        </button>
+      </div>
+
+      {mode === 'same' ? (
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <label className="mb-1 block text-xs text-gray-500">Hari Buka</label>
+            <input type="text" value={sameHours.days} onChange={e => setSameHours(p => ({ ...p, days: e.target.value }))}
+              placeholder="Senin–Sabtu" className={inputClass} />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-gray-500">Buka</label>
+            <input type="time" value={sameHours.open} onChange={e => setSameHours(p => ({ ...p, open: e.target.value }))}
+              className={inputClass} />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-gray-500">Tutup</label>
+            <input type="time" value={sameHours.close} onChange={e => setSameHours(p => ({ ...p, close: e.target.value }))}
+              className={inputClass} />
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {DAYS.map(day => (
+            <div key={day} className="flex items-center gap-2">
+              <label className="flex w-20 shrink-0 items-center gap-1.5 text-sm text-paroki-700">
+                <input type="checkbox" checked={!customHours[day].closed}
+                  onChange={e => setCustomHours(p => ({ ...p, [day]: { ...p[day], closed: !e.target.checked } }))}
+                  className="h-4 w-4 rounded border-gray-300 text-paroki-600 focus:ring-paroki-400" />
+                {day}
+              </label>
+              {customHours[day].closed ? (
+                <span className="text-xs text-gray-400">Tutup</span>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <input type="time" value={customHours[day].open}
+                    onChange={e => setCustomHours(p => ({ ...p, [day]: { ...p[day], open: e.target.value } }))}
+                    className={`${inputClass} w-32 py-1.5 text-xs`} />
+                  <span className="text-gray-400">–</span>
+                  <input type="time" value={customHours[day].close}
+                    onChange={e => setCustomHours(p => ({ ...p, [day]: { ...p[day], close: e.target.value } }))}
+                    className={`${inputClass} w-32 py-1.5 text-xs`} />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Preview */}
+      <p className="mt-2 rounded-lg bg-paroki-50 px-3 py-2 text-xs text-paroki-600">
+        <span className="font-medium">Pratinjau:</span> {value || '—'}
+      </p>
+    </div>
+  );
+}
 
 interface Props {
   businessId?: string;
@@ -62,8 +190,6 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
 
   const [form, setForm] = useState<FormData>(emptyForm);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [wilayahList, setWilayahList] = useState<Wilayah[]>([]);
-  const [lingkunganList, setLingkunganList] = useState<Lingkungan[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,11 +225,7 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
 
       setCategories((catData || []) as Category[]);
 
-      // Fetch wilayah + lingkungan
-      const { data: wData } = await supabase.from('wilayah').select('*').order('sort_order');
-      const { data: lData } = await supabase.from('lingkungan').select('*').order('sort_order');
-      setWilayahList((wData || []) as Wilayah[]);
-      setLingkunganList((lData || []) as Lingkungan[]);
+      // Categories only — wilayah/lingkungan removed from business form
 
       // If editing, fetch existing business
       if (businessId) {
@@ -200,7 +322,7 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
     try {
       const userId = session.user.id;
       const ext = file.name.split('.').pop() || 'jpg';
-      const fileName = `business-images/${userId}/logo-${Date.now()}.${ext}`;
+      const fileName = `${userId}/logo-${Date.now()}.${ext}`;
 
       const { error: uploadErr } = await supabase.storage
         .from('business-images')
@@ -663,51 +785,6 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
           />
         )}
 
-        {/* Wilayah + Lingkungan */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="area" className={labelClass}>
-              Wilayah
-            </label>
-            <select
-              id="area"
-              name="area"
-              value={form.area}
-              onChange={handleChange}
-              className={inputClass}
-            >
-              <option value="">Pilih Wilayah...</option>
-              {wilayahList.map((w) => (
-                <option key={w.id} value={w.name}>{w.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="lingkungan" className={labelClass}>
-              Lingkungan
-            </label>
-            <select
-              id="lingkungan"
-              name="lingkungan"
-              value={form.lingkungan}
-              onChange={handleChange}
-              className={inputClass}
-            >
-              <option value="">Pilih Lingkungan...</option>
-              {lingkunganList
-                .filter((l) => {
-                  const matchedWilayah = wilayahList.find((w) => w.name === form.area);
-                  return !matchedWilayah || l.wilayah_id === matchedWilayah.id;
-                })
-                .map((l) => (
-                  <option key={l.id} value={l.name}>{l.name}</option>
-                ))
-              }
-            </select>
-            {!form.area && <p className="mt-1 text-xs text-gray-400">Pilih wilayah dulu untuk melihat lingkungan.</p>}
-          </div>
-        </div>
-
         {/* Contact info */}
         <div className="rounded-xl border border-paroki-100 bg-paroki-50/50 p-4">
           <h2 className="mb-4 font-serif text-sm font-semibold text-paroki-800">
@@ -850,21 +927,13 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
           </div>
         </div>
 
-        {/* Operating hours */}
-        <div>
-          <label htmlFor="operating_hours_text" className={labelClass}>
-            Jam Operasional
-          </label>
-          <input
-            id="operating_hours_text"
-            name="operating_hours_text"
-            type="text"
-            value={form.operating_hours_text}
-            onChange={handleChange}
-            placeholder="contoh: Senin–Sabtu, 08.00–17.00"
-            className={inputClass}
-          />
-        </div>
+        {/* Operating hours — structured UI */}
+        <OperatingHoursEditor
+          value={form.operating_hours_text}
+          onChange={(val) => setForm((prev) => ({ ...prev, operating_hours_text: val }))}
+          labelClass={labelClass}
+          inputClass={inputClass}
+        />
 
         {/* Verification documents */}
         <div className="rounded-xl border border-paroki-100 bg-paroki-50/50 p-4">
