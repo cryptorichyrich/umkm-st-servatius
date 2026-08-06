@@ -1,4 +1,4 @@
-export const prerender = false;
+export const prerender = true;
 
 export async function GET({ url }: { url: URL }) {
   const baseUrl = url.origin;

@@ -1,25 +1,22 @@
 ---
-export const prerender = false;
-
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BusinessGrid from '../../components/react/BusinessGrid.tsx';
 import CategoryIcon from '../../components/CategoryIcon.astro';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
-const slug = Astro.params.slug!;
-
-// ── Fetch single category at request time ──
-const { data: category } = isSupabaseConfigured
-  ? await supabase
-      .from('categories')
-      .select(`*`)
-      .eq('slug', slug).single()
-  : { data: null };
-
-if (!category) {
-  return Astro.redirect('/404');
+// ── Pre-render all category pages at build time ──
+export async function getStaticPaths() {
+  if (!isSupabaseConfigured) return [];
+  const { data } = await supabase
+    .from('categories')
+    .select('id, slug, name');
+  return (data || []).map((c: any) => ({
+    params: { slug: c.slug },
+    props: { category: c },
+  }));
 }
 
+const { category } = Astro.props;
 const baseUrl = Astro.url.origin;
 ---
 

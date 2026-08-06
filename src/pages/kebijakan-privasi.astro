@@ -1,0 +1,77 @@
+---
+export const prerender = true;
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const title = 'Kebijakan Privasi';
+const lastUpdated = '5 Agustus 2026';
+---
+
+<BaseLayout title={title} description="Kebijakan Privasi UMKM St. Servatius" hideSearch>
+  <section class="mx-auto max-w-3xl px-4 py-12">
+    <h1 class="font-display text-3xl font-bold tracking-tight text-ink">Kebijakan Privasi</h1>
+    <p class="mt-1 text-sm text-perak-500">Terakhir diperbarui: {lastUpdated}</p>
+
+    <div class="mt-8 space-y-6 text-sm leading-relaxed text-perak-700">
+      <div>
+        <h2 class="mb-2 text-lg font-bold text-ink">1. Data yang Kami Kumpulkan</h2>
+        <p>Saat mendaftar, kami mengumpulkan: nama lengkap, nomor telepon/WhatsApp, dan alamat email. Saat verifikasi anggota: nomor BIDUK dan wilayah/lingkungan paroki. Saat mendaftarkan usaha: informasi usaha, alamat, koordinat peta, foto KTP, katalog, omset, NIB, PIRT, dan sertifikasi halal.</p>
+      </div>
+
+      <div>
+        <h2 class="mb-2 text-lg font-bold text-ink">2. Penggunaan Data</h2>
+        <ul class="ml-4 list-disc space-y-1">
+          <li><strong>Nama usaha, kategori, alamat, dan foto katalog</strong> — ditampilkan publik di direktori UMKM.</li>
+          <li><strong>Nama lengkap</strong> — ditampilkan publik sebagai pemilik usaha dan pada ulasan.</li>
+          <li><strong>Nomor telepon</strong> — ditampilkan publik untuk kontak bisnis (jika diizinkan).</li>
+          <li><strong>Nomor BIDUK, omset, NIB, PIRT, sertifikasi halal</strong> — <strong>privat</strong>, hanya dapat diakses oleh pengurus (admin).</li>
+          <li><strong>Email dan kata sandi</strong> — tidak pernah ditampilkan secara publik.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="mb-2 text-lg font-bold text-ink">3. Penyimpanan dan Keamanan</h2>
+        <p>Data disimpan dengan enkripsi pada platform database bersertifikat. Akses ke data privat dibatasi melalui kontrol akses berbasis peran (role-based access control). Hanya pengurus dengan peran admin yang dapat melihat data privat anggota.</p>
+      </div>
+
+      <div>
+        <h2 class="mb-2 text-lg font-bold text-ink">4. Pembagian Data ke Pihak Ketiga</h2>
+        <p>Kami <strong>tidak menjual atau menyewakan</strong> data pribadi Anda. Data tidak akan dibagikan ke pihak ketiga kecuali:</p>
+        <ul class="ml-4 list-disc space-y-1">
+          <li>Diwajibkan oleh hukum atau permintaan resmi otoritas yang berwenang.</li>
+          <li>Untuk pemrosesan pembayaran (jika tersedia di masa depan) melalui penyedia layanan tepercaya.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="mb-2 text-lg font-bold text-ink">5. Hak Anda</h2>
+        <ul class="ml-4 list-disc space-y-1">
+          <li><strong>Akses</strong> — Anda dapat melihat data yang tersimpan tentang Anda.</li>
+          <li><strong>Koreksi</strong> — Anda dapat memperbarui informasi melalui dasbor.</li>
+          <li><strong>Penghapusan</strong> — Anda dapat meminta penghapusan akun dan data terkait.</li>
+          <li><strong>Penarikan izin</strong> — Anda dapat menonaktifkan visibilitas nomor telepon.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="mb-2 text-lg font-bold text-ink">6. Cookie dan Pelacakan</h2>
+        <p>Platform ini menggunakan cookie esensial untuk fungsi otentikasi sesi. Kami tidak menggunakan cookie pelacakan iklan pihak ketiga.</p>
+      </div>
+
+      <div>
+        <h2 class="mb-2 text-lg font-bold text-ink">7. Perubahan Kebijakan</h2>
+        <p>Kebijakan ini dapat diperbarui sewaktu-waktu. Perubahan akan berlaku segera setelah dipublikasikan di halaman ini. Lihat juga <a href="/syarat-ketentuan" class="font-semibold text-paroki-700 hover:underline">Syarat &amp; Ketentuan</a> kami.</p>
+      </div>
+
+      <div>
+        <h2 class="mb-2 text-lg font-bold text-ink">8. Kontak Privasi</h2>
+        <p>Untuk permintaan terkait data pribadi (akses, koreksi, penghapusan), silakan hubungi pengurus melalui WhatsApp atau email yang tersedia di halaman <a href="/" class="font-semibold text-paroki-700 hover:underline">beranda</a>.</p>
+      </div>
+    </div>
+
+    <div class="mt-10 border-t border-perak-200 pt-6">
+      <a href="/daftar" class="inline-flex items-center gap-2 rounded-lg bg-gold-500 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-gold-600">
+        ← Kembali ke Pendaftaran
+      </a>
+    </div>
+  </section>
+</BaseLayout>

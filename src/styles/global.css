@@ -1,37 +1,78 @@
 @import "tailwindcss";
 
 /*
-  UMKM St. Servatius — design tokens v2
-  Palette: WHITE base + deep forest GREEN (structural) + GOLD (accents/CTAs).
-  Matches the main church site at servatius.pages.dev.
-  Green #004225 = liturgical ordinary-time green. Gold #C99A2E = celebration/dignity.
+  UMKM St. Servatius — Design Tokens v3
+  ─────────────────────────────────────
+  Five-color liturgical palette: GREEN · GOLD · RED · SILVER · WHITE
+  
+  • GREEN (paroki)  — structural foundation: footer, headers, trust
+  • GOLD            — celebration & CTA: buttons, highlights, premium
+  • RED (merah)     — liturgical accent: alerts, urgency, badges
+  • SILVER (perak)  — neutral elegance: backgrounds, borders, cards
+  • WHITE           — pure clean base
+
+  Inspired by cathedral interiors: deep green marble, gold leaf accents,
+  crimson altar cloth, silver candlesticks, white stone.
 */
 @theme {
-  /* Green — structural color (footer, quick-links, section accents) */
-  --color-paroki-50: #f0f6f2;
-  --color-paroki-100: #d8e8df;
-  --color-paroki-200: #b1d1bf;
-  --color-paroki-300: #7eb093;
-  --color-paroki-400: #4d8c68;
-  --color-paroki-500: #2d7a4f;
-  --color-paroki-600: #1a6138;
-  --color-paroki-700: #0d4a28;
-  --color-paroki-800: #053a1d;
+  /* ═══ GREEN (paroki) — Deep Forest Liturgical ═══ */
+  /* Trust · Community · Growth — the structural backbone */
+  --color-paroki-50:  #f0f7f3;
+  --color-paroki-100: #dceee3;
+  --color-paroki-200: #badcc8;
+  --color-paroki-300: #8dc3a7;
+  --color-paroki-400: #59a57e;
+  --color-paroki-500: #368a5f;
+  --color-paroki-600: #226e49;
+  --color-paroki-700: #145439;
+  --color-paroki-800: #0a4029;
   --color-paroki-900: #004225;
   --color-paroki-950: #002815;
 
-  /* Gold — accent color (CTAs, badges, highlights) */
-  --color-gold-200: #f5e6c4;
-  --color-gold-300: #ecd29a;
-  --color-gold-400: #ddb867;
-  --color-gold-500: #c99a2e;
-  --color-gold-600: #a87d1e;
-  --color-gold-700: #876418;
+  /* ═══ GOLD — Royal Warm Gold ═══ */
+  /* Dignity · Celebration · Premium — gold leaf, not brass */
+  --color-gold-50:  #fdf9ed;
+  --color-gold-100: #f9efce;
+  --color-gold-200: #f3dd9c;
+  --color-gold-300: #ecc56a;
+  --color-gold-400: #e0ac3e;
+  --color-gold-500: #cf9429;
+  --color-gold-600: #b27620;
+  --color-gold-700: #8e581c;
+  --color-gold-800: #74471b;
+  --color-gold-900: #613a18;
 
-  /* Ink — text colors */
-  --color-ink: #1c1c1c;
-  --color-ink-soft: #4a4a4a;
+  /* ═══ RED (merah) — Cardinal Crimson ═══ */
+  /* Passion · Urgency · Feast — altar vestments, not fire alarm */
+  --color-merah-50:  #fdf4f4;
+  --color-merah-100: #fce8e8;
+  --color-merah-200: #f8cfcf;
+  --color-merah-300: #f0a6a8;
+  --color-merah-400: #e47276;
+  --color-merah-500: #cf444a;
+  --color-merah-600: #b62e34;
+  --color-merah-700: #922428;
+  --color-merah-800: #721e22;
+  --color-merah-900: #5b1a1d;
 
+  /* ═══ SILVER (perak) — Brushed Pewter ═══ */
+  /* Calm · Refined · Neutral — cool undertone, aged elegance */
+  --color-perak-50:  #f8fafb;
+  --color-perak-100: #f0f3f5;
+  --color-perak-200: #e2e7eb;
+  --color-perak-300: #cdd4da;
+  --color-perak-400: #a8b3bc;
+  --color-perak-500: #7d8a94;
+  --color-perak-600: #5a6770;
+  --color-perak-700: #475158;
+  --color-perak-800: #3a4147;
+  --color-perak-900: #2e3439;
+
+  /* ═══ Ink — Text ═══ */
+  --color-ink: #1a1d1b;
+  --color-ink-soft: #525a55;
+
+  /* ═══ Fonts ═══ */
   --font-sans: 'Source Sans 3', 'Source Sans Pro', system-ui, sans-serif;
   --font-serif: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
@@ -61,7 +102,7 @@ h1, h2, h3 {
   animation: fadeIn 0.3s ease-out;
 }
 
-/* Tinted soft shadow */
+/* Tinted soft shadow — warm green-gold undertone */
 @utility shadow-soft {
   box-shadow: 0 1px 3px rgba(0, 50, 25, 0.06), 0 4px 12px rgba(0, 50, 25, 0.05);
 }
@@ -122,7 +163,7 @@ h1, h2, h3 {
   margin: 1rem 0;
 }
 .wysiwyg-content blockquote {
-  border-left: 3px solid var(--color-paroki-300);
+  border-left: 3px solid var(--color-gold-400);
   padding-left: 1rem;
   margin: 1rem 0;
   font-style: italic;
@@ -130,7 +171,7 @@ h1, h2, h3 {
 }
 .wysiwyg-content hr {
   border: none;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-perak-200);
   margin: 1.5rem 0;
 }
 .wysiwyg-content table {
@@ -141,29 +182,29 @@ h1, h2, h3 {
 }
 .wysiwyg-content th,
 .wysiwyg-content td {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-perak-200);
   padding: 0.5rem 0.75rem;
   text-align: left;
 }
 .wysiwyg-content th {
-  background-color: #f9fafb;
+  background-color: var(--color-perak-50);
   font-weight: 600;
   color: var(--color-ink);
 }
 .wysiwyg-content tr:nth-child(even) {
-  background-color: #fafafa;
+  background-color: var(--color-perak-50);
 }
 .wysiwyg-content code {
-  background-color: #f3f4f6;
+  background-color: var(--color-perak-100);
   border-radius: 0.25rem;
   padding: 0.125rem 0.375rem;
   font-size: 0.85em;
   font-family: 'Courier New', monospace;
-  color: #be185d;
+  color: var(--color-merah-700);
 }
 .wysiwyg-content pre {
-  background-color: #1f2937;
-  color: #e5e7eb;
+  background-color: var(--color-perak-900);
+  color: var(--color-perak-200);
   border-radius: 0.5rem;
   padding: 1rem;
   overflow-x: auto;
@@ -184,6 +225,6 @@ h1, h2, h3 {
 /* WYSIWYG editable area (editor mode) */
 .wysiwyg-content[contenteditable]:empty::before {
   content: attr(data-placeholder);
-  color: #9ca3af;
+  color: var(--color-perak-400);
   pointer-events: none;
 }

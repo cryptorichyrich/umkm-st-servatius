@@ -40,6 +40,7 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-paroki-800';
 
 export default function MemberVerification({ onRequestSubmitted }: MemberVerificationProps) {
   const [kkFile, setKkFile] = useState<UploadedFile | null>(null);
+  const [bidukNumber, setBidukNumber] = useState('');
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -173,6 +174,10 @@ export default function MemberVerification({ onRequestSubmitted }: MemberVerific
       setError('Foto KK Gereja wajib diupload.');
       return;
     }
+    if (!bidukNumber.trim()) {
+      setError('Nomor BIDUK (Kartu Keluarga Paroki) wajib diisi.');
+      return;
+    }
     if (!selectedWilayah) {
       setError('Wilayah wajib dipilih.');
       return;
@@ -197,6 +202,7 @@ export default function MemberVerification({ onRequestSubmitted }: MemberVerific
         kk_gereja_url: kkFile.url,
         wilayah: selectedWilayah,
         lingkungan: selectedLingkungan,
+        biduk_number: bidukNumber.trim(),
       });
       if (insertErr) throw insertErr;
 
@@ -327,6 +333,24 @@ export default function MemberVerification({ onRequestSubmitted }: MemberVerific
           </div>
         </div>
 
+        {/* BIDUK number */}
+        <div>
+          <label htmlFor="biduk" className={labelClass}>
+            Nomor BIDUK (Kartu Keluarga Paroki) <span className="text-red-500">*</span>
+          </label>
+          <input
+            id="biduk"
+            type="text"
+            value={bidukNumber}
+            onChange={(e) => setBidukNumber(e.target.value)}
+            placeholder="Contoh: BDK-001234"
+            className={inputClass}
+          />
+          <p className="mt-1 text-xs text-paroki-500">
+            Nomor Kartu Keluarga Paroki St. Servatius.
+          </p>
+        </div>
+
         {/* Upload zone */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-paroki-800">
@@ -421,7 +445,7 @@ export default function MemberVerification({ onRequestSubmitted }: MemberVerific
         {/* Submit button */}
         <button
           type="submit"
-          disabled={submitting || !kkFile || !selectedWilayah || !selectedLingkungan}
+          disabled={submitting || !kkFile || !selectedWilayah || !selectedLingkungan || !bidukNumber.trim()}
           className="w-full rounded-lg border-2 border-paroki-300 bg-white px-4 py-2.5 text-sm font-semibold text-paroki-700 transition hover:border-paroki-500 hover:bg-paroki-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {submitting ? (

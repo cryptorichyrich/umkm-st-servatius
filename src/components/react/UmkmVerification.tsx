@@ -56,6 +56,11 @@ export default function UmkmVerification() {
     business_address: '',
     business_phone: '',
     category_id: '',
+    omset_range: '',
+    has_nib: false,
+    has_pirt: false,
+    has_halal: false,
+    harapan_gabung: '',
   });
 
   // Wilayah & Lingkungan
@@ -274,6 +279,11 @@ export default function UmkmVerification() {
         business_address: form.business_address.trim(),
         business_phone: form.business_phone.trim(),
         category_id: form.category_id,
+        omset_range: form.omset_range,
+        has_nib: form.has_nib,
+        has_pirt: form.has_pirt,
+        has_halal: form.has_halal,
+        harapan_gabung: form.harapan_gabung.trim(),
         wilayah: selectedWilayah,
         lingkungan: selectedLingkungan,
       };
@@ -663,6 +673,63 @@ export default function UmkmVerification() {
           isUploading={uploading === 'catalog'}
           isDragOver={dragOver === 'catalog'}
         />
+
+        {/* Business info — private, for admin */}
+        <div className="rounded-xl border border-paroki-200 bg-paroki-50/50 p-4 space-y-4">
+          <div>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-paroki-600">
+              Informasi Usaha
+            </p>
+            <p className="text-xs text-paroki-400">Privat — hanya untuk pengurus/admin</p>
+          </div>
+
+          <div>
+            <label className={labelClass}>Kisaran Omset Tahunan</label>
+            <select
+              value={form.omset_range}
+              onChange={(e) => setForm((p) => ({ ...p, omset_range: e.target.value }))}
+              className={inputClass}
+            >
+              <option value="">— Pilih kisaran omset —</option>
+              <option value="< 50jt">Belum ada omset / &lt; Rp 50 juta</option>
+              <option value="50-300jt">Rp 50 juta – Rp 300 juta</option>
+              <option value="300jt-2.5M">Rp 300 juta – Rp 2.5 miliar</option>
+              <option value="> 2.5M">&gt; Rp 2.5 miliar</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input type="checkbox" checked={form.has_nib}
+                onChange={(e) => setForm((p) => ({ ...p, has_nib: e.target.checked }))}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-paroki-700 focus:ring-paroki-400" />
+              <span className="text-sm text-paroki-800">Saya memiliki <strong>NIB</strong> (Nomor Induk Berusaha)</span>
+            </label>
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input type="checkbox" checked={form.has_pirt}
+                onChange={(e) => setForm((p) => ({ ...p, has_pirt: e.target.checked }))}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-paroki-700 focus:ring-paroki-400" />
+              <span className="text-sm text-paroki-800">Saya memiliki <strong>PIRT</strong> (Sertifikat Laik Higiene Sanitasi)</span>
+            </label>
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input type="checkbox" checked={form.has_halal}
+                onChange={(e) => setForm((p) => ({ ...p, has_halal: e.target.checked }))}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-paroki-700 focus:ring-paroki-400" />
+              <span className="text-sm text-paroki-800">Saya memiliki <strong>Sertifikasi Halal</strong> (MUI/BPJPH)</span>
+            </label>
+          </div>
+
+          <div>
+            <label className={labelClass}>Harapan Bergabung dengan UMKM Paroki</label>
+            <textarea
+              value={form.harapan_gabung}
+              onChange={(e) => setForm((p) => ({ ...p, harapan_gabung: e.target.value }))}
+              placeholder="Apa harapan Anda bergabung dengan komunitas UMKM Paroki St. Servatius?"
+              rows={3}
+              className={`${inputClass} resize-none`}
+            />
+          </div>
+        </div>
 
         {/* Error message */}
         {error && (

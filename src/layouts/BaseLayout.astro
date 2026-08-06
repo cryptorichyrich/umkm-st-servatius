@@ -104,63 +104,62 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
     </script>
   </head>
   <body>
-    <!-- Top announcement bar -->
-    <div class="hidden bg-paroki-900 text-paroki-200 md:block">
-      <div class="mx-auto flex max-w-6xl items-center justify-center px-4 py-1.5 text-xs">
+    <!-- Top announcement bar — gold accent stripe -->
+    <div class="hidden bg-paroki-900 text-gold-200 md:block">
+      <div class="mx-auto flex max-w-6xl items-center justify-center gap-2 px-4 py-1.5 text-xs">
+        <span class="text-gold-400">✦</span>
         <p class="font-medium tracking-wide">Bersatu Membangun Ekonomi Umat Paroki St. Servatius</p>
+        <span class="text-gold-400">✦</span>
       </div>
     </div>
 
-    <!-- Main header -->
-    <header class="sticky top-0 z-50 border-b border-gray-100 bg-white/95 shadow-soft backdrop-blur-md">
-      <nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-2.5">
-        <!-- Logo + site name -->
-        <a href="/" class="flex items-center gap-3">
-          <img src="/logo-umkm-nav.png" alt="Logo UMKM St. Servatius" class="h-14 w-14 rounded-2xl object-cover shadow-sm ring-1 ring-gray-200 transition hover:shadow-md md:h-16 md:w-16" />
-          <span class="flex flex-col leading-tight">
-            <span class="font-display text-base font-extrabold tracking-tight text-ink md:text-lg">UMKM St. Servatius</span>
-            <span class="text-xs font-medium text-paroki-600 md:text-[13px]">Paroki Kampung Sawah</span>
-          </span>
+    <!-- Main header — Vatican-style with hanging centered logo -->
+    <header class="sticky top-0 z-50 border-b border-perak-200 bg-white/95 shadow-soft backdrop-blur-md">
+      <div class="h-0.5 w-full bg-gradient-to-r from-paroki-700 via-gold-400 to-merah-700"></div>
+      <nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        <!-- Left: Brand text -->
+        <a href="/" class="flex flex-col leading-tight">
+          <span class="font-display text-base font-extrabold tracking-tight text-ink md:text-lg">UMKM St. Servatius</span>
+          <span class="text-xs font-medium text-paroki-600 md:text-[13px]">Paroki Kampung Sawah</span>
         </a>
 
-        <!-- Desktop nav -->
-        <div class="hidden items-center gap-1 md:flex">
-          <a href="/umkm" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-gray-700 transition hover:bg-paroki-50 hover:text-paroki-800">UMKM</a>
-          <a href="/produk" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-gray-700 transition hover:bg-paroki-50 hover:text-paroki-800">Produk</a>
-          <a href="/bazar" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-gray-700 transition hover:bg-paroki-50 hover:text-paroki-800">Bazar</a>
+        <!-- Right: Nav links + auth (pushed right, center stays clear for logo) -->
+        <div class="hidden items-center gap-2 md:flex">
+          <div class="flex items-center gap-1 border-r border-perak-200 pr-3">
+            <a href="/umkm" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">UMKM</a>
+            <a href="/produk" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">Produk</a>
+            <a href="/bazar" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">Bazar</a>
 
-          <!-- Dropdown: Artikel [Berita, Blog] -->
-          <div class="relative nav-dropdown" id="dd-artikel">
-            <button class="nav-dd-btn flex items-center gap-1 rounded-lg px-3.5 py-2 text-sm font-semibold text-gray-700 transition hover:bg-paroki-50 hover:text-paroki-800">
-              Artikel
-              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
-            </button>
-            <div class="nav-dd-menu invisible absolute left-0 top-full z-50 mt-1.5 w-48 translate-y-1 rounded-2xl border border-gray-100 bg-white py-2 opacity-0 shadow-xl transition-all duration-150">
-              <a href="/berita" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-paroki-50 hover:text-paroki-800">
-                <svg class="h-4 w-4 text-paroki-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9.2a2 2 0 0 1 .559-1.38l1.441-1.42M18 14h-8M15 18h-5M10 6h8v4h-8V6Z"/></svg>
-                Berita
-              </a>
-              <a href="/blog" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-paroki-50 hover:text-paroki-800">
-                <svg class="h-4 w-4 text-gold-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H3ZM14 12a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-9Z"/></svg>
-                Blog UMKM
-              </a>
+            <!-- Dropdown: Artikel [Berita, Blog] -->
+            <div class="relative nav-dropdown" id="dd-artikel">
+              <button class="nav-dd-btn flex items-center gap-1 rounded-lg px-3.5 py-2 text-sm font-semibold text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">
+                Artikel
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <div class="nav-dd-menu invisible absolute right-0 top-full z-50 mt-1.5 w-48 translate-y-1 rounded-2xl border border-perak-200 bg-white py-2 opacity-0 shadow-xl transition-all duration-150">
+                <a href="/berita" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">
+                  <svg class="h-4 w-4 text-paroki-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9.2a2 2 0 0 1 .559-1.38l1.441-1.42M18 14h-8M15 18h-5M10 6h8v4h-8V6Z"/></svg>
+                  Berita
+                </a>
+                <a href="/blog" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">
+                  <svg class="h-4 w-4 text-gold-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H3ZM14 12a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-9Z"/></svg>
+                  Blog UMKM
+                </a>
+              </div>
             </div>
           </div>
 
-          <!-- Logged out: Masuk + Daftar -->
-          <div id="nav-auth-buttons" class="nav-guest-only flex items-center gap-2 border-l border-gray-200 pl-3 ml-2">
-            <a href="/masuk" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800">Masuk</a>
+          <div id="nav-auth-buttons" class="nav-guest-only flex items-center gap-2">
+            <a href="/masuk" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-perak-600 transition hover:bg-paroki-50 hover:text-paroki-800">Masuk</a>
             <a href="/daftar" class="inline-flex items-center gap-1.5 rounded-xl bg-gold-500 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-gold-600 hover:shadow-md active:translate-y-px">Daftar</a>
           </div>
-
-          <!-- Logged in: Akun dropdown (populated by script) -->
           <div id="nav-auth-area" class="hidden"></div>
         </div>
 
-        <!-- Mobile menu button -->
+        <!-- Right: Mobile menu button -->
         <button
           id="mobile-menu-btn"
-          class="rounded-xl p-2 text-gray-700 transition hover:bg-gray-100 md:hidden"
+          class="rounded-xl p-2 text-perak-700 transition hover:bg-perak-100 md:hidden"
           aria-label="Buka menu"
           aria-expanded="false"
           aria-controls="mobile-menu"
@@ -171,32 +170,36 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
         </button>
       </nav>
 
+      <!-- Hanging centered logo (Vatican-style medallion) -->
+      <a href="/" class="absolute bottom-0 left-1/2 z-50 flex -translate-x-1/2 translate-y-1/2 flex-col items-center" aria-label="UMKM St. Servatius — Beranda">
+        <img src="/logo-umkm-hires.png" alt="Logo UMKM St. Servatius" class="h-14 w-14 object-contain drop-shadow-md transition hover:scale-105 md:h-20 md:w-20" />
+      </a>
+
       <!-- Mobile menu -->
-      <div id="mobile-menu" class="hidden border-t border-gray-100 bg-white px-4 py-3 md:hidden">
+      <div id="mobile-menu" class="hidden border-t border-perak-200 bg-white px-4 py-3 md:hidden">
         <div class="flex flex-col gap-1">
-          <a href="/umkm" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-paroki-50">UMKM</a>
-          <a href="/produk" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-paroki-50">Produk</a>
-          <a href="/bazar" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-paroki-50">Bazar</a>
-          <a href="/berita" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-paroki-50">Berita</a>
-          <a href="/blog" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-paroki-50">Blog UMKM</a>
-          <!-- Mobile auth area (populated by script) -->
-          <div id="mobile-auth-area" class="mt-2 border-t border-gray-100 pt-2 flex flex-col gap-1"></div>
-          <div id="mobile-auth-guest" class="nav-guest-only flex flex-col gap-1">
-            <a href="/masuk" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-paroki-50">Masuk</a>
-            <a href="/daftar" class="mt-1 rounded-xl bg-gold-500 px-3 py-2.5 text-center text-sm font-bold text-white">Daftar</a>
-          </div>
+          <a href="/umkm" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-perak-700 hover:bg-paroki-50">UMKM</a>
+          <a href="/produk" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-perak-700 hover:bg-paroki-50">Produk</a>
+          <a href="/bazar" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-perak-700 hover:bg-paroki-50">Bazar</a>
+          <a href="/berita" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-perak-700 hover:bg-paroki-50">Berita</a>
+          <a href="/blog" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-perak-700 hover:bg-paroki-50">Blog UMKM</a>
+        </div>
+        <div id="mobile-auth-area" class="mt-2 border-t border-perak-200 pt-2 flex flex-col gap-1"></div>
+        <div id="mobile-auth-guest" class="nav-guest-only mt-2 border-t border-perak-200 pt-2 flex flex-col gap-1">
+          <a href="/masuk" class="rounded-lg px-3 py-2.5 text-sm font-semibold text-perak-600 hover:bg-paroki-50">Masuk</a>
+          <a href="/daftar" class="mt-1 rounded-xl bg-gold-500 px-3 py-2.5 text-center text-sm font-bold text-white">Daftar</a>
         </div>
       </div>
     </header>
 
     <!-- Global search bar (hidden on homepage + admin) -->
     {!hideSearch && (
-      <div class="border-b border-gray-100 bg-white">
-        <div class="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2.5">
-          <form action="/produk" method="get" class="flex flex-1 items-center gap-2">
+      <div class="border-b border-perak-200 bg-perak-50 pt-10 md:pt-12">
+        <div class="mx-auto max-w-6xl px-4 pb-2">
+          <form action="/produk" method="get" class="flex items-center gap-2 py-2">
             <div class="relative flex-1">
-              <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.34-4.34"/></svg>
-              <input type="text" name="q" placeholder="Cari produk, jasa, atau usaha..." class="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-4 text-sm text-ink outline-none transition placeholder:text-gray-400 focus:border-gold-400 focus:bg-white focus:ring-2 focus:ring-gold-100" />
+              <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-perak-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.3-4.3"/></svg>
+              <input type="text" name="q" placeholder="Cari produk, jasa, atau usaha..." class="w-full rounded-xl border border-perak-200 bg-white py-2.5 pl-10 pr-4 text-sm text-ink outline-none transition placeholder:text-perak-400 focus:border-gold-400 focus:bg-white focus:ring-2 focus:ring-gold-100" />
             </div>
             <button type="submit" class="inline-flex shrink-0 items-center justify-center rounded-xl bg-paroki-800 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-paroki-900 active:translate-y-px">
               Cari
@@ -211,16 +214,17 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
       <slot />
     </main>
 
-    <!-- Footer — deep green -->
+    <!-- Footer — deep green with gold accents -->
     <footer class="bg-paroki-900 text-paroki-100">
+      <div class="h-1 w-full bg-gradient-to-r from-merah-700 via-gold-400 to-merah-700"></div>
       <div class="mx-auto max-w-6xl px-4 py-10">
         <div class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div class="max-w-sm">
             <div class="flex items-center gap-3">
-              <img src="/logo-umkm-nav.png" alt="Logo UMKM St. Servatius" class="h-20 w-20 rounded-2xl object-cover shadow-lg ring-1 ring-white/20" />
+              <img src="/logo-umkm-hires.png" alt="Logo UMKM St. Servatius" class="h-20 w-20 object-contain" />
               <div class="flex flex-col">
                 <span class="font-display text-lg font-bold text-white">{siteName}</span>
-                <span class="text-xs font-medium text-paroki-300">Paroki Kampung Sawah</span>
+                <span class="text-xs font-medium text-gold-300">Paroki Kampung Sawah</span>
               </div>
             </div>
             <p class="mt-3 text-sm leading-relaxed text-paroki-200">
@@ -228,19 +232,29 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
             </p>
           </div>
           <div class="flex flex-col gap-2 text-sm">
-            <span class="text-xs font-semibold uppercase tracking-wider text-paroki-300">Jelajahi</span>
-            <a href="/umkm" class="text-paroki-100 transition hover:text-white">UMKM</a>
-            <a href="/produk" class="text-paroki-100 transition hover:text-white">Produk</a>
-            <a href="/berita" class="text-paroki-100 transition hover:text-white">Berita</a>
-            <a href="/blog" class="text-paroki-100 transition hover:text-white">Blog</a>
-            <a href="/daftar" class="text-paroki-100 transition hover:text-white">Daftarkan Usaha</a>
-            <a href="/dashboard" class="text-paroki-100 transition hover:text-white">Dashboard</a>
+            <span class="text-xs font-semibold uppercase tracking-wider text-gold-300">Jelajahi</span>
+            <a href="/umkm" class="text-paroki-100 transition hover:text-gold-200">UMKM</a>
+            <a href="/produk" class="text-paroki-100 transition hover:text-gold-200">Produk</a>
+            <a href="/berita" class="text-paroki-100 transition hover:text-gold-200">Berita</a>
+            <a href="/blog" class="text-paroki-100 transition hover:text-gold-200">Blog</a>
+            <a href="/daftar" class="text-paroki-100 transition hover:text-gold-200">Daftarkan Usaha</a>
+            <a href="/dashboard" class="text-paroki-100 transition hover:text-gold-200">Dashboard</a>
+          </div>
+          <div class="flex flex-col gap-2 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-wider text-gold-300">Informasi</span>
+            <a href="/syarat-ketentuan" class="text-paroki-100 transition hover:text-gold-200">Syarat &amp; Ketentuan</a>
+            <a href="/kebijakan-privasi" class="text-paroki-100 transition hover:text-gold-200">Kebijakan Privasi</a>
           </div>
         </div>
-        <div class="mt-8 border-t border-white/10 pt-5">
-          <p class="text-xs text-paroki-300">
-            © {year} {siteName} · Paroki Santo Servatius, Kampung Sawah
-          </p>
+        <div class="mt-8 border-t border-gold-400/20 pt-5">
+          <div class="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-xs text-paroki-300">
+              © {year} {siteName} · Paroki Santo Servatius, Kampung Sawah
+            </p>
+            <p class="text-xs text-paroki-300">
+              Bersinergi dengan seksi IT Paroki Kampung Sawah dengan ❤️
+            </p>
+          </div>
         </div>
       </div>
     </footer>
@@ -418,6 +432,67 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
       }
 
       updateNav();
+    </script>
+
+    <!-- Impersonation banner: standalone, runs immediately from localStorage -->
+    <script is:inline>
+      (function() {
+        var raw = localStorage.getItem('impersonation_admin_session');
+        if (!raw) return;
+        var data;
+        try { data = JSON.parse(raw); } catch(e) { return; }
+        if (!data || !data.access_token || !data.refresh_token) return;
+        if (!data.expires_at || (data.expires_at * 1000) <= Date.now()) {
+          localStorage.removeItem('impersonation_admin_session');
+          return;
+        }
+
+        var adminPath = localStorage.getItem('impersonation_admin_path') || '/admin';
+
+        var banner = document.createElement('div');
+        banner.id = 'impersonation-banner';
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;display:flex;align-items:center;justify-content:center;gap:10px;background:#4f46e5;color:#fff;padding:8px 16px;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.2);font-family:system-ui,sans-serif';
+        banner.innerHTML =
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m22 11-3 3-2-2"/></svg>' +
+          '<span style="font-weight:500">Mode Impersonasi — Anda bukan admin</span>' +
+          '<button id="restore-admin-btn" style="margin-left:8px;border:none;border-radius:6px;background:#fff;color:#4f46e5;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer">← Kembali ke Admin</button>';
+        document.body.prepend(banner);
+        document.body.style.paddingTop = '38px';
+
+        document.getElementById('restore-admin-btn').addEventListener('click', function() {
+          var btn = this;
+          btn.textContent = 'Memulihkan...';
+          btn.disabled = true;
+
+          // window.sb is set by the auth-aware navbar script (updateNav)
+          function doRestore(sb) {
+            sb.auth.signOut().then(function() {
+              return sb.auth.setSession({
+                access_token: data.access_token,
+                refresh_token: data.refresh_token
+              });
+            }).then(function() {
+              localStorage.removeItem('impersonation_admin_session');
+              localStorage.removeItem('impersonation_admin_path');
+              window.location.href = adminPath;
+            }).catch(function(e) {
+              console.error('Restore failed:', e);
+              localStorage.removeItem('impersonation_admin_session');
+              localStorage.removeItem('impersonation_admin_path');
+              window.location.href = '/masuk';
+            });
+          }
+
+          // Wait for window.sb (set async by module script)
+          var tries = 0;
+          function checkSb() {
+            if (window.sb) { doRestore(window.sb); return; }
+            if (++tries > 50) { window.location.href = '/masuk'; return; } // 5s timeout
+            setTimeout(checkSb, 100);
+          }
+          checkSb();
+        });
+      })();
     </script>
   </body>
 </html>

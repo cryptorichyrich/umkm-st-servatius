@@ -15,6 +15,7 @@ const demoBusinesses: Record<string, Business> = {
     id: 'demo1', owner_id: '', name: 'Katering Bu Maria', slug: 'katering-bu-maria',
     description: 'Katering rumahan dengan menu harian berganti. Masakan Indonesia autentik.', category_id: '',
     whatsapp: '628123456789', phone: '08123456789', email: '', address: 'Jl. Melati No. 12', area: 'Wilayah 1',
+    lingkungan: '', latitude: null, longitude: null,
     instagram: '@kateringbumaria', facebook: '', tiktok: '', operating_hours: { weekdays: '08:00 - 17:00', weekend: '07:00 - 14:00' },
     logo_url: '', status: 'approved', is_featured: true, rejection_note: '',
     created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
@@ -436,6 +437,33 @@ export default function BusinessDetail({ slug }: Props) {
           )}
         </div>
       </div>
+
+      {/* Google Maps embed — uses saved lat/lng */}
+      {business.latitude !== null && business.longitude !== null && (
+        <div className="mb-6 overflow-hidden rounded-xl border border-gray-200">
+          <div className="flex items-center justify-between bg-gray-50 px-4 py-2">
+            <h3 className="flex items-center gap-2 font-display text-sm font-bold text-ink">
+              <MapPin className="h-4 w-4 text-gray-400" /> Lokasi di Google Maps
+            </h3>
+            <a
+              href={`https://www.google.com/maps?q=${business.latitude},${business.longitude}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-medium text-paroki-700 hover:underline"
+            >
+              Buka di Maps →
+            </a>
+          </div>
+          <iframe
+            src={`https://www.google.com/maps?q=${business.latitude},${business.longitude}&z=16&output=embed`}
+            className="h-72 w-full"
+            style={{ border: 0 }}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            title={`Peta lokasi ${business.name}`}
+          />
+        </div>
+      )}
 
       {products.length > 0 && (
         <div className="mt-8">

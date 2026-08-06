@@ -1,7 +1,14 @@
 ---
-export const prerender = false;
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import AdminPanel from '../../components/react/AdminPanel.tsx';
+
+export const prerender = true;
+
+export function getStaticPaths() {
+  return [
+    { params: { path: undefined } },
+  ];
+}
 
 const title = 'Admin Panel';
 ---

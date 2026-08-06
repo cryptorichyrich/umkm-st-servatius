@@ -89,6 +89,8 @@ export interface Business {
   address: string;
   area: string;
   lingkungan: string;
+  latitude: number | null;
+  longitude: number | null;
   instagram: string;
   facebook: string;
   tiktok: string;

@@ -1,11 +1,19 @@
 ---
-export const prerender = false;
-
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import NewsDetail from '../../components/react/NewsDetail.tsx';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
 const baseUrl = Astro.url.origin;
+
+// ── Pre-render all published news at build time ──
+export async function getStaticPaths() {
+  if (!isSupabaseConfigured) return [];
+  const { data } = await supabase
+    .from('news')
+    .select('slug')
+    .eq('status', 'published');
+  return (data || []).map((n: any) => ({ params: { slug: n.slug } }));
+}
 
 // ── SEO helpers ──
 function stripHtml(html: string): string {
@@ -28,7 +36,7 @@ function truncate(s: string, max = 155): string {
 
 const slug = Astro.params.slug!;
 
-// ── Fetch single news article at request time ──
+// ── Fetch single news article at build time ──
 const { data: article } = isSupabaseConfigured
   ? await supabase
       .from('news')
@@ -40,16 +48,13 @@ if (!article) {
   return Astro.redirect('/404');
 }
 
-// ── Extract category info ──
 const cat: any = article?.category;
 const categoryName = Array.isArray(cat) ? cat[0]?.name : cat?.name;
 
-// ── Auto-generate SEO title ──
 const seoTitle = article?.title
   ? `${article.title} | Berita UMKM St. Servatius`
   : 'Berita | UMKM St. Servatius';
 
-// ── Auto-generate SEO description ──
 let seoDesc: string;
 if (article) {
   const rawExcerpt = article.excerpt?.trim();
@@ -65,10 +70,8 @@ if (article) {
   seoDesc = 'Berita UMKM Paroki St. Servatius, Kampung Sawah.';
 }
 
-// ── OG image: cover image > default ──
 const ogImage = article?.cover_image || `${baseUrl}/og-default.jpg`;
 
-// ── NewsArticle JSON-LD ──
 const jsonLd = article ? {
   '@context': 'https://schema.org',
   '@type': 'NewsArticle',

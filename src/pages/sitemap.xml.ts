@@ -1,4 +1,4 @@
-export const prerender = false;
+export const prerender = true;
 
 const SUPABASE_URL = 'https://vfqcydqmwhfelqizxzbi.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';

@@ -1,0 +1,57 @@
+---
+export const prerender = true;
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const title = 'Syarat & Ketentuan';
+const lastUpdated = '5 Agustus 2026';
+---
+
+<BaseLayout title={title} description="Syarat dan Ketentuan UMKM St. Servatius" hideSearch>
+  <section class="mx-auto max-w-3xl px-4 py-12">
+    <h1 class="font-display text-3xl font-bold tracking-tight text-ink">Syarat &amp; Ketentuan</h1>
+    <p class="mt-1 text-sm text-perak-500">Terakhir diperbarui: {lastUpdated}</p>
+
+    <div class="mt-8 space-y-6 text-sm leading-relaxed text-perak-700">
+      <div>
+        <h2 class="mb-2 text-lg font-bold text-ink">1. Pendaftaran Akun</h2>
+        <p>Dengan mendaftar akun di platform UMKM St. Servatius, Anda menyatakan bahwa informasi yang diberikan (nama, nomor telepon, email) adalah benar dan akurat. Akun palsu atau informasi palsu dapat menyebabkan penangguuhan akun tanpa pemberitahuan.</p>
+      </div>
+
+      <div>
+        <h2 class="mb-2 text-lg font-bold text-ink">2. Verifikasi Anggota Paroki</h2>
+        <p>Untuk menjadi anggota terverifikasi, Anda wajib mengunggah Kartu Keluarga Paroki (BIDUK) dan memilih wilayah/lingkungan. Data ini bersifat privat dan hanya dapat diakses oleh pengurus (admin). Verifikasi diperlukan untuk dapat memberikan ulasan dan mendaftarkan usaha.</p>
+      </div>
+
+      <div>
+        <h2 class="mb-2 text-lg font-bold text-ink">3. Pendaftaran Usaha UMKM</h2>
+        <p>Anggota terverifikasi dapat mendaftarkan usaha dengan mengisi informasi usaha (nama, kategori, alamat, deskripsi), lokasi peta, dan mengunggah foto KTP serta katalog produk. Informasi omset, NIB, PIRT, dan sertifikasi halal bersifat <strong>privat</strong> — hanya untuk pengetahuan pengurus dan tidak ditampilkan secara publik.</p>
+      </div>
+
+      <div>
+        <h2 class="mb-2 text-lg font-bold text-ink">4. Konten dan Ulasan</h2>
+        <p>Anda bertanggung jawab atas seluruh konten yang diunggah. Ulasan dan komentar harus sopan, jujur, dan relevan. Pengurus berhak menghapus konten yang melanggar tanpa pemberitahuan sebelumnya.</p>
+      </div>
+
+      <div>
+        <h2 class="mb-2 text-lg font-bold text-ink">5. Privasi Data</h2>
+        <p>Data pribadi Anda dilindungi dan dikelola sesuai <a href="/kebijakan-privasi" class="font-semibold text-paroki-700 hover:underline">Kebijakan Privasi</a> kami. Kami tidak akan membagikan data pribadi Anda kepada pihak ketiga tanpa persetujuan, kecuali diwajibkan oleh hukum.</p>
+      </div>
+
+      <div>
+        <h2 class="mb-2 text-lg font-bold text-ink">6. Perubahan Ketentuan</h2>
+        <p>Pengurus berhak mengubah Syarat &amp; Ketentuan ini sewaktu-waktu. Perubahan akan berlaku segera setelah dipublikasikan di halaman ini. Penggunaan platform setelah perubahan dianggap sebagai persetujuan terhadap ketentuan terbaru.</p>
+      </div>
+
+      <div>
+        <h2 class="mb-2 text-lg font-bold text-ink">7. Kontak</h2>
+        <p>Untuk pertanyaan mengenai Syarat &amp; Ketentuan ini, silakan hubungi pengurus melalui WhatsApp atau email yang tersedia di halaman <a href="/" class="font-semibold text-paroki-700 hover:underline">beranda</a>.</p>
+      </div>
+    </div>
+
+    <div class="mt-10 border-t border-perak-200 pt-6">
+      <a href="/daftar" class="inline-flex items-center gap-2 rounded-lg bg-gold-500 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-gold-600">
+        ← Kembali ke Pendaftaran
+      </a>
+    </div>
+  </section>
+</BaseLayout>

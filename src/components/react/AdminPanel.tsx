@@ -85,6 +85,12 @@ interface UserProfile {
   verification_type: string | null;
   verified_at: string | null;
   created_at: string;
+  has_nib: boolean | null;
+  omset_range: string | null;
+  biduk_number: string | null;
+  has_pirt: boolean | null;
+  has_halal: boolean | null;
+  harapan_gabung: string | null;
 }
 
 interface VerificationRequest {
@@ -429,6 +435,7 @@ export default function AdminPanel() {
   const [editRole, setEditRole] = useState('');
   const [editVerifStatus, setEditVerifStatus] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
+  const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
 
   // ── Verification request actions ──
   const [verifActionId, setVerifActionId] = useState<string | null>(null);
@@ -1043,6 +1050,54 @@ export default function AdminPanel() {
   };
 
   // ───────────────────────────────────────────
+  // Admin impersonation — generates a Supabase magic link to log in as target user.
+  // Saves admin session to localStorage so it can be restored with one click.
+  // ───────────────────────────────────────────
+  const handleImpersonate = async (userId: string, fullName: string) => {
+    const ok = confirm(
+      `Masuk sebagai "${fullName}"?\n\n` +
+      `Anda akan melihat dashboard sebagai user ini. ` +
+      `Klik tombol "Kembali ke Admin" untuk kembali ke sesi admin Anda.`,
+    );
+    if (!ok) return;
+
+    setImpersonatingId(userId);
+    try {
+      // Save current admin page path so we can return here
+      localStorage.setItem('impersonation_admin_path', window.location.pathname);
+
+      // Save current admin session before switching
+      const { data: { session: adminSession } } = await supabase.auth.getSession();
+      if (adminSession) {
+        localStorage.setItem('impersonation_admin_session', JSON.stringify({
+          access_token: adminSession.access_token,
+          refresh_token: adminSession.refresh_token,
+          expires_at: adminSession.expires_at,
+        }));
+      }
+
+      const { data, error } = await supabase.functions.invoke('admin-impersonate', {
+        body: { userId, redirectTo: `${window.location.origin}/dashboard` },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      // Navigate to the magic link — Supabase verifies the token and redirects
+      // to /dashboard with the target user's session tokens in the URL hash.
+      window.location.href = data.magicLink;
+    } catch (err) {
+      // Clean up saved session on failure
+      localStorage.removeItem('impersonation_admin_session');
+      alert(
+        err instanceof Error
+          ? `Gagal impersonasi: ${err.message}`
+          : 'Gagal melakukan impersonasi.',
+      );
+    } finally {
+      setImpersonatingId(null);
+    }
+  };
+
   // ───────────────────────────────────────────
   const handleApproveVerif = async (req: VerificationRequest) => {
     setVerifActionId(req.id);
@@ -3262,7 +3317,7 @@ export default function AdminPanel() {
       {/* ─────────────────────────────────────────── */}
       {/* BERITA TAB (Admin only) */}
       {/* ─────────────────────────────────────────── */}
-      {activeTab === 'berita' && profile?.role === 'admin' && (
+      {activeTab === 'berita' && authState === 'ok' && (
         <Suspense fallback={<TabFallback />}>
           <NewsManager />
         </Suspense>
@@ -3271,7 +3326,7 @@ export default function AdminPanel() {
       {/* ─────────────────────────────────────────── */}
       {/* MODERASI BLOG TAB (Admin + Blogger) */}
       {/* ─────────────────────────────────────────── */}
-      {activeTab === 'moderasi-blog' && (profile?.role === 'admin' || profile?.role === 'blogger') && (
+      {activeTab === 'moderasi-blog' && authState === 'ok' && (
         <Suspense fallback={<TabFallback />}>
           <BlogModeration />
         </Suspense>
@@ -3393,7 +3448,74 @@ export default function AdminPanel() {
                       : '-'}
                   </p>
                 </div>
+
+                {/* Omset — private admin info */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-paroki-500">Omset Tahunan</label>
+                  <p className="text-sm text-paroki-800">
+                    {detailUser.omset_range ? (
+                      {
+                        '< 50jt': 'Belum ada omset / < Rp 50 juta',
+                        '50-300jt': 'Rp 50 juta – Rp 300 juta',
+                        '300jt-2.5M': 'Rp 300 juta – Rp 2.5 miliar',
+                        '> 2.5M': '> Rp 2.5 miliar',
+                      }[detailUser.omset_range] || detailUser.omset_range
+                    ) : (
+                      <span className="text-gray-400">Belum diisi</span>
+                    )}
+                  </p>
+                </div>
+
+                {/* NIB — private admin info */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-paroki-500">NIB</label>
+                  <p className="text-sm text-paroki-800">
+                    {detailUser.has_nib ? (
+                      <span className="inline-flex items-center gap-1 text-green-700">✓ Punya NIB</span>
+                    ) : (
+                      <span className="text-gray-400">Tidak ada</span>
+                    )}
+                  </p>
+                </div>
+
+                {/* PIRT — private admin info */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-paroki-500">PIRT</label>
+                  <p className="text-sm text-paroki-800">
+                    {detailUser.has_pirt ? (
+                      <span className="inline-flex items-center gap-1 text-green-700">✓ Punya PIRT</span>
+                    ) : (
+                      <span className="text-gray-400">Tidak ada</span>
+                    )}
+                  </p>
+                </div>
+
+                {/* Halal — private admin info */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-paroki-500">Sertifikasi Halal</label>
+                  <p className="text-sm text-paroki-800">
+                    {detailUser.has_halal ? (
+                      <span className="inline-flex items-center gap-1 text-green-700">✓ Halal Certified</span>
+                    ) : (
+                      <span className="text-gray-400">Tidak ada</span>
+                    )}
+                  </p>
+                </div>
+
+                {/* BIDUK number */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-paroki-500">No. BIDUK</label>
+                  <p className="text-sm text-paroki-800">{detailUser.biduk_number || <span className="text-gray-400">Belum diisi</span>}</p>
+                </div>
               </div>
+
+              {/* Harapan */}
+              {detailUser.harapan_gabung && (
+                <div className="rounded-lg bg-paroki-50 px-4 py-3">
+                  <label className="mb-1 block text-xs font-medium text-paroki-500">Harapan Bergabung</label>
+                  <p className="text-sm italic text-paroki-700">"{detailUser.harapan_gabung}"</p>
+                </div>
+              )}
 
               {/* User's businesses */}
               <div>
@@ -3478,6 +3600,15 @@ export default function AdminPanel() {
                   </>
                 )}
               </div>
+
+              {/* Impersonation — login as this user via magic link */}
+              <button
+                onClick={() => handleImpersonate(detailUser.id, detailUser.full_name || detailUser.email || 'User')}
+                disabled={impersonatingId === detailUser.id}
+                className="w-full rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {impersonatingId === detailUser.id ? '⏳ Membuat link...' : '🔑 Login sebagai user ini'}
+              </button>
             </div>
           </div>
         </div>
