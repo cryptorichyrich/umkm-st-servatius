@@ -334,6 +334,8 @@ function StatCard({
 // ─────────────────────────────────────────────
 // Document thumbnail component
 // ─────────────────────────────────────────────
+const PRIVATE_BUCKETS = ['verification-docs', 'bazar-payments'];
+
 function DocThumbnail({
   url,
   label,
@@ -341,16 +343,29 @@ function DocThumbnail({
   url: string;
   label: string;
 }) {
+  const [displayUrl, setDisplayUrl] = useState(url);
+
+  useEffect(() => {
+    const match = url.match(/\/storage\/v1\/object\/(?:public|sign)\/(verification-docs|bazar-payments)\/([^?#]+)/);
+    if (match) {
+      const [, bucket, path] = match;
+      supabase.storage.from(bucket).createSignedUrl(path, 3600)
+        .then(({ data }) => data?.signedUrl && setDisplayUrl(data.signedUrl));
+    } else {
+      setDisplayUrl(url);
+    }
+  }, [url]);
+
   return (
     <a
-      href={url}
+      href={displayUrl}
       target="_blank"
       rel="noopener noreferrer"
       className="group block"
     >
       <div className="relative overflow-hidden rounded-xl border border-paroki-200 bg-paroki-50 transition group-hover:border-paroki-400">
         <img
-          src={url}
+          src={displayUrl}
           alt={label}
           className="h-24 w-full object-cover"
           loading="lazy"

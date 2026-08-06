@@ -360,11 +360,11 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
 
       if (uploadErr) throw uploadErr;
 
-      const { data: pubData } = supabase.storage
+      const { data: signedData } = await supabase.storage
         .from('verification-docs')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 3600);
 
-      setForm((prev) => ({ ...prev, ktp_url: pubData.publicUrl }));
+      setForm((prev) => ({ ...prev, ktp_url: signedData?.signedUrl || '' }));
     } catch (err) {
       setError(
         err instanceof Error
@@ -402,11 +402,11 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
 
       if (uploadErr) throw uploadErr;
 
-      const { data: pubData } = supabase.storage
+      const { data: signedData } = await supabase.storage
         .from('verification-docs')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 3600);
 
-      setForm((prev) => ({ ...prev, catalog_url: pubData.publicUrl }));
+      setForm((prev) => ({ ...prev, catalog_url: signedData?.signedUrl || '' }));
     } catch (err) {
       setError(
         err instanceof Error

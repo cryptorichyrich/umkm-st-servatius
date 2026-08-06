@@ -114,12 +114,12 @@ export default function MemberVerification({ onRequestSubmitted }: MemberVerific
 
       if (uploadErr) throw uploadErr;
 
-      const { data: pubData } = supabase.storage
+      const { data: signedData } = await supabase.storage
         .from('verification-docs')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 3600);
 
       const isImage = file.type.startsWith('image/');
-      return { url: pubData.publicUrl, name: file.name, isImage };
+      return { url: signedData?.signedUrl || '', name: file.name, isImage };
     },
     [getUserId],
   );
