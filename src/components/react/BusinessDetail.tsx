@@ -167,6 +167,7 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!business || !currentUserId || formRating === 0 || submitting) return;
+    if (isOwner) return; // owners cannot review their own business
     if (formPhotos.length === 0) {
       alert('Mohon unggah minimal 1 foto bukti.');
       return;
@@ -504,7 +505,8 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
         </div>
       )}
 
-      {/* Reviews Section */}
+      {/* Reviews Section — hidden from business owner */}
+      {!isOwner && (
       <div className="mt-8">
         <h2 className="mb-4 flex items-center gap-2 font-display text-xl font-bold text-ink">
           <Star className="h-5 w-5 text-gray-400" />Ulasan Pelanggan
@@ -775,6 +777,7 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
           </div>
         )}
       </div>
+      )}
 
       <div className="mt-10 rounded-xl bg-paroki-50 p-6 md:p-8">
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
