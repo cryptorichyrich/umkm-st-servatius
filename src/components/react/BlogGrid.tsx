@@ -216,7 +216,7 @@ export default function BlogGrid({ mode = 'all', businessId }: Props) {
                     <div className="mt-auto flex items-center justify-between gap-2 pt-4 text-xs text-gray-400">
                       {biz && (
                         <a
-                          href={`/umkm/${biz.slug}`}
+                          href={`/${biz.slug}`}
                           onClick={(e) => e.stopPropagation()}
                           className="inline-flex items-center gap-1 font-medium text-gray-500 transition hover:text-paroki-700"
                         >

@@ -43,7 +43,7 @@ export async function onRequestGet(context) {
       .filter(p => p.slug && p.business?.slug)
       .map(p => `${SITE_URL}/${p.business.slug}/${p.slug}/`);
     const dynamicUrls = [
-      ...businessSlugs.map(s => s.slug ? `${SITE_URL}/umkm/${s.slug}/` : '').filter(Boolean),
+      ...businessSlugs.map(s => s.slug ? `${SITE_URL}/${s.slug}/` : '').filter(Boolean),
       ...productUrls,
       ...blogSlugs.map(s => s.slug ? `${SITE_URL}/blog/${s.slug}/` : '').filter(Boolean),
       ...newsSlugs.map(s => s.slug ? `${SITE_URL}/berita/${s.slug}/` : '').filter(Boolean),

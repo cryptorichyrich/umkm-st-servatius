@@ -133,7 +133,7 @@ export default function BusinessGrid({
         <>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {businesses.map((b) => (
-              <a key={b.id} href={`/umkm/${b.slug}`}
+              <a key={b.id} href={`/${b.slug}`}
                 className="group flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white transition hover:border-gold-400 hover:shadow-soft">
                 <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
                   {b.logo_url || b.images?.[0]?.image_url ? (

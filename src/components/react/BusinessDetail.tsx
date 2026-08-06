@@ -44,7 +44,7 @@ const FacebookIcon = ({ className = 'h-4 w-4' }: { className?: string }) => (
 
 export default function BusinessDetail({ slug: propSlug }: Props) {
   const slug = propSlug || (typeof window !== 'undefined'
-    ? window.location.pathname.replace(/^\/umkm\//, '').replace(/\/$/, '')
+    ? window.location.pathname.replace(/^\//, '').replace(/\/$/, '').split('/')[0]
     : '');
   const [business, setBusiness] = useState<Business | null>(null);
   const [products, setProducts] = useState<Product[]>([]);

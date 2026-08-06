@@ -143,7 +143,7 @@ export default function BlogDetail() {
       <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-gray-500">
         {biz && (
           <a
-            href={`/umkm/${biz.slug}`}
+            href={`/${biz.slug}`}
             className="inline-flex items-center gap-2 font-medium text-gray-700 transition hover:text-paroki-700"
           >
             {biz.logo_url ? (
@@ -203,7 +203,7 @@ export default function BlogDetail() {
               <p className="font-display text-sm font-bold text-ink">{biz.name}</p>
             </div>
             <a
-              href={`/umkm/${biz.slug}`}
+              href={`/${biz.slug}`}
               className="inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-gold-600 active:translate-y-px"
             >
               <Store className="h-4 w-4" />

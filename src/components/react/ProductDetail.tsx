@@ -101,7 +101,7 @@ export default function ProductDetail({ slug: propSlug }: Props) {
           </>
         ) : b?.slug ? (
           <>
-            <a href={`/umkm/${b.slug}`} className="transition hover:text-paroki-700">{b.name}</a><span>/</span>
+            <a href={`/${b.slug}`} className="transition hover:text-paroki-700">{b.name}</a><span>/</span>
           </>
         ) : null}
         <span className="font-medium text-gray-700 line-clamp-1">{product.name}</span>
@@ -187,7 +187,7 @@ export default function ProductDetail({ slug: propSlug }: Props) {
 
             {/* Penyedia — compact card */}
             {b && (
-              <a href={`/umkm/${b.slug}`} className="mt-4 flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 transition hover:border-paroki-200 hover:shadow-sm">
+              <a href={`/${b.slug}`} className="mt-4 flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 transition hover:border-paroki-200 hover:shadow-sm">
                 {b.logo_url
                   ? <img src={b.logo_url} alt={b.name} className="h-11 w-11 flex-shrink-0 rounded-lg object-cover" />
                   : <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-paroki-50 text-paroki-400"><Store className="h-5 w-5" /></div>}
@@ -252,7 +252,7 @@ export default function ProductDetail({ slug: propSlug }: Props) {
             <ArrowLeft className="h-4 w-4" />Kembali ke Produk
           </a>
         ) : b?.slug ? (
-          <a href={`/umkm/${b.slug}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-paroki-700 transition hover:text-paroki-900 hover:underline">
+          <a href={`/${b.slug}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-paroki-700 transition hover:text-paroki-900 hover:underline">
             <ArrowLeft className="h-4 w-4" />Kembali ke {b.name}
           </a>
         ) : (

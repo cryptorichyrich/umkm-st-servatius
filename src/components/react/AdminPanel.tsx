@@ -2316,7 +2316,7 @@ export default function AdminPanel() {
                                 Detail
                               </button>
                               <a
-                                href={`/umkm/${b.slug}/`}
+                                href={`/${b.slug}/`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
@@ -2466,7 +2466,7 @@ export default function AdminPanel() {
                       {/* Action buttons */}
                       <div className="flex flex-wrap gap-2 border-t border-paroki-100 pt-4">
                         <a
-                          href={`/umkm/${detailBiz.slug}/`}
+                          href={`/${detailBiz.slug}/`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1.5 rounded-lg border border-paroki-200 px-4 py-2 text-sm font-medium text-paroki-600 transition hover:bg-paroki-50"
@@ -3645,7 +3645,7 @@ export default function AdminPanel() {
                     {detailBusinesses.map((b) => (
                       <a
                         key={b.id}
-                        href={`/umkm/${b.slug}`}
+                        href={`/${b.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-between rounded-lg border border-paroki-200 px-3 py-2 transition hover:bg-paroki-50"

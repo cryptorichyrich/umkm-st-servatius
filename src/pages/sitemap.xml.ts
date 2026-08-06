@@ -73,7 +73,7 @@ export async function GET({ url }: { url: URL }) {
   for (const b of businesses) {
     if (b.slug) {
       entries.push({
-        loc: `${BASE_URL}/umkm/${xmlEscape(b.slug)}`,
+        loc: `${BASE_URL}/${xmlEscape(b.slug)}`,
         lastmod: b.updated_at,
         changefreq: 'weekly',
         priority: '0.9',

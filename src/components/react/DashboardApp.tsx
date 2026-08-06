@@ -508,7 +508,7 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
                     {businesses.map((b) => (
                       <tr key={b.id} className="hover:bg-paroki-50/50">
                         <td className="px-4 py-3">
-                          <a href={`/umkm/${b.slug}`} target="_blank" rel="noopener noreferrer" className="font-medium text-paroki-900 transition hover:text-gold-600 hover:underline">
+                          <a href={`/${b.slug}`} target="_blank" rel="noopener noreferrer" className="font-medium text-paroki-900 transition hover:text-gold-600 hover:underline">
                             {b.name}
                           </a>
                           {b.status === 'rejected' && b.rejection_note && (
@@ -530,7 +530,7 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
                           <div className="flex justify-end gap-1.5">
                             {b.status === 'approved' && (
                               <a
-                                href={`/umkm/${b.slug}`}
+                                href={`/${b.slug}`}
                                 className="rounded-md border border-paroki-200 px-3 py-1.5 text-xs font-medium text-paroki-700 hover:bg-paroki-50"
                               >
                                 Lihat
@@ -578,7 +578,7 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <h3 className="font-medium">
-                          <a href={`/umkm/${b.slug}`} target="_blank" rel="noopener noreferrer" className="text-paroki-900 transition hover:text-gold-600 hover:underline">
+                          <a href={`/${b.slug}`} target="_blank" rel="noopener noreferrer" className="text-paroki-900 transition hover:text-gold-600 hover:underline">
                             {b.name}
                           </a>
                         </h3>
@@ -600,7 +600,7 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {b.status === 'approved' && (
                         <a
-                          href={`/umkm/${b.slug}`}
+                          href={`/${b.slug}`}
                           className="rounded-md border border-paroki-200 px-3 py-1.5 text-xs font-medium text-paroki-700 hover:bg-paroki-50"
                         >
                           Lihat
@@ -693,7 +693,7 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
                           className="flex items-center gap-3 rounded-xl border border-paroki-200 bg-white p-3 shadow-sm"
                         >
                           {/* Thumbnail / Logo */}
-                          <a href={`/umkm/${biz.slug}`} className="flex-shrink-0">
+                          <a href={`/${biz.slug}`} className="flex-shrink-0">
                             <div className="h-14 w-14 overflow-hidden rounded-lg bg-paroki-50">
                               {biz.logo_url ? (
                                 <img src={biz.logo_url} alt={biz.name} className="h-full w-full object-cover" />
@@ -706,7 +706,7 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
                           </a>
 
                           {/* Info */}
-                          <a href={`/umkm/${biz.slug}`} className="min-w-0 flex-1">
+                          <a href={`/${biz.slug}`} className="min-w-0 flex-1">
                             <h4 className="truncate font-medium text-paroki-900 hover:text-paroki-700">{biz.name}</h4>
                             <p className="truncate text-xs text-paroki-500">
                               {biz.area || 'Lokasi tidak tersedia'}

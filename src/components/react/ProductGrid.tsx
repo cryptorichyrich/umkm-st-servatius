@@ -144,7 +144,7 @@ export default function ProductGrid({
                     {p.description && <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-gray-500">{p.description}</p>}
                     <div className="mt-2 text-sm font-bold text-paroki-700">{formatPrice(p.price, p.price_note)}</div>
                     {p.business && mode !== 'business' && (
-                      <a href={`/umkm/${p.business.slug}`} className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-gray-400 transition hover:text-paroki-700">
+                      <a href={`/${p.business.slug}`} className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-gray-400 transition hover:text-paroki-700">
                         <Store className="h-3.5 w-3.5" />{p.business.name}
                       </a>
                     )}

@@ -2389,7 +2389,7 @@ function BusinessPickRow({
         </div>
         {/* Detail link */}
         <a
-          href={`/umkm/${business.slug}`}
+          href={`/${business.slug}`}
           target="_blank"
           rel="noopener noreferrer"
           className="shrink-0 rounded-md px-2 py-1 text-xs text-gray-400 transition hover:text-paroki-600"

@@ -244,7 +244,7 @@ export default function BazarPublic() {
                         </div>
                         {biz ? (
                           <a
-                            href={`/umkm/${biz.slug}`}
+                            href={`/${biz.slug}`}
                             className="group flex items-center gap-1.5 text-xs font-semibold text-paroki-800 hover:text-gold-700"
                           >
                             {biz.logo_url && (

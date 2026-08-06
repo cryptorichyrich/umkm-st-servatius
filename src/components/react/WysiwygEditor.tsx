@@ -136,7 +136,7 @@ export default function WysiwygEditor({ value, onChange, placeholder = '' }: Wys
   }, []);
 
   const insertInternalLink = useCallback((name: string, slug: string) => {
-    const url = `/umkm/${slug}/`;
+    const url = `/${slug}/`;
     editorRef.current?.focus();
     document.execCommand('createLink', false, url);
     // After createLink, the selected text becomes the link. If no selection, insert the name.
