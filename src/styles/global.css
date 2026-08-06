@@ -4,42 +4,53 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
-  UMKM St. Servatius — Design Tokens v3
+  UMKM St. Servatius — Design Tokens v4
   ─────────────────────────────────────
-  Five-color liturgical palette: GREEN · GOLD · RED · SILVER · WHITE
-  
-  • GREEN (paroki)  — structural foundation: footer, headers, trust
-  • GOLD            — celebration & CTA: buttons, highlights, premium
-  • RED (merah)     — liturgical accent: alerts, urgency, badges
-  • SILVER (perak)  — neutral elegance: backgrounds, borders, cards
-  • WHITE           — pure clean base
+  Modernized palette: less green dominance, more gold + silver elegance.
 
-  Inspired by cathedral interiors: deep green marble, gold leaf accents,
-  crimson altar cloth, silver candlesticks, white stone.
+  • NEUTRAL (perak)  — primary surfaces, cards, backgrounds
+  • GOLD             — primary accent: CTAs, highlights, premium feel
+  • GREEN (paroki)   — brand identity: logo, footer, trust badges
+  • RED (merah)      — urgency, alerts, liturgical accent
+  • INK              — text colors
+
+  Design principle: Silver/neutral surfaces dominate.
+  Gold is the hero accent. Green is reserved for brand structure.
 */
 @theme {
-  /* ═══ GREEN (paroki) — Deep Forest Liturgical ═══ */
-  --color-paroki-50:  #f0f7f3;
-  --color-paroki-100: #dceee3;
-  --color-paroki-200: #badcc8;
+  /* ═══ NEUTRAL (perak) — Cool Silver Pewter, now the primary surface system ═══ */
+  --color-perak-50:  #f9fafb;
+  --color-perak-100: #f1f3f5;
+  --color-perak-200: #e3e7ea;
+  --color-perak-300: #ced4da;
+  --color-perak-400: #a8b2bb;
+  --color-perak-500: #7c8794;
+  --color-perak-600: #5a6573;
+  --color-perak-700: #475059;
+  --color-perak-800: #3a4148;
+  --color-perak-900: #2d3338;
+
+  /* ═══ GREEN (paroki) — Refined Forest, brand identity only ═══ */
+  --color-paroki-50:  #f0f7f4;
+  --color-paroki-100: #dceee4;
+  --color-paroki-200: #b9dcc9;
   --color-paroki-300: #8dc3a7;
   --color-paroki-400: #59a57e;
   --color-paroki-500: #368a5f;
   --color-paroki-600: #226e49;
   --color-paroki-700: #145439;
   --color-paroki-800: #0a4029;
-  --color-paroki-900: #004225;
-  --color-paroki-950: #002815;
+  --color-paroki-900: #003d22;
 
-  /* ═══ GOLD — Royal Warm Gold ═══ */
+  /* ═══ GOLD — Primary accent, brighter and more prominent ═══ */
   --color-gold-50:  #fdf9ed;
   --color-gold-100: #f9efce;
   --color-gold-200: #f3dd9c;
   --color-gold-300: #ecc56a;
   --color-gold-400: #e0ac3e;
-  --color-gold-500: #cf9429;
-  --color-gold-600: #b27620;
-  --color-gold-700: #8e581c;
+  --color-gold-500: #d4942a;
+  --color-gold-600: #b87620;
+  --color-gold-700: #93591c;
   --color-gold-800: #74471b;
   --color-gold-900: #613a18;
 
@@ -55,21 +66,9 @@
   --color-merah-800: #721e22;
   --color-merah-900: #5b1a1d;
 
-  /* ═══ SILVER (perak) — Brushed Pewter ═══ */
-  --color-perak-50:  #f8fafb;
-  --color-perak-100: #f0f3f5;
-  --color-perak-200: #e2e7eb;
-  --color-perak-300: #cdd4da;
-  --color-perak-400: #a8b3bc;
-  --color-perak-500: #7d8a94;
-  --color-perak-600: #5a6770;
-  --color-perak-700: #475158;
-  --color-perak-800: #3a4147;
-  --color-perak-900: #2e3439;
-
   /* ═══ Ink — Text ═══ */
   --color-ink: #1a1d1b;
-  --color-ink-soft: #525a55;
+  --color-ink-soft: #5a6360;
 
   /* ═══ Fonts ═══ */
   --font-sans: 'Source Sans 3', 'Source Sans Pro', system-ui, sans-serif;
@@ -78,44 +77,15 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   DARK MODE — Semantic Approach
-   Brand colors (paroki, gold, merah) stay the SAME at every shade.
-   Only lighten the dark brand shades used as TEXT on dark surfaces.
-   Neutrals (perak) shift to dark. Gray-* overrides for React components.
+   DARK MODE — Surface-only overrides
+   Brand colors (paroki, gold, merah) NEVER change.
+   Only neutral surfaces, gray utilities, and ink text adapt.
+   Footer (paroki-900) stays dark green in both modes — correct.
    ═══════════════════════════════════════════════════════════ */
 .dark {
-  /* Perak (neutral) → dark scale for surfaces, borders */
-  --color-perak-50:  #141715;
-  --color-perak-100: #1a1f1b;
-  --color-perak-200: #262d27;
-  --color-perak-300: #363f38;
-  --color-perak-400: #4d5650;
-  --color-perak-500: #67736a;
-  --color-perak-600: #859188;
-  --color-perak-700: #a4adb0;
-  --color-perak-800: #c8cfd0;
-  --color-perak-900: #e4e8e6;
-
-  /* Paroki — lighten dark shades for TEXT visibility on dark bg.
-     900 stays dark (footer bg is already dark — perfect for dark mode). */
-  --color-paroki-50:  #0c1b12;
-  --color-paroki-100: #112619;
-  --color-paroki-200: #1a3525;
-  --color-paroki-300: #2a5040;
-  --color-paroki-400: #3d7560;
-  --color-paroki-500: #4a9d6e;
-  --color-paroki-600: #368a5f;
-  --color-paroki-700: #4a9d6e;
-  --color-paroki-800: #59b07f;
-
-  /* Gold — brighten for visibility */
-  --color-gold-400: #eab84a;
-  --color-gold-500: #d9a030;
-  --color-gold-300: #f3dd9c;
-
   /* Ink — light text */
-  --color-ink: #e8ebe6;
-  --color-ink-soft: #9ba39a;
+  --color-ink: #e8eae8;
+  --color-ink-soft: #9aa2a0;
 
   color-scheme: dark;
 }
@@ -125,64 +95,70 @@ html {
 }
 
 body {
-  @apply bg-white text-ink antialiased;
+  @apply bg-perak-50 text-ink antialiased;
   font-family: var(--font-sans);
 }
 
-/* ═══ Dark Mode: Surface + Neutral Overrides ═══ */
-/* These target hardcoded Tailwind utility classes used in React components. */
+/* ═══ Dark Mode Surface Overrides ═══ */
 .dark body {
-  background-color: #0e120f;
+  background-color: #12151a;
 }
 
-/* Surfaces — including opacity variants used for header, image overlays, etc. */
-.dark .bg-white { background-color: #1a1f1b !important; }
-.dark .bg-white\/95 { background-color: rgba(26, 31, 27, 0.95) !important; }
-.dark .bg-white\/90 { background-color: rgba(26, 31, 27, 0.9) !important; }
-.dark .bg-white\/80 { background-color: rgba(26, 31, 27, 0.8) !important; }
-.dark .bg-white\/70 { background-color: rgba(26, 31, 27, 0.7) !important; }
-.dark .bg-gray-50 { background-color: #141715 !important; }
-.dark .bg-gray-100 { background-color: #1a1f1b !important; }
-.dark .bg-gray-200 { background-color: #262d27 !important; }
+/* Surfaces: bg-white + opacity variants → dark */
+.dark .bg-white { background-color: #1c2026 !important; }
+.dark .bg-white\/95 { background-color: rgba(28, 32, 38, 0.95) !important; }
+.dark .bg-white\/90 { background-color: rgba(28, 32, 38, 0.9) !important; }
+.dark .bg-white\/80 { background-color: rgba(28, 32, 38, 0.8) !important; }
+.dark .bg-white\/70 { background-color: rgba(28, 32, 38, 0.7) !important; }
 
-/* Text */
-.dark .text-gray-400 { color: #67736a !important; }
-.dark .text-gray-500 { color: #859188 !important; }
-.dark .text-gray-600 { color: #a4adb0 !important; }
-.dark .text-gray-700 { color: #c8cfd0 !important; }
-.dark .text-gray-800 { color: #e4e8e6 !important; }
-.dark .text-gray-900 { color: #f0f3f0 !important; }
+/* Neutral surfaces */
+.dark .bg-perak-50 { background-color: #12151a !important; }
+.dark .bg-perak-100 { background-color: #1c2026 !important; }
+.dark .bg-perak-200 { background-color: #2a2f37 !important; }
+
+/* Gray utility overrides (used in React components) */
+.dark .bg-gray-50 { background-color: #12151a !important; }
+.dark .bg-gray-100 { background-color: #1c2026 !important; }
+.dark .bg-gray-200 { background-color: #2a2f37 !important; }
+
+/* Text — gray utilities */
+.dark .text-gray-400 { color: #7c8794 !important; }
+.dark .text-gray-500 { color: #9aa3ad !important; }
+.dark .text-gray-600 { color: #b0b8c0 !important; }
+.dark .text-gray-700 { color: #cdd4da !important; }
+.dark .text-gray-800 { color: #e3e7ea !important; }
+.dark .text-gray-900 { color: #f1f3f5 !important; }
 
 /* Borders */
-.dark .border-gray-100 { border-color: #1a1f1b !important; }
-.dark .border-gray-200 { border-color: #262d27 !important; }
-.dark .border-gray-300 { border-color: #363f38 !important; }
+.dark .border-gray-100 { border-color: #1c2026 !important; }
+.dark .border-gray-200 { border-color: #2a2f37 !important; }
+.dark .border-gray-300 { border-color: #3a4148 !important; }
 
 /* Dividers */
-.dark .divide-gray-50 > * { border-color: #141715 !important; }
-.dark .divide-gray-100 > * { border-color: #1a1f1b !important; }
-.dark .divide-gray-200 > * { border-color: #262d27 !important; }
+.dark .divide-gray-50 > * { border-color: #12151a !important; }
+.dark .divide-gray-100 > * { border-color: #1c2026 !important; }
+.dark .divide-gray-200 > * { border-color: #2a2f37 !important; }
 
 /* Ring */
-.dark .ring-gray-200 { --tw-ring-color: #262d27 !important; }
+.dark .ring-gray-200 { --tw-ring-color: #2a2f37 !important; }
 
 /* Form inputs */
 .dark input:not([type="checkbox"]):not([type="radio"]),
 .dark textarea,
 .dark select {
-  background-color: #1a1f1b !important;
-  border-color: #262d27 !important;
-  color: #e4e8e6 !important;
+  background-color: #1c2026 !important;
+  border-color: #2a2f37 !important;
+  color: #e3e7ea !important;
 }
 .dark input::placeholder,
 .dark textarea::placeholder {
-  color: #4d5650 !important;
+  color: #475059 !important;
 }
 
-/* Accent hover backgrounds */
-.dark .hover\:bg-paroki-50:hover { background-color: #0c1b12 !important; }
+/* Accent hover backgrounds — subtle dark green tint */
+.dark .hover\:bg-paroki-50:hover { background-color: rgba(20, 84, 57, 0.15) !important; }
 
-/* Shadows */
+/* Shadows — deeper in dark mode */
 .dark .shadow-soft { box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25); }
 .dark .shadow-soft-lg { box-shadow: 0 2px 6px rgba(0,0,0,0.35), 0 12px 28px rgba(0,0,0,0.3); }
 .dark .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
@@ -190,8 +166,8 @@ body {
 .dark .shadow-lg { box-shadow: 0 2px 10px rgba(0,0,0,0.35); }
 .dark .shadow-xl { box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
 
-/* Backdrop adjustments */
-.dark .backdrop-blur-md { backdrop-filter: blur(12px) brightness(0.7); }
+/* Backdrop — darken for dark mode */
+.dark .backdrop-blur-md { backdrop-filter: blur(12px) brightness(0.6); }
 
 h1, h2, h3 {
   font-family: var(--font-display);
@@ -208,7 +184,7 @@ h1, h2, h3 {
   animation: fadeIn 0.3s ease-out;
 }
 
-/* Tinted soft shadow — warm green-gold undertone */
+/* Tinted soft shadow */
 @utility shadow-soft {
   box-shadow: 0 1px 3px rgba(0, 50, 25, 0.06), 0 4px 12px rgba(0, 50, 25, 0.05);
 }
@@ -216,119 +192,34 @@ h1, h2, h3 {
   box-shadow: 0 2px 6px rgba(0, 50, 25, 0.07), 0 12px 28px rgba(0, 50, 25, 0.09);
 }
 
-/* WYSIWYG editor content styling — prose-like for rich_description display */
+/* WYSIWYG editor content styling */
 .wysiwyg-content {
   font-size: 0.95rem;
   line-height: 1.7;
 }
-.wysiwyg-content h2 {
-  font-size: 1.35rem;
-  font-weight: 700;
-  margin-top: 1.5rem;
-  margin-bottom: 0.6rem;
-  color: var(--color-ink);
-}
-.wysiwyg-content h3 {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin-top: 1.2rem;
-  margin-bottom: 0.5rem;
-  color: var(--color-ink);
-}
-.wysiwyg-content p {
-  margin-bottom: 0.8rem;
-}
-.wysiwyg-content ul {
-  list-style: disc;
-  padding-left: 1.5rem;
-  margin-bottom: 0.8rem;
-}
-.wysiwyg-content ol {
-  list-style: decimal;
-  padding-left: 1.5rem;
-  margin-bottom: 0.8rem;
-}
-.wysiwyg-content li {
-  margin-bottom: 0.3rem;
-}
-.wysiwyg-content a {
-  color: var(--color-paroki-600);
-  text-decoration: underline;
-  font-weight: 500;
-}
-.wysiwyg-content a:hover {
-  color: var(--color-paroki-800);
-}
-.wysiwyg-content strong {
-  font-weight: 700;
-  color: var(--color-ink);
-}
-.wysiwyg-content img {
-  max-width: 100%;
-  border-radius: 0.5rem;
-  margin: 1rem 0;
-}
-.wysiwyg-content blockquote {
-  border-left: 3px solid var(--color-gold-400);
-  padding-left: 1rem;
-  margin: 1rem 0;
-  font-style: italic;
-  color: var(--color-ink-soft);
-}
-.wysiwyg-content hr {
-  border: none;
-  border-top: 1px solid var(--color-perak-200);
-  margin: 1.5rem 0;
-}
-.wysiwyg-content table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 1rem 0;
-  font-size: 0.875rem;
-}
-.wysiwyg-content th,
-.wysiwyg-content td {
-  border: 1px solid var(--color-perak-200);
-  padding: 0.5rem 0.75rem;
-  text-align: left;
-}
-.wysiwyg-content th {
-  background-color: var(--color-perak-50);
-  font-weight: 600;
-  color: var(--color-ink);
-}
-.wysiwyg-content tr:nth-child(even) {
-  background-color: var(--color-perak-50);
-}
-.wysiwyg-content code {
-  background-color: var(--color-perak-100);
-  border-radius: 0.25rem;
-  padding: 0.125rem 0.375rem;
-  font-size: 0.85em;
-  font-family: 'Courier New', monospace;
-  color: var(--color-merah-700);
-}
-.wysiwyg-content pre {
-  background-color: var(--color-perak-900);
-  color: var(--color-perak-200);
-  border-radius: 0.5rem;
-  padding: 1rem;
-  overflow-x: auto;
-  margin: 1rem 0;
-}
-.wysiwyg-content pre code {
-  background: none;
-  color: inherit;
-  padding: 0;
-}
-.wysiwyg-content em {
-  font-style: italic;
-}
-.wysiwyg-content u {
-  text-decoration: underline;
-}
+.wysiwyg-content h2 { font-size: 1.35rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.6rem; color: var(--color-ink); }
+.wysiwyg-content h3 { font-size: 1.1rem; font-weight: 700; margin-top: 1.2rem; margin-bottom: 0.5rem; color: var(--color-ink); }
+.wysiwyg-content p { margin-bottom: 0.8rem; }
+.wysiwyg-content ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 0.8rem; }
+.wysiwyg-content ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 0.8rem; }
+.wysiwyg-content li { margin-bottom: 0.3rem; }
+.wysiwyg-content a { color: var(--color-paroki-600); text-decoration: underline; font-weight: 500; }
+.wysiwyg-content a:hover { color: var(--color-paroki-800); }
+.wysiwyg-content strong { font-weight: 700; color: var(--color-ink); }
+.wysiwyg-content img { max-width: 100%; border-radius: 0.5rem; margin: 1rem 0; }
+.wysiwyg-content blockquote { border-left: 3px solid var(--color-gold-400); padding-left: 1rem; margin: 1rem 0; font-style: italic; color: var(--color-ink-soft); }
+.wysiwyg-content hr { border: none; border-top: 1px solid var(--color-perak-200); margin: 1.5rem 0; }
+.wysiwyg-content table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.875rem; }
+.wysiwyg-content th, .wysiwyg-content td { border: 1px solid var(--color-perak-200); padding: 0.5rem 0.75rem; text-align: left; }
+.wysiwyg-content th { background-color: var(--color-perak-50); font-weight: 600; color: var(--color-ink); }
+.wysiwyg-content tr:nth-child(even) { background-color: var(--color-perak-50); }
+.wysiwyg-content code { background-color: var(--color-perak-100); border-radius: 0.25rem; padding: 0.125rem 0.375rem; font-size: 0.85em; font-family: 'Courier New', monospace; color: var(--color-merah-700); }
+.wysiwyg-content pre { background-color: var(--color-perak-900); color: var(--color-perak-200); border-radius: 0.5rem; padding: 1rem; overflow-x: auto; margin: 1rem 0; }
+.wysiwyg-content pre code { background: none; color: inherit; padding: 0; }
+.wysiwyg-content em { font-style: italic; }
+.wysiwyg-content u { text-decoration: underline; }
 
-/* WYSIWYG editable area (editor mode) */
+/* WYSIWYG editable area */
 .wysiwyg-content[contenteditable]:empty::before {
   content: attr(data-placeholder);
   color: var(--color-perak-400);

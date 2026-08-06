@@ -122,7 +122,7 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
   </head>
   <body>
     <!-- Top announcement bar — gold accent stripe -->
-    <div class="hidden bg-paroki-900 text-gold-200 md:block">
+    <div class="hidden bg-perak-900 text-gold-200 md:block">
       <div class="mx-auto flex max-w-6xl items-center justify-center gap-2 px-4 py-1.5 text-xs">
         <span class="text-gold-400">✦</span>
         <p class="font-medium tracking-wide">Bersatu Membangun Ekonomi Umat Paroki St. Servatius</p>
@@ -130,56 +130,51 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
       </div>
     </div>
 
-    <!-- Main header — brand left, menu right -->
-    <header class="sticky top-0 z-50 border-b border-perak-200 bg-white/95 shadow-soft backdrop-blur-md">
+    <!-- Main header — brand left, medallion center, menu right -->
+    <header class="sticky top-0 z-50 border-b border-perak-200 bg-white shadow-soft backdrop-blur-md">
       <div class="h-0.5 w-full bg-gradient-to-r from-paroki-700 via-gold-400 to-merah-700"></div>
-      <nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <!-- Left: Brand + Logo -->
-        <a href="/" class="flex items-center gap-2.5">
-          <img src="/logo-umkm-hires.png" alt="Logo UMKM St. Servatius" class="h-11 w-11 shrink-0 object-contain drop-shadow-sm md:h-12 md:w-12" />
-          <div class="flex flex-col leading-tight">
-            <span class="font-display text-base font-extrabold tracking-tight text-ink md:text-lg">UMKM St. Servatius</span>
-            <span class="text-[11px] font-medium text-paroki-600 md:text-xs">Paroki Kampung Sawah</span>
-          </div>
+      <nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-2.5">
+        <!-- Left: Brand text -->
+        <a href="/" class="flex flex-col leading-tight">
+          <span class="font-display text-base font-extrabold tracking-tight text-ink md:text-lg">UMKM St. Servatius</span>
+          <span class="text-[11px] font-medium text-perak-600 md:text-xs">Paroki Kampung Sawah</span>
         </a>
 
         <!-- Right: Nav links + auth, all pushed right -->
-        <div class="hidden items-center gap-2 md:flex">
-          <div class="flex items-center gap-0">
-            <a href="/umkm" class="rounded-lg px-3 py-2 text-sm font-semibold text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">UMKM</a>
-            <a href="/produk" class="rounded-lg px-3 py-2 text-sm font-semibold text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">Produk</a>
-            <a href="/bazar" class="rounded-lg px-3 py-2 text-sm font-semibold text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">Bazar</a>
+        <div class="hidden items-center gap-1 md:flex">
+          <a href="/umkm" class="rounded-lg px-3 py-2 text-sm font-semibold text-perak-700 transition hover:bg-perak-100 hover:text-paroki-700">UMKM</a>
+          <a href="/produk" class="rounded-lg px-3 py-2 text-sm font-semibold text-perak-700 transition hover:bg-perak-100 hover:text-paroki-700">Produk</a>
+          <a href="/bazar" class="rounded-lg px-3 py-2 text-sm font-semibold text-perak-700 transition hover:bg-perak-100 hover:text-paroki-700">Bazar</a>
 
-            <!-- Dropdown: Artikel [Berita, Blog] -->
-            <div class="relative nav-dropdown" id="dd-artikel">
-              <button class="nav-dd-btn flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">
-                Artikel
-                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
-              </button>
-              <div class="nav-dd-menu invisible absolute right-0 top-full z-50 mt-1.5 w-48 translate-y-1 rounded-2xl border border-perak-200 bg-white py-2 opacity-0 shadow-xl transition-all duration-150">
-                <a href="/berita" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">
-                  <svg class="h-4 w-4 text-paroki-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9.2a2 2 0 0 1 .559-1.38l1.441-1.42M18 14h-8M15 18h-5M10 6h8v4h-8V6Z"/></svg>
-                  Berita
-                </a>
-                <a href="/blog" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-perak-700 transition hover:bg-paroki-50 hover:text-paroki-800">
-                  <svg class="h-4 w-4 text-gold-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H3ZM14 12a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-9Z"/></svg>
-                  Blog UMKM
-                </a>
-              </div>
+          <!-- Dropdown: Artikel [Berita, Blog] -->
+          <div class="relative nav-dropdown" id="dd-artikel">
+            <button class="nav-dd-btn flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-perak-700 transition hover:bg-perak-100 hover:text-paroki-700">
+              Artikel
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="nav-dd-menu invisible absolute right-0 top-full z-50 mt-1.5 w-48 translate-y-1 rounded-2xl border border-perak-200 bg-white py-2 opacity-0 shadow-xl transition-all duration-150">
+              <a href="/berita" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-perak-700 transition hover:bg-perak-100 hover:text-paroki-700">
+                <svg class="h-4 w-4 text-perak-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9.2a2 2 0 0 1 .559-1.38l1.441-1.42M18 14h-8M15 18h-5M10 6h8v4h-8V6Z"/></svg>
+                Berita
+              </a>
+              <a href="/blog" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-perak-700 transition hover:bg-perak-100 hover:text-paroki-700">
+                <svg class="h-4 w-4 text-gold-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H3ZM14 12a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-9Z"/></svg>
+                Blog UMKM
+              </a>
             </div>
           </div>
 
           <div class="mx-1 h-6 w-px bg-perak-200"></div>
 
           <div id="nav-auth-buttons" class="nav-guest-only flex items-center gap-2">
-            <a href="/masuk" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-perak-600 transition hover:bg-paroki-50 hover:text-paroki-800">Masuk</a>
+            <a href="/masuk" class="rounded-lg px-3 py-2 text-sm font-semibold text-perak-600 transition hover:bg-perak-100 hover:text-paroki-700">Masuk</a>
             <a href="/daftar" class="inline-flex items-center gap-1.5 rounded-xl bg-gold-500 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-gold-600 hover:shadow-md active:translate-y-px">Daftar</a>
           </div>
           <div id="nav-notif-area" class="hidden relative"></div>
           <div id="nav-auth-area" class="hidden"></div>
         </div>
 
-        <!-- Mobile: hamburger only -->
+        <!-- Mobile: hamburger -->
         <button
           id="mobile-menu-btn"
           class="rounded-xl p-2 text-perak-700 transition hover:bg-perak-100 md:hidden"
@@ -192,6 +187,11 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
           </svg>
         </button>
       </nav>
+
+      <!-- Hanging centered logo (medallion) -->
+      <a href="/" class="absolute bottom-0 left-1/2 z-50 flex -translate-x-1/2 translate-y-1/2 flex-col items-center" aria-label="UMKM St. Servatius — Beranda">
+        <img src="/logo-umkm-hires.png" alt="Logo UMKM St. Servatius" class="h-12 w-12 object-contain drop-shadow-md transition hover:scale-105 md:h-16 md:w-16" />
+      </a>
 
       <!-- Mobile menu -->
       <div id="mobile-menu" class="hidden border-t border-perak-200 bg-white px-4 py-3 md:hidden">
@@ -212,14 +212,14 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
 
     <!-- Global search bar (hidden on homepage + admin) -->
     {!hideSearch && (
-      <div class="border-b border-perak-200 bg-perak-50 py-3">
+      <div class="border-b border-perak-200 bg-perak-100 pt-8 md:pt-10">
         <div class="mx-auto max-w-6xl px-4 pb-2">
           <form action="/produk" method="get" class="flex items-center gap-2 py-2">
             <div class="relative flex-1">
               <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-perak-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.3-4.3"/></svg>
               <input type="text" name="q" placeholder="Cari produk, jasa, atau usaha..." class="w-full rounded-xl border border-perak-200 bg-white py-2.5 pl-10 pr-4 text-sm text-ink outline-none transition placeholder:text-perak-400 focus:border-gold-400 focus:bg-white focus:ring-2 focus:ring-gold-100" />
             </div>
-            <button type="submit" class="inline-flex shrink-0 items-center justify-center rounded-xl bg-paroki-800 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-paroki-900 active:translate-y-px">
+            <button type="submit" class="inline-flex shrink-0 items-center justify-center rounded-xl bg-perak-800 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-perak-900 active:translate-y-px">
               Cari
             </button>
           </form>
