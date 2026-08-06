@@ -105,18 +105,11 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
       <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
     )}
 
-    <!-- Anti-FOUC: apply dark mode before paint -->
-    <script is:inline>
-      (function() {
-        const t = localStorage.getItem('theme');
-        if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-          document.documentElement.classList.add('dark');
-        }
-      })();
-    </script>
-
     <!-- Load Supabase config from Worker runtime env (dynamic, not baked at build) -->
     <script is:inline define:vars={{ sbUrl, sbKey }}>
+      // Clear any stale dark mode from previous toggle
+      localStorage.removeItem('theme');
+      document.documentElement.classList.remove('dark');
       window.__SUPABASE__ = { url: sbUrl, key: sbKey };
     </script>
   </head>
@@ -262,25 +255,6 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
             <span class="text-xs font-semibold uppercase tracking-wider text-gold-300">Informasi</span>
             <a href="/syarat-ketentuan" class="text-paroki-100 transition hover:text-gold-200">Syarat &amp; Ketentuan</a>
             <a href="/kebijakan-privasi" class="text-paroki-100 transition hover:text-gold-200">Kebijakan Privasi</a>
-            <!-- Theme toggle -->
-            <div class="mt-1 flex items-center gap-2">
-              <span class="text-xs font-semibold uppercase tracking-wider text-gold-300">Tema</span>
-              <button
-                id="theme-toggle"
-                class="inline-flex items-center gap-1.5 rounded-lg border border-paroki-700 bg-paroki-800 px-2.5 py-1 text-xs font-medium text-paroki-100 transition hover:bg-paroki-700"
-                aria-label="Ganti tema terang/gelap"
-              >
-                <svg class="hidden h-3.5 w-3.5 dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="4"/>
-                  <path stroke-linecap="round" d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-                </svg>
-                <svg class="h-3.5 w-3.5 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
-                </svg>
-                <span class="dark:hidden">Gelap</span>
-                <span class="hidden dark:inline">Terang</span>
-              </button>
-            </div>
           </div>
         </div>
         <div class="mt-8 border-t border-gold-400/20 pt-5">
@@ -368,12 +342,6 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
         });
       });
 
-      // ── Theme toggle (in footer) ──
-      const themeBtn = document.getElementById('theme-toggle');
-      themeBtn?.addEventListener('click', () => {
-        const isDark = document.documentElement.classList.toggle('dark');
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-      });
     </script>
 
     <!-- Auth-aware navbar -->
