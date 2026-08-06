@@ -95,13 +95,15 @@ html {
 }
 
 body {
-  @apply bg-perak-50 text-ink antialiased;
+  background-color: #fdfbf6; /* warm white with gold tint */
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
   font-family: var(--font-sans);
 }
 
 /* ═══ Dark Mode Surface Overrides ═══ */
 .dark body {
-  background-color: #12151a;
+  background-color: #14130f; /* warm dark */
 }
 
 /* Surfaces: bg-white + opacity variants → dark */
