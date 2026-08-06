@@ -364,7 +364,7 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
           // Logged in: fetch profile
           const { data: profile } = await sb
             .from('profiles')
-            .select('full_name, role, verification_status, verification_type')
+            .select('full_name, role, verification_status, verification_type, avatar_url')
             .eq('id', session.user.id)
             .single();
 
@@ -471,9 +471,8 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
 
           if (desktopArea) {
             desktopArea.innerHTML = `
-              <button class="nav-dd-btn flex items-center gap-2 rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-paroki-50">
-                <span class="flex h-7 w-7 items-center justify-center rounded-full bg-paroki-900 text-xs font-bold text-white">${initials}</span>
-                <span class="max-w-[100px] truncate">${fullName}</span>
+              <button class="nav-dd-btn flex items-center gap-1.5 rounded-lg p-1 pr-2 transition hover:bg-paroki-50">
+                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-paroki-900 text-xs font-bold text-white overflow-hidden">${profile?.avatar_url ? `<img src="${profile.avatar_url}" alt="" class="h-8 w-8 object-cover rounded-full" />` : initials}</span>
                 <svg class="h-3.5 w-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
               </button>
               <div class="nav-dd-menu invisible absolute right-0 top-full z-50 mt-1 w-52 translate-y-1 rounded-xl border border-gray-200 bg-white py-1.5 opacity-0 shadow-lg transition-all duration-150">

@@ -794,6 +794,39 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
           {/* Profile info card */}
           <div className="rounded-lg border border-gray-200 bg-white p-5">
             <h3 className="mb-4 font-display text-lg font-bold text-ink">Informasi Akun</h3>
+            {/* Avatar upload */}
+            <div className="mb-4 flex items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-paroki-900 text-xl font-bold text-white">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className="h-16 w-16 object-cover" />
+                ) : (
+                  (profile?.full_name || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+                )}
+              </div>
+              <div>
+                <label className="cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+                  Ganti Foto
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const ext = file.name.split('.').pop();
+                      const path = `${user?.id}/avatar.${ext}`;
+                      const { error: upErr } = await supabase.storage.from('business-images').upload(path, file, { upsert: true });
+                      if (upErr) { alert('Gagal upload: ' + upErr.message); return; }
+                      const { data: { publicUrl } } = supabase.storage.from('business-images').getPublicUrl(path);
+                      const url = publicUrl + '?t=' + Date.now();
+                      await supabase.from('profiles').update({ avatar_url: url }).eq('id', user!.id);
+                      setProfile(p => p ? { ...p, avatar_url: url } : p);
+                    }}
+                  />
+                </label>
+                <p className="mt-1 text-xs text-gray-400">JPG/PNG, maks 2MB</p>
+              </div>
+            </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between border-b border-gray-100 pb-2">
                 <span className="text-gray-500">Nama</span>
