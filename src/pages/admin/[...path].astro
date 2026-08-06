@@ -6,7 +6,7 @@ import AdminPanel from '../../components/react/AdminPanel.tsx';
 export async function getStaticPaths() {
   const tabs = [
     'moderasi', 'verifikasi', 'listing', 'kategori', 'wilayah',
-    'users', 'reviews', 'laporan', 'bazar', 'berita', 'moderasi-blog',
+    'users', 'reviews', 'laporan', 'bazar', 'berita', 'moderasi-blog', 'log',
   ];
   // Root: /admin/ (no path param)
   const paths = [{ params: { path: undefined } }];

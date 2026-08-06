@@ -160,6 +160,7 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
             <a href="/masuk" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-perak-600 transition hover:bg-paroki-50 hover:text-paroki-800">Masuk</a>
             <a href="/daftar" class="inline-flex items-center gap-1.5 rounded-xl bg-gold-500 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-gold-600 hover:shadow-md active:translate-y-px">Daftar</a>
           </div>
+          <div id="nav-notif-area" class="hidden relative"></div>
           <div id="nav-auth-area" class="hidden"></div>
         </div>
 
@@ -374,6 +375,95 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
 
           // Hide guest-only elements
           document.querySelectorAll('.nav-guest-only').forEach(el => el.classList.add('hidden'));
+
+          // ── Notification Bell ──
+          const notifArea = document.getElementById('nav-notif-area');
+          if (notifArea) {
+            notifArea.innerHTML = `
+              <button id="notif-bell-btn" class="relative rounded-lg p-2 text-gray-600 transition hover:bg-paroki-50 hover:text-paroki-800" aria-label="Notifikasi">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                <span id="notif-badge" class="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white" style="display:none"></span>
+              </button>
+              <div id="notif-panel" class="invisible absolute right-0 top-full z-50 mt-1 w-80 max-h-[400px] overflow-y-auto translate-y-1 rounded-xl border border-gray-200 bg-white py-1.5 opacity-0 shadow-xl transition-all duration-150">
+                <div class="flex items-center justify-between px-4 py-2 border-b border-gray-100">
+                  <span class="text-sm font-bold text-gray-800">Notifikasi</span>
+                  <button id="notif-mark-all" class="text-xs font-medium text-paroki-600 hover:text-paroki-800 hover:underline">Tandai semua dibaca</button>
+                </div>
+                <div id="notif-list" class="divide-y divide-gray-50"></div>
+              </div>
+            `;
+            notifArea.classList.remove('hidden');
+            notifArea.classList.add('nav-dropdown', 'relative');
+
+            const notifBtn = notifArea.querySelector('#notif-bell-btn');
+            const notifPanel = notifArea.querySelector('#notif-panel');
+            const notifBadge = notifArea.querySelector('#notif-badge');
+            const notifList = notifArea.querySelector('#notif-list');
+
+            async function loadNotifs() {
+              const { data: notifs } = await sb.from('notifications').select('*').order('created_at', { ascending: false }).limit(20);
+              const unread = notifs?.filter(n => !n.is_read).length || 0;
+              if (unread > 0) { notifBadge.textContent = unread > 9 ? '9+' : unread; notifBadge.style.display = 'flex'; }
+              else { notifBadge.style.display = 'none'; }
+
+              if (!notifs || notifs.length === 0) {
+                notifList.innerHTML = '<div class="px-4 py-8 text-center text-sm text-gray-400">Belum ada notifikasi</div>';
+                return;
+              }
+              notifList.innerHTML = notifs.map(n => {
+                const time = new Date(n.created_at).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+                const dot = n.is_read ? '' : '<span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-paroki-500"></span>';
+                return `<a href="${n.link || '#'}" data-id="${n.id}" class="notif-item flex gap-2.5 px-4 py-3 transition hover:bg-paroki-50 ${n.is_read ? 'opacity-60' : ''}">
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-800">${n.title}</p>
+                    <p class="mt-0.5 text-xs text-gray-500 line-clamp-2">${n.message}</p>
+                    <p class="mt-1 text-[10px] text-gray-400">${time}</p>
+                  </div>${dot}
+                </a>`;
+              }).join('');
+
+              // Wire mark-as-read on click
+              notifList.querySelectorAll('.notif-item').forEach(el => {
+                el.addEventListener('click', async (e) => {
+                  const id = el.dataset.id;
+                  await sb.from('notifications').update({ is_read: true }).eq('id', id);
+                });
+              });
+            }
+
+            loadNotifs();
+
+            // Realtime: update badge when new notification arrives
+            sb.channel('notifications')
+              .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: 'user_id=eq.' + session.user.id }, () => loadNotifs())
+              .subscribe();
+
+            // Toggle panel
+            notifBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              if (notifPanel.classList.contains('opacity-0')) {
+                notifPanel.classList.remove('invisible', 'opacity-0', 'translate-y-1');
+                notifPanel.classList.add('opacity-100', 'translate-y-0');
+              } else {
+                notifPanel.classList.add('invisible', 'opacity-0', 'translate-y-1');
+                notifPanel.classList.remove('opacity-100', 'translate-y-0');
+              }
+            });
+
+            // Close on outside click
+            document.addEventListener('click', (e) => {
+              if (!notifArea.contains(e.target)) {
+                notifPanel.classList.add('invisible', 'opacity-0', 'translate-y-1');
+                notifPanel.classList.remove('opacity-100', 'translate-y-0');
+              }
+            });
+
+            // Mark all as read
+            notifArea.querySelector('#notif-mark-all')?.addEventListener('click', async () => {
+              await sb.from('notifications').update({ is_read: true }).eq('user_id', session.user.id).eq('is_read', false);
+              loadNotifs();
+            });
+          }
 
           // ── Desktop: Akun dropdown ──
           const desktopArea = document.getElementById('nav-auth-area');

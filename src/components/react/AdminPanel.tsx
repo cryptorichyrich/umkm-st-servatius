@@ -17,6 +17,7 @@ import {
   Flag,
   Eye,
   Newspaper,
+  History,
 } from 'lucide-react';
 import {
   supabase,
@@ -32,6 +33,7 @@ import {
 const BazarManager = lazy(() => import('./BazarManager'));
 const NewsManager = lazy(() => import('./NewsManager'));
 const BlogModeration = lazy(() => import('./BlogModeration'));
+const AdminActivityLog = lazy(() => import('./AdminActivityLog'));
 
 const TabFallback = () => (
   <div className="flex items-center justify-center py-20">
@@ -155,7 +157,8 @@ type TabKey =
   | 'laporan'
   | 'bazar'
   | 'berita'
-  | 'moderasi-blog';
+  | 'moderasi-blog'
+  | 'log';
 
 const VALID_TABS: TabKey[] = [
   'moderasi',
@@ -169,6 +172,7 @@ const VALID_TABS: TabKey[] = [
   'bazar',
   'berita',
   'moderasi-blog',
+  'log',
 ];
 
 function getTabFromURL(): TabKey {
@@ -735,6 +739,16 @@ export default function AdminPanel() {
         .update({ is_featured: !currentValue })
         .eq('id', businessId);
       if (updateErr) throw updateErr;
+      // Log admin action
+      const bizName = allBiz.find(b => b.id === businessId)?.name || businessId;
+      await supabase.rpc('log_admin_action', {
+        p_action: 'toggle_featured',
+        p_target_type: 'business',
+        p_target_id: businessId,
+        p_target_name: bizName,
+        p_summary: `${!currentValue ? 'Aktifkan' : 'Nonaktifkan'} featured: ${bizName}`,
+        p_details: { featured: !currentValue },
+      }).then(() => {});
       setAllBiz((prev) =>
         prev.map((b) =>
           b.id === businessId ? { ...b, is_featured: !currentValue } : b,
@@ -1202,6 +1216,15 @@ export default function AdminPanel() {
         .update({ is_visible: !currentVisible })
         .eq('id', reviewId);
       if (updateErr) throw updateErr;
+      // Log admin action
+      await supabase.rpc('log_admin_action', {
+        p_action: 'toggle_review_visibility',
+        p_target_type: 'review',
+        p_target_id: reviewId,
+        p_target_name: '',
+        p_summary: `${!currentVisible ? 'Tampilkan' : 'Sembunyikan'} ulasan`,
+        p_details: { visible: !currentVisible },
+      }).then(() => {});
       setReviewList((prev) =>
         prev.map((r) =>
           r.id === reviewId ? { ...r, is_visible: !currentVisible } : r,
@@ -1228,6 +1251,15 @@ export default function AdminPanel() {
         .delete()
         .eq('id', reviewId);
       if (delErr) throw delErr;
+      // Log admin action
+      await supabase.rpc('log_admin_action', {
+        p_action: 'delete_review',
+        p_target_type: 'review',
+        p_target_id: reviewId,
+        p_target_name: '',
+        p_summary: 'Hapus ulasan',
+        p_details: {},
+      }).then(() => {});
       setReviewList((prev) => prev.filter((r) => r.id !== reviewId));
     } catch (err) {
       alert(
@@ -1516,6 +1548,7 @@ export default function AdminPanel() {
     { key: 'bazar', label: 'Bazar', icon: Store },
     { key: 'berita', label: 'Berita', icon: Newspaper },
     { key: 'moderasi-blog', label: 'Moderasi Blog', icon: FileText },
+    { key: 'log', label: 'Log Aktivitas', icon: History },
   ];
 
   // ───────────────────────────────────────────
@@ -3480,6 +3513,15 @@ export default function AdminPanel() {
       {activeTab === 'moderasi-blog' && authState === 'ok' && (
         <Suspense fallback={<TabFallback />}>
           <BlogModeration />
+        </Suspense>
+      )}
+
+      {/* ─────────────────────────────────────────── */}
+      {/* LOG AKTIVITAS TAB */}
+      {/* ─────────────────────────────────────────── */}
+      {activeTab === 'log' && authState === 'ok' && (
+        <Suspense fallback={<TabFallback />}>
+          <AdminActivityLog />
         </Suspense>
       )}
 
