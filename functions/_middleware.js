@@ -1,18 +1,17 @@
-// Edge rate limiter using Cache API (per-colo, not global, but catches burst abuse)
-// Uses CF-Connecting-IP as the key, sliding window per minute
-
+// Edge rate limiter — only counts dynamic requests, skips static assets
 const WINDOW_SEC = 60;
 const LIMITS = {
-  '/api/upload': 10,   // 10 uploads/min
-  '/api/auth': 5,      // 5 auth attempts/min
+  '/api/upload': 10,
+  '/api/auth': 5,
 };
-const DEFAULT_LIMIT = 120; // 120 req/min for everything else
+const DEFAULT_LIMIT = 300;
 
-async function getRate(ip, path) {
+const SKIP_EXT = /\.(js|css|png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|eot|map|xml|txt|webmanifest)$/i;
+
+async function getRate(ip, category) {
   const cache = caches.default;
-  const limit = Object.entries(LIMITS).find(([p]) => path.startsWith(p))?.[1] ?? DEFAULT_LIMIT;
-  const key = `ratelimit:${ip}:${path.startsWith('/api/upload') ? 'upload' : path.startsWith('/api/auth') ? 'auth' : 'default'}`;
-  const cacheKey = new Request(`https://ratelimit.internal/${key}`);
+  const limit = LIMITS[category] ?? DEFAULT_LIMIT;
+  const cacheKey = new Request(`https://ratelimit.internal/ratelimit:${ip}:${category}`);
   const cached = await cache.match(cacheKey);
   const count = cached ? parseInt(await cached.text()) : 0;
   return { count, limit };
@@ -30,14 +29,21 @@ async function incrementRate(ip, category) {
 
 export async function onRequest(context) {
   const { request, next } = context;
-  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
   const path = new URL(request.url).pathname;
 
-  const category = path.startsWith('/api/upload') ? 'upload' 
-    : path.startsWith('/api/auth') ? 'auth' 
-    : 'default';
+  // Skip static assets — they're cached by CDN, don't count against rate limit
+  if (SKIP_EXT.test(path) || path.startsWith('/_astro/')) {
+    return next();
+  }
 
-  const { count, limit } = await getRate(ip, path);
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+
+  let category = 'default';
+  for (const [prefix] of Object.entries(LIMITS)) {
+    if (path.startsWith(prefix)) { category = prefix; break; }
+  }
+
+  const { count, limit } = await getRate(ip, category);
 
   if (count >= limit) {
     return new Response(JSON.stringify({ error: 'Rate limit exceeded. Coba lagi dalam beberapa saat.' }), {
@@ -45,13 +51,10 @@ export async function onRequest(context) {
       headers: {
         'Content-Type': 'application/json',
         'Retry-After': String(WINDOW_SEC),
-        'X-RateLimit-Limit': String(limit),
-        'X-RateLimit-Remaining': '0',
       }
     });
   }
 
   await incrementRate(ip, category);
-
   return next();
 }
