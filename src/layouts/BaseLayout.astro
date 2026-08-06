@@ -105,6 +105,16 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
       <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
     )}
 
+    <!-- Anti-FOUC: apply dark mode before paint -->
+    <script is:inline>
+      (function() {
+        const t = localStorage.getItem('theme');
+        if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+
     <!-- Load Supabase config from Worker runtime env (dynamic, not baked at build) -->
     <script is:inline define:vars={{ sbUrl, sbKey }}>
       window.__SUPABASE__ = { url: sbUrl, key: sbKey };
@@ -164,18 +174,33 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
           <div id="nav-auth-area" class="hidden"></div>
         </div>
 
-        <!-- Right: Mobile menu button -->
-        <button
-          id="mobile-menu-btn"
-          class="rounded-xl p-2 text-perak-700 transition hover:bg-perak-100 md:hidden"
-          aria-label="Buka menu"
-          aria-expanded="false"
-          aria-controls="mobile-menu"
-        >
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16" />
-          </svg>
-        </button>
+        <!-- Right: Theme toggle + Mobile menu button -->
+        <div class="flex items-center gap-1 md:gap-0">
+          <button
+            id="theme-toggle"
+            class="rounded-xl p-2 text-perak-700 transition hover:bg-perak-100 dark:text-perak-700 dark:hover:bg-perak-200"
+            aria-label="Ganti tema"
+          >
+            <svg class="h-5 w-5 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+            </svg>
+            <svg class="hidden h-5 w-5 dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+            </svg>
+          </button>
+
+          <button
+            id="mobile-menu-btn"
+            class="rounded-xl p-2 text-perak-700 transition hover:bg-perak-100 md:hidden"
+            aria-label="Buka menu"
+            aria-expanded="false"
+            aria-controls="mobile-menu"
+          >
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+          </button>
+        </div>
       </nav>
 
       <!-- Hanging centered logo (Vatican-style medallion) -->
@@ -337,6 +362,13 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
           m.classList.add('invisible', 'opacity-0', 'translate-y-1');
           m.classList.remove('opacity-100', 'translate-y-0');
         });
+      });
+
+      // ── Theme toggle ──
+      const themeBtn = document.getElementById('theme-toggle');
+      themeBtn?.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
       });
     </script>
 

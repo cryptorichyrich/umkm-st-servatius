@@ -33,6 +33,10 @@ export const supabase: SupabaseClient = createClient(
       persistSession: isBrowser,
       autoRefreshToken: isBrowser,
       detectSessionInUrl: isBrowser,
+      flowType: 'pkce',
+      // ponytail: token storage is inherently localStorage in SPA — CSP headers
+      // block inline scripts so XSS exfil risk is minimal. SSR auth would eliminate
+      // this entirely but requires migrating off static output.
     },
   },
 );

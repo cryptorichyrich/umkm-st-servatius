@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Dark mode variant — class-based (toggle) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
   UMKM St. Servatius — Design Tokens v3
   ─────────────────────────────────────
@@ -78,6 +81,45 @@
   --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
+/* ═══ Dark Mode Token Overrides ═══ */
+/* Override the CSS variables so all utility classes that reference them adapt */
+.dark {
+  --color-paroki-50:  #0a1f14;
+  --color-paroki-100: #0e2a1b;
+  --color-paroki-200: #143a26;
+  --color-paroki-300: #2a5a42;
+  --color-paroki-400: #3d7a5e;
+  --color-paroki-500: #59a57e;
+  --color-paroki-600: #6dbd95;
+  --color-paroki-700: #8dc3a7;
+  --color-paroki-800: #badcc8;
+  --color-paroki-900: #dceee3;
+  --color-paroki-950: #f0f7f3;
+
+  --color-perak-50:  #14181a;
+  --color-perak-100: #1a2025;
+  --color-perak-200: #283038;
+  --color-perak-300: #3a444e;
+  --color-perak-400: #525e6a;
+  --color-perak-500: #6b7886;
+  --color-perak-600: #8a96a3;
+  --color-perak-700: #a8b3bc;
+  --color-perak-800: #cdd4da;
+  --color-perak-900: #e2e7eb;
+
+  --color-gold-300: #f3dd9c;
+  --color-gold-400: #ecc56a;
+  --color-gold-500: #e0ac3e;
+
+  --color-merah-400: #e47276;
+  --color-merah-500: #cf444a;
+
+  --color-ink: #e4e7e5;
+  --color-ink-soft: #9ca3a0;
+
+  color-scheme: dark;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -86,6 +128,49 @@ body {
   @apply bg-white text-ink antialiased;
   font-family: var(--font-sans);
 }
+
+.dark body {
+  background-color: #12160e;
+}
+
+/* Dark mode overrides for hardcoded Tailwind color utilities used in React components */
+.dark .bg-white { background-color: #1a1f15 !important; }
+.dark .bg-gray-50 { background-color: #14181a !important; }
+.dark .bg-gray-100 { background-color: #1a2025 !important; }
+.dark .bg-gray-200 { background-color: #283038 !important; }
+
+.dark .text-gray-400 { color: #6b7886 !important; }
+.dark .text-gray-500 { color: #8a96a3 !important; }
+.dark .text-gray-600 { color: #a8b3bc !important; }
+.dark .text-gray-700 { color: #cdd4da !important; }
+.dark .text-gray-800 { color: #e2e7eb !important; }
+.dark .text-gray-900 { color: #f0f3f5 !important; }
+
+.dark .border-gray-100 { border-color: #1a2025 !important; }
+.dark .border-gray-200 { border-color: #283038 !important; }
+.dark .border-gray-300 { border-color: #3a444e !important; }
+
+.dark .divide-gray-50 > * { border-color: #14181a !important; }
+.dark .divide-gray-100 > * { border-color: #1a2025 !important; }
+
+.dark .ring-gray-200 { --tw-ring-color: #283038 !important; }
+
+/* Dark mode for form inputs */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #1a2025 !important;
+  border-color: #283038 !important;
+  color: #e2e7eb !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #525e6a !important;
+}
+
+/* Dark mode shadow */
+.dark .shadow-soft { box-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.2); }
+.dark .shadow-soft-lg { box-shadow: 0 2px 6px rgba(0,0,0,0.3), 0 12px 28px rgba(0,0,0,0.25); }
 
 h1, h2, h3 {
   font-family: var(--font-display);
