@@ -74,8 +74,6 @@ export async function onRequestGet(context) {
 
     // ── Inject SEO meta tags ──
     const metaTags = `
-    <title>${escapeHtml(seoTitle)}</title>
-    <meta name="description" content="${escapeHtml(seoDesc)}" />
     <meta property="og:title" content="${escapeHtml(seoTitle)}" />
     <meta property="og:description" content="${escapeHtml(seoDesc)}" />
     <meta property="og:type" content="website" />
