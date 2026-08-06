@@ -90,6 +90,14 @@ export async function onRequestGet(context) {
 
     html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(seoTitle)}</title>`);
     html = html.replace(/<meta name="description" content="[^"]*"/, `<meta name="description" content="${escapeHtml(seoDesc)}"`);
+
+    // Remove existing og: and twitter: tags to avoid duplicates
+    html = html.replace(/<meta property="og:[^>]*>/g, '');
+    html = html.replace(/<meta name="twitter:[^>]*>/g, '');
+
+    // Fix canonical URL
+    html = html.replace(/<link rel="canonical" href="[^"]*"/, `<link rel="canonical" href="${SITE_URL}/berita/${slug}"`);
+
     html = html.replace('</head>', `${metaTags}\n</head>`);
 
     return new Response(html, {

@@ -93,6 +93,13 @@ export async function onRequestGet(context) {
     // Replace description meta
     html = html.replace(/<meta name="description" content="[^"]*"/, `<meta name="description" content="${escapeHtml(seoDesc)}"`);
 
+    // Remove existing og: and twitter: tags to avoid duplicates
+    html = html.replace(/<meta property="og:[^>]*>/g, '');
+    html = html.replace(/<meta name="twitter:[^>]*>/g, '');
+
+    // Fix canonical URL
+    html = html.replace(/<link rel="canonical" href="[^"]*"/, `<link rel="canonical" href="${SITE_URL}/umkm/${slug}"`);
+
     // Inject JSON-LD and og tags before </head>
     html = html.replace('</head>', `${metaTags}\n</head>`);
 
