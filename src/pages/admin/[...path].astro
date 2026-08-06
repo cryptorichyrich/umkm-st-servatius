@@ -2,12 +2,19 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import AdminPanel from '../../components/react/AdminPanel.tsx';
 
-export const prerender = true;
-
-export function getStaticPaths() {
-  return [
-    { params: { path: undefined } },
+// ── Pre-generate all admin tab routes for client-side routing ──
+export async function getStaticPaths() {
+  const tabs = [
+    'moderasi', 'verifikasi', 'listing', 'kategori', 'wilayah',
+    'users', 'reviews', 'laporan', 'bazar', 'berita', 'moderasi-blog',
   ];
+  // Root: /admin/ (no path param)
+  const paths = [{ params: { path: undefined } }];
+  // Sub-routes: /admin/moderasi, /admin/verifikasi, etc.
+  for (const tab of tabs) {
+    paths.push({ params: { path: tab } });
+  }
+  return paths;
 }
 
 const title = 'Admin Panel';
