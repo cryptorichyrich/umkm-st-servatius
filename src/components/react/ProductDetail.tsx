@@ -16,13 +16,14 @@ function formatPrice(price: number | null, note: string): string {
 }
 
 export default function ProductDetail({ slug: propSlug }: Props) {
-  // Parse slug from URL — supports /umkm/{biz-slug}/{prod-slug} and legacy /produk/{slug}
+  // Parse slug from URL — /{biz-slug}/{prod-slug} and legacy /produk/{slug}
   const slug = propSlug || (typeof window !== 'undefined'
     ? (() => {
         const parts = window.location.pathname.split('/').filter(Boolean);
         if (parts[0] === 'produk') return parts[1] || '';
-        if (parts[0] === 'umkm') return parts[2] || '';
-        return parts[parts.length - 1] || '';
+        // /{biz-slug}/{prod-slug} — product slug is the last segment
+        if (parts.length >= 2) return parts[parts.length - 1] || '';
+        return parts[0] || '';
       })()
     : '');
   const [product, setProduct] = useState<Product | null>(null);

@@ -744,7 +744,7 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
                           className="flex items-center gap-3 rounded-xl border border-paroki-200 bg-white p-3 shadow-sm"
                         >
                           {/* Thumbnail */}
-                          <a href={`/umkm/${prod.business?.slug || '_'}/${prod.slug}`} className="flex-shrink-0">
+                          <a href={`/${prod.business?.slug || '_'}/${prod.slug}`} className="flex-shrink-0">
                             <div className="h-14 w-14 overflow-hidden rounded-lg bg-paroki-50">
                               {prod.image_url ? (
                                 <img src={prod.image_url} alt={prod.name} className="h-full w-full object-cover" />
@@ -757,7 +757,7 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
                           </a>
 
                           {/* Info */}
-                          <a href={`/umkm/${prod.business?.slug || '_'}/${prod.slug}`} className="min-w-0 flex-1">
+                          <a href={`/${prod.business?.slug || '_'}/${prod.slug}`} className="min-w-0 flex-1">
                             <h4 className="truncate font-medium text-paroki-900 hover:text-paroki-700">{prod.name}</h4>
                             <p className="truncate text-xs text-paroki-500">
                               {prod.business?.name || ''}

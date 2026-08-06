@@ -26,7 +26,7 @@ export async function onRequestGet(context) {
       const biz = Array.isArray(product.business) ? product.business[0] : product.business;
       const bizSlug = biz?.slug;
       if (bizSlug) {
-        return Response.redirect(`${SITE_URL}/umkm/${bizSlug}/${slug}/`, 301);
+        return Response.redirect(`${SITE_URL}/${bizSlug}/${slug}/`, 301);
       }
     }
 

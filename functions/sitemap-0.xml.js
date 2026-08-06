@@ -41,7 +41,7 @@ export async function onRequestGet(context) {
     const now = new Date().toISOString();
     const productUrls = productSlugs
       .filter(p => p.slug && p.business?.slug)
-      .map(p => `${SITE_URL}/umkm/${p.business.slug}/${p.slug}/`);
+      .map(p => `${SITE_URL}/${p.business.slug}/${p.slug}/`);
     const dynamicUrls = [
       ...businessSlugs.map(s => s.slug ? `${SITE_URL}/umkm/${s.slug}/` : '').filter(Boolean),
       ...productUrls,

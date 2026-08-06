@@ -127,7 +127,7 @@ export default function ProductGrid({
               const wa = waLink(phone, p.name, p.business?.name || businessName);
               return (
                 <div key={p.id} className="group flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white transition hover:border-gold-400 hover:shadow-soft">
-                  <a href={`/umkm/${p.business?.slug}/${p.slug}`} className="block">
+                  <a href={`/${p.business?.slug}/${p.slug}`} className="block">
                     <div className="relative aspect-square overflow-hidden bg-gray-100">
                       {p.image_url ? (
                         <img src={p.image_url} alt={p.name} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" loading="lazy" />
@@ -140,7 +140,7 @@ export default function ProductGrid({
                     </div>
                   </a>
                   <div className="flex flex-1 flex-col p-4">
-                    <a href={`/umkm/${p.business?.slug}/${p.slug}`}><h3 className="font-display text-[15px] font-bold leading-snug text-ink break-words transition hover:text-paroki-700">{p.name}</h3></a>
+                    <a href={`/${p.business?.slug}/${p.slug}`}><h3 className="font-display text-[15px] font-bold leading-snug text-ink break-words transition hover:text-paroki-700">{p.name}</h3></a>
                     {p.description && <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-gray-500">{p.description}</p>}
                     <div className="mt-2 text-sm font-bold text-paroki-700">{formatPrice(p.price, p.price_note)}</div>
                     {p.business && mode !== 'business' && (

@@ -1,4 +1,4 @@
-// CF Pages Function: /umkm/[slug]/[produk]
+// CF Pages Function: /[slug]/[produk]
 // Fetches product SEO data from Supabase, injects into static shell HTML
 
 const SUPABASE_URL = 'https://vfqcydqmwhfelqizxzbi.supabase.co';
@@ -36,7 +36,6 @@ export async function onRequestGet(context) {
   }
 
   try {
-    // Fetch product by slug, joined with business to verify bizSlug matches
     const apiUrl = `${SUPABASE_URL}/rest/v1/products?select=slug,name,description,rich_description,seo_title,seo_description,price,image_url,business:businesses!inner(name,slug,category:categories(name,slug))&slug=eq.${encodeURIComponent(prodSlug)}&business.slug=eq.${encodeURIComponent(bizSlug)}&is_available=eq.true&limit=1`;
     const res = await fetch(apiUrl, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
@@ -71,7 +70,7 @@ export async function onRequestGet(context) {
     }
 
     const ogImage = product.image_url || `${SITE_URL}/og-default.jpg`;
-    const canonicalUrl = `${SITE_URL}/umkm/${businessSlug}/${product.slug}`;
+    const canonicalUrl = `${SITE_URL}/${businessSlug}/${product.slug}`;
 
     const jsonLd = {
       '@context': 'https://schema.org',
@@ -94,7 +93,7 @@ export async function onRequestGet(context) {
     };
 
     // Fetch the static shell HTML
-    const shellRes = await env.ASSETS.fetch(new Request(new URL('/umkm/_/_/', request.url)));
+    const shellRes = await env.ASSETS.fetch(new Request(new URL('/_/_/', request.url)));
     let html = await shellRes.text();
 
     const metaTags = `
@@ -112,11 +111,9 @@ export async function onRequestGet(context) {
     html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(seoTitle)}</title>`);
     html = html.replace(/<meta name="description" content="[^"]*"/, `<meta name="description" content="${escapeHtml(seoDesc)}"`);
 
-    // Remove existing og: and twitter: tags to avoid duplicates
     html = html.replace(/<meta property="og:[^>]*>/g, '');
     html = html.replace(/<meta name="twitter:[^>]*>/g, '');
 
-    // Fix canonical URL
     html = html.replace(/<link rel="canonical" href="[^"]*"/, `<link rel="canonical" href="${escapeHtml(canonicalUrl)}"`);
 
     html = html.replace('</head>', `${metaTags}\n</head>`);

@@ -81,12 +81,12 @@ export async function GET({ url }: { url: URL }) {
     }
   }
 
-  // Product detail pages — /umkm/{biz-slug}/{prod-slug}
+  // Product detail pages — /{biz-slug}/{prod-slug}
   for (const p of products) {
     const bizSlug = Array.isArray(p.business) ? p.business[0]?.slug : p.business?.slug;
     if (p.slug && bizSlug) {
       entries.push({
-        loc: `${BASE_URL}/umkm/${xmlEscape(bizSlug)}/${xmlEscape(p.slug)}`,
+        loc: `${BASE_URL}/${xmlEscape(bizSlug)}/${xmlEscape(p.slug)}`,
         lastmod: p.updated_at,
         changefreq: 'weekly',
         priority: '0.8',
