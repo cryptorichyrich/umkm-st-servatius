@@ -528,62 +528,22 @@ export default function AuthForm({ mode }: Props) {
                 </div>
               </form>
             ) : (
-              <>
-                {/* Sub-mode toggle */}
-                <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
-                  <button type="button"
-                    onClick={() => { setPhoneMode('password'); setError(null); }}
-                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                      phoneMode === 'password' ? 'bg-white text-paroki-800 shadow-sm' : 'text-gray-500'}`}>
-                    <KeyRound className="h-3.5 w-3.5" /> Dengan Password
-                  </button>
-                  <button type="button"
-                    onClick={() => { setPhoneMode('otp'); setError(null); }}
-                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                      phoneMode === 'otp' ? 'bg-white text-paroki-800 shadow-sm' : 'text-gray-500'}`}>
-                    <MessageCircle className="h-3.5 w-3.5" /> Kode OTP
-                  </button>
-                </div>
-
-                {/* Password sub-mode */}
-                {phoneMode === 'password' && (
-                  <form onSubmit={handlePhoneLogin} className="space-y-4">
-                    <div>
-                      <label htmlFor="login_phone_pw" className={labelClass}>Kata Sandi</label>
-                      <div className="relative">
-                        <input id="login_phone_pw" type={showPassword ? 'text' : 'password'} required minLength={8}
-                          value={loginPhonePw} onChange={(e) => setLoginPhonePw(e.target.value)}
-                          placeholder="••••••••" className={inputClass} />
-                        {eyeBtn(showPassword, () => setShowPassword(!showPassword))}
-                      </div>
-                    </div>
-                    <ErrorBox />
-                    <button type="submit" disabled={loading || lockSecs > 0}
-                      className="w-full rounded-lg bg-gold-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-gold-600 disabled:cursor-not-allowed disabled:opacity-60 active:translate-y-px">
-                      {loading ? 'Memproses...' : lockSecs > 0 ? 'Terlalu cepat — tunggu...' : 'Masuk'}
-                    </button>
-                    <button type="button"
-                      onClick={() => { setPhoneMode('otp'); setError(null); }}
-                      className="w-full text-center text-xs font-medium text-paroki-700 hover:underline">
-                      Lupa password? Gunakan kode OTP →
-                    </button>
-                  </form>
-                )}
-
-                {/* OTP sub-mode */}
-                {phoneMode === 'otp' && (
-                  <div className="space-y-4">
-                    <ErrorBox />
-                    <button type="button" onClick={() => handleSendOtp()} disabled={loading || !isValidPhone(loginPhone) || lockSecs > 0}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#25D366] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#1eb858] disabled:cursor-not-allowed disabled:opacity-60 active:translate-y-px">
-                      {loading ? 'Mengirim...' : lockSecs > 0 ? 'Terlalu cepat — tunggu...' : (<><MessageCircle className="h-4 w-4" /> Kirim Kode via WhatsApp</>)}
-                    </button>
-                    <p className="text-center text-xs text-gray-400">
-                      Belum punya akun? Masukkan nomor HP, Anda otomatis terdaftar.
-                    </p>
+              <form onSubmit={handlePhoneLogin} className="space-y-4">
+                <div>
+                  <label htmlFor="login_phone_pw" className={labelClass}>Kata Sandi</label>
+                  <div className="relative">
+                    <input id="login_phone_pw" type={showPassword ? 'text' : 'password'} required minLength={8}
+                      value={loginPhonePw} onChange={(e) => setLoginPhonePw(e.target.value)}
+                      placeholder="••••••••" className={inputClass} />
+                    {eyeBtn(showPassword, () => setShowPassword(!showPassword))}
                   </div>
-                )}
-              </>
+                </div>
+                <ErrorBox />
+                <button type="submit" disabled={loading || lockSecs > 0}
+                  className="w-full rounded-lg bg-gold-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-gold-600 disabled:cursor-not-allowed disabled:opacity-60 active:translate-y-px">
+                  {loading ? 'Memproses...' : lockSecs > 0 ? 'Terlalu cepat — tunggu...' : 'Masuk'}
+                </button>
+              </form>
             )}
           </div>
         )}
