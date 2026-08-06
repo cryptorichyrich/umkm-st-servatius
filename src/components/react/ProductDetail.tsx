@@ -8,14 +8,17 @@ import ReportButton from './ReportButton';
 import { sanitizeHtml } from '../../lib/sanitize';
 import ShareButtons from './ShareButtons';
 
-interface Props { slug: string; }
+interface Props { slug?: string; }
 
 function formatPrice(price: number | null, note: string): string {
   if (!price) return note || 'Hubungi untuk harga';
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(price);
 }
 
-export default function ProductDetail({ slug }: Props) {
+export default function ProductDetail({ slug: propSlug }: Props) {
+  const slug = propSlug || (typeof window !== 'undefined'
+    ? window.location.pathname.replace(/^\/produk\//, '').replace(/\/$/, '')
+    : '');
   const [product, setProduct] = useState<Product | null>(null);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [activeImage, setActiveImage] = useState(0);

@@ -1,109 +1,15 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ProductDetail from '../../components/react/ProductDetail.tsx';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
-const baseUrl = Astro.url.origin;
-
-// ── Pre-render all available product pages at build time ──
 export async function getStaticPaths() {
-  if (!isSupabaseConfigured) return [];
-  const { data } = await supabase
-    .from('products')
-    .select('slug')
-    .eq('is_available', true);
-  return (data || []).map((p: any) => ({ params: { slug: p.slug } }));
+  return [{ params: { slug: '_' } }];
 }
 
-// ── SEO helpers ──
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function truncate(s: string, max = 155): string {
-  if (s.length <= max) return s;
-  return s.slice(0, max - 3).trimEnd() + '...';
-}
-
-function formatIDR(n: number): string {
-  return 'Rp' + new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(n);
-}
-
-const slug = Astro.params.slug!;
-
-// ── Fetch single product at build time ──
-const { data: product } = isSupabaseConfigured
-  ? await supabase
-      .from('products')
-      .select(`slug,name,description,rich_description,seo_title,seo_description,price,price_note,image_url,updated_at,business:businesses(name,slug,category:categories(name,slug))`)
-      .eq('slug', slug).eq('is_available', true).single()
-  : { data: null };
-
-if (!product) {
-  return Astro.redirect('/404');
-}
-
-const biz: any = product?.business;
-const businessName = Array.isArray(biz) ? biz[0]?.name : biz?.name;
-const bizCatRaw: any = Array.isArray(biz) ? biz[0]?.category : biz?.category;
-const categoryName = Array.isArray(bizCatRaw) ? bizCatRaw[0]?.name : bizCatRaw?.name;
-
-const seoTitle = product?.seo_title ||
-  (businessName ? `${product?.name} — ${businessName}` : product?.name) ||
-  'Produk UMKM';
-
-let seoDesc = product?.seo_description;
-if (!seoDesc && product) {
-  const parts: string[] = [];
-  const rawDesc = stripHtml(product.rich_description || product.description || '');
-  if (rawDesc) parts.push(rawDesc);
-  if (businessName) parts.push(`Oleh ${businessName}`);
-  if (categoryName) parts.push(categoryName);
-  if (product.price) parts.push(`Harga ${formatIDR(product.price)}`);
-  parts.push('Tersedia di Direktori UMKM Paroki St. Servatius');
-  seoDesc = truncate(parts.join('. '));
-}
-if (!seoDesc) seoDesc = 'Produk UMKM Paroki St. Servatius, Kampung Sawah.';
-
-const ogImage = product?.image_url || `${baseUrl}/og-default.jpg`;
-
-const jsonLd = product ? {
-  '@context': 'https://schema.org',
-  '@type': 'Product',
-  name: product.name,
-  description: seoDesc,
-  url: `${baseUrl}/produk/${product.slug}`,
-  ...(product.image_url ? { image: product.image_url } : {}),
-  ...(businessName ? {
-    brand: { '@type': 'Brand', name: businessName },
-    seller: { '@type': 'Organization', name: businessName },
-  } : {}),
-  ...(categoryName ? { category: categoryName } : {}),
-  ...(product.price ? {
-    offers: {
-      '@type': 'Offer',
-      price: product.price,
-      priceCurrency: 'IDR',
-      availability: 'https://schema.org/InStock',
-      url: `${baseUrl}/produk/${product.slug}`,
-    },
-  } : {}),
-} : undefined;
+const seoTitle = 'Produk UMKM Paroki St. Servatius';
+const seoDesc = 'Produk UMKM Paroki St. Servatius, Kampung Sawah.';
 ---
 
-<BaseLayout
-  title={seoTitle}
-  description={seoDesc}
-  image={ogImage}
-  type="product"
-  jsonLd={jsonLd}
->
-  <ProductDetail client:load slug={slug} />
+<BaseLayout title={seoTitle} description={seoDesc}>
+  <ProductDetail client:load />
 </BaseLayout>

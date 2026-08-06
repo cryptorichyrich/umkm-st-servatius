@@ -1,89 +1,16 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BusinessDetail from '../../components/react/BusinessDetail.tsx';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
-const baseUrl = Astro.url.origin;
-
-// ── Pre-render all approved business pages at build time ──
+// ── Single shell page for CSR — CF Function injects real SEO ──
 export async function getStaticPaths() {
-  if (!isSupabaseConfigured) return [];
-  const { data } = await supabase
-    .from('businesses')
-    .select('slug')
-    .eq('status', 'approved');
-  return (data || []).map((b: any) => ({ params: { slug: b.slug } }));
+  return [{ params: { slug: '_' } }];
 }
 
-// ── SEO helpers ──
-function truncate(s: string, max = 155): string {
-  if (s.length <= max) return s;
-  return s.slice(0, max - 3).trimEnd() + '...';
-}
-
-const slug = Astro.params.slug!;
-
-// ── Fetch single business at build time ──
-const { data: business } = isSupabaseConfigured
-  ? await supabase
-      .from('businesses')
-      .select(`slug,name,description,address,area,phone,whatsapp,instagram,logo_url,updated_at,category:categories(name,slug)`)
-      .eq('slug', slug).eq('status', 'approved').single()
-  : { data: null };
-
-if (!business) {
-  return Astro.redirect('/404');
-}
-
-const catRaw: any = business?.category;
-const categoryName = Array.isArray(catRaw) ? catRaw[0]?.name : catRaw?.name;
-
-// ── Auto-generate SEO title ──
-const seoTitle = business
-  ? `${business.name}${categoryName ? ` — ${categoryName}` : ''} | Paroki St. Servatius`
-  : 'UMKM Paroki St. Servatius';
-
-// ── Auto-generate SEO description ──
-let seoDesc: string | undefined;
-if (business) {
-  const parts: string[] = [];
-  if (business.description) parts.push(business.description);
-  if (categoryName) parts.push(`Kategori: ${categoryName}`);
-  if (business.area) parts.push(`Berlokasi di ${business.area}`);
-  if (business.whatsapp || business.phone) parts.push('Hubungi via WhatsApp');
-  parts.push('Direktori UMKM Paroki St. Servatius, Kampung Sawah');
-  seoDesc = truncate(parts.join('. '));
-}
-if (!seoDesc) seoDesc = 'Detail usaha UMKM Paroki St. Servatius, Kampung Sawah.';
-
-// ── Enhanced LocalBusiness JSON-LD ──
-const jsonLd = business ? {
-  '@context': 'https://schema.org',
-  '@type': 'LocalBusiness',
-  name: business.name,
-  description: seoDesc,
-  url: `${baseUrl}/umkm/${business.slug}`,
-  ...(business.address ? { address: { '@type': 'PostalAddress', streetAddress: business.address } } : {}),
-  ...(business.area ? { areaServed: business.area } : {}),
-  ...(business.phone ? { telephone: business.phone } : {}),
-  ...(business.whatsapp ? {
-    contactPoint: {
-      '@type': 'ContactPoint',
-      contactType: 'customer service',
-      telephone: business.whatsapp,
-    },
-  } : {}),
-  ...(business.logo_url ? { image: business.logo_url } : {}),
-  ...(categoryName ? { additionalType: categoryName } : {}),
-} : undefined;
+const seoTitle = 'UMKM Paroki St. Servatius';
+const seoDesc = 'Detail usaha UMKM Paroki St. Servatius, Kampung Sawah.';
 ---
 
-<BaseLayout
-  title={seoTitle}
-  description={seoDesc}
-  image={business?.logo_url}
-  type="website"
-  jsonLd={jsonLd}
->
-  <BusinessDetail client:load slug={slug} />
+<BaseLayout title={seoTitle} description={seoDesc}>
+  <BusinessDetail client:load />
 </BaseLayout>

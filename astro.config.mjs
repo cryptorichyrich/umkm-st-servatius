@@ -10,7 +10,14 @@ export default defineConfig({
   integrations: [
     react(),
     sitemap({
-      filter: (page) => !page.includes('/admin'),
+      filter: (page) =>
+        !page.includes('/admin') &&
+        !page.includes('/dashboard/') &&
+        !page.includes('/masuk') &&
+        !page.includes('/daftar') &&
+        !page.includes('/lupa-sandi') &&
+        !page.includes('/reset-sandi') &&
+        !page.includes('/_/'),
       changefreq: 'weekly',
       priority: 0.7,
       lastmod: new Date(),

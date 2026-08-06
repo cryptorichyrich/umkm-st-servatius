@@ -1,110 +1,15 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BlogDetail from '../../components/react/BlogDetail.tsx';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
-const baseUrl = Astro.url.origin;
-
-// ── Pre-render all approved blog posts at build time ──
 export async function getStaticPaths() {
-  if (!isSupabaseConfigured) return [];
-  const { data } = await supabase
-    .from('blog_posts')
-    .select('slug')
-    .eq('status', 'approved');
-  return (data || []).map((p: any) => ({ params: { slug: p.slug } }));
+  return [{ params: { slug: '_' } }];
 }
 
-// ── SEO helpers ──
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&#39;/g, "'")
-    .replace(/&quot;/g, '"')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function truncate(s: string, max = 155): string {
-  if (s.length <= max) return s;
-  return s.slice(0, max - 3).trimEnd() + '...';
-}
-
-const slug = Astro.params.slug!;
-
-// ── Fetch single blog post at build time ──
-const { data: post } = isSupabaseConfigured
-  ? await supabase
-      .from('blog_posts')
-      .select(`slug, title, excerpt, content, cover_image, published_at, updated_at, business:businesses(name, slug, logo_url), category:categories(name, slug)`)
-      .eq('slug', slug).eq('status', 'approved').single()
-  : { data: null };
-
-if (!post) {
-  return Astro.redirect('/404');
-}
-
-const biz: any = post?.business;
-const businessName = Array.isArray(biz) ? biz[0]?.name : biz?.name;
-const businessSlug: string | undefined = Array.isArray(biz) ? biz[0]?.slug : biz?.slug;
-const catRaw: any = post?.category;
-const categoryName = Array.isArray(catRaw) ? catRaw[0]?.name : catRaw?.name;
-
-const seoTitle = (businessName
-  ? `${post?.title} — ${businessName}`
-  : post?.title) || 'Artikel Blog';
-
-const fullSeoTitle = `${seoTitle} | Blog UMKM Paroki St. Servatius`;
-
-let seoDesc: string | undefined;
-if (post) {
-  if (post.excerpt) {
-    seoDesc = truncate(post.excerpt);
-  } else if (post.content) {
-    seoDesc = truncate(stripHtml(post.content));
-  }
-}
-if (!seoDesc) seoDesc = 'Artikel dari Blog UMKM Paroki St. Servatius, Kampung Sawah.';
-
-const ogImage = post?.cover_image || `${baseUrl}/og-default.jpg`;
-
-const jsonLd = post ? {
-  '@context': 'https://schema.org',
-  '@type': 'BlogPosting',
-  headline: post.title,
-  description: seoDesc,
-  url: `${baseUrl}/blog/${post.slug}`,
-  ...(post.cover_image ? { image: post.cover_image } : {}),
-  ...(post.published_at ? { datePublished: post.published_at } : {}),
-  ...(post.updated_at ? { dateModified: post.updated_at } : {}),
-  author: businessName ? {
-    '@type': 'Organization',
-    name: businessName,
-    url: businessSlug ? `${baseUrl}/umkm/${businessSlug}` : undefined,
-  } : undefined,
-  publisher: {
-    '@type': 'Organization',
-    name: 'UMKM St. Servatius',
-    url: baseUrl,
-  },
-  mainEntityOfPage: {
-    '@type': 'WebPage',
-    '@id': `${baseUrl}/blog/${post.slug}`,
-  },
-  ...(categoryName ? { articleSection: categoryName } : {}),
-} : undefined;
+const seoTitle = 'Blog UMKM Paroki St. Servatius';
+const seoDesc = 'Artikel dari Blog UMKM Paroki St. Servatius, Kampung Sawah.';
 ---
 
-<BaseLayout
-  title={fullSeoTitle}
-  description={seoDesc}
-  image={ogImage}
-  type="article"
-  jsonLd={jsonLd}
->
+<BaseLayout title={seoTitle} description={seoDesc}>
   <BlogDetail client:load />
 </BaseLayout>

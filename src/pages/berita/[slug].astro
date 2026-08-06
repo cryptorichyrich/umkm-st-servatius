@@ -1,111 +1,15 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import NewsDetail from '../../components/react/NewsDetail.tsx';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
-const baseUrl = Astro.url.origin;
-
-// ── Pre-render all published news at build time ──
 export async function getStaticPaths() {
-  if (!isSupabaseConfigured) return [];
-  const { data } = await supabase
-    .from('news')
-    .select('slug')
-    .eq('status', 'published');
-  return (data || []).map((n: any) => ({ params: { slug: n.slug } }));
+  return [{ params: { slug: '_' } }];
 }
 
-// ── SEO helpers ──
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function truncate(s: string, max = 155): string {
-  if (s.length <= max) return s;
-  return s.slice(0, max - 3).trimEnd() + '...';
-}
-
-const slug = Astro.params.slug!;
-
-// ── Fetch single news article at build time ──
-const { data: article } = isSupabaseConfigured
-  ? await supabase
-      .from('news')
-      .select(`slug,title,excerpt,content,cover_image,published_at,category:news_categories(name,slug,icon)`)
-      .eq('slug', slug).eq('status', 'published').single()
-  : { data: null };
-
-if (!article) {
-  return Astro.redirect('/404');
-}
-
-const cat: any = article?.category;
-const categoryName = Array.isArray(cat) ? cat[0]?.name : cat?.name;
-
-const seoTitle = article?.title
-  ? `${article.title} | Berita UMKM St. Servatius`
-  : 'Berita | UMKM St. Servatius';
-
-let seoDesc: string;
-if (article) {
-  const rawExcerpt = article.excerpt?.trim();
-  const rawContent = stripHtml(article.content || '').trim();
-  if (rawExcerpt) {
-    seoDesc = truncate(rawExcerpt);
-  } else if (rawContent) {
-    seoDesc = truncate(rawContent);
-  } else {
-    seoDesc = 'Berita UMKM Paroki St. Servatius, Kampung Sawah.';
-  }
-} else {
-  seoDesc = 'Berita UMKM Paroki St. Servatius, Kampung Sawah.';
-}
-
-const ogImage = article?.cover_image || `${baseUrl}/og-default.jpg`;
-
-const jsonLd = article ? {
-  '@context': 'https://schema.org',
-  '@type': 'NewsArticle',
-  headline: article.title,
-  description: seoDesc,
-  url: `${baseUrl}/berita/${article.slug}`,
-  ...(article.cover_image ? { image: [article.cover_image] } : {}),
-  ...(article.published_at ? {
-    datePublished: article.published_at,
-    dateModified: article.published_at,
-  } : {}),
-  author: {
-    '@type': 'Organization',
-    name: 'UMKM St. Servatius',
-  },
-  publisher: {
-    '@type': 'Organization',
-    name: 'UMKM St. Servatius',
-    url: baseUrl,
-  },
-  mainEntityOfPage: {
-    '@type': 'WebPage',
-    '@id': `${baseUrl}/berita/${article.slug}`,
-  },
-  ...(categoryName ? { articleSection: categoryName } : {}),
-} : undefined;
+const seoTitle = 'Berita UMKM St. Servatius';
+const seoDesc = 'Berita UMKM Paroki St. Servatius, Kampung Sawah.';
 ---
 
-<BaseLayout
-  title={seoTitle}
-  description={seoDesc}
-  image={ogImage}
-  type="article"
-  jsonLd={jsonLd}
->
-  <NewsDetail client:load slug={slug} />
+<BaseLayout title={seoTitle} description={seoDesc}>
+  <NewsDetail client:load />
 </BaseLayout>

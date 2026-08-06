@@ -1,0 +1,6 @@
+# SPA fallback for dynamic routes (backup for CF Functions)
+# CF Functions handle these routes first; this is fallback if Functions fail
+/umkm/:slug /umkm/_/index.html 200
+/produk/:slug /produk/_/index.html 200
+/blog/:slug /blog/_/index.html 200
+/berita/:slug /berita/_/index.html 200

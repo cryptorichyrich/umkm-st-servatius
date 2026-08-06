@@ -8,7 +8,7 @@ import ReportButton from './ReportButton';
 import ShareButtons from './ShareButtons';
 import PhotoGalleryUploader from './PhotoGalleryUploader';
 
-interface Props { slug: string; }
+interface Props { slug?: string; }
 
 const demoBusinesses: Record<string, Business> = {
   'katering-bu-maria': {
@@ -42,7 +42,10 @@ const FacebookIcon = ({ className = 'h-4 w-4' }: { className?: string }) => (
   </svg>
 );
 
-export default function BusinessDetail({ slug }: Props) {
+export default function BusinessDetail({ slug: propSlug }: Props) {
+  const slug = propSlug || (typeof window !== 'undefined'
+    ? window.location.pathname.replace(/^\/umkm\//, '').replace(/\/$/, '')
+    : '');
   const [business, setBusiness] = useState<Business | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
