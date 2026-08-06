@@ -79,12 +79,18 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
   useEffect(() => {
     (async () => {
       if (!isSupabaseConfigured && demoBusinesses[slug]) { setBusiness(demoBusinesses[slug]); setLoading(false); return; }
-      const { data, error } = await supabase.from('businesses').select(`*, category:categories(*), images:business_images(*), owner:profiles!owner_id(full_name)`).eq('slug', slug).in('status', ['approved', 'pending', 'rejected']).single();
+      const { data, error } = await supabase.from('businesses').select(`*, category:categories(*), images:business_images(*), owner:profiles!owner_id(full_name)`).eq('slug', slug).single();
       if (!error && data) {
         const biz = data as any;
-        // If flagged and user is not admin/owner → show 404
+        // Non-approved only visible to owner or admin
         const isOwner = biz.owner_id === currentUserId;
         const isAdmin = currentUserRole === 'admin';
+        if (biz.status !== 'approved' && !isOwner && !isAdmin) {
+          setNotFound(true);
+          setLoading(false);
+          return;
+        }
+        // If flagged and user is not admin/owner → show 404
         if (biz.is_flagged && !isOwner && !isAdmin) {
           setNotFound(true);
           setLoading(false);
