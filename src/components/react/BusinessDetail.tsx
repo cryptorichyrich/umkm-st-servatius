@@ -53,6 +53,8 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [ratingSummary, setRatingSummary] = useState<{ avg_rating: number; review_count: number } | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [formRating, setFormRating] = useState(0);
@@ -79,9 +81,18 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
       if (!isSupabaseConfigured && demoBusinesses[slug]) { setBusiness(demoBusinesses[slug]); setLoading(false); return; }
       const { data, error } = await supabase.from('businesses').select(`*, category:categories(*), images:business_images(*), owner:profiles!owner_id(full_name)`).eq('slug', slug).in('status', ['approved', 'pending', 'rejected']).single();
       if (!error && data) {
-        setBusiness(data);
-        setOwnerName((data as any).owner?.full_name || null);
-        const { data: prods } = await supabase.from('products').select('*').eq('business_id', data.id).eq('is_available', true).order('sort_order', { ascending: true }).order('created_at', { ascending: false });
+        const biz = data as any;
+        // If flagged and user is not admin/owner → show 404
+        const isOwner = biz.owner_id === currentUserId;
+        const isAdmin = currentUserRole === 'admin';
+        if (biz.is_flagged && !isOwner && !isAdmin) {
+          setNotFound(true);
+          setLoading(false);
+          return;
+        }
+        setBusiness(biz);
+        setOwnerName(biz?.owner?.full_name || null);
+        const { data: prods } = await supabase.from('products').select('*').eq('business_id', biz.id).eq('is_available', true).order('sort_order', { ascending: true }).order('created_at', { ascending: false });
         setProducts(prods || []);
       }
       setLoading(false);
@@ -111,6 +122,7 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
           .eq('id', session.user.id)
           .single();
         setIsVerified(profile?.verification_status === 'verified');
+        setCurrentUserRole(profile?.role || null);
         // Fetch user's helpful votes
         const { data: myVotes } = await supabase
           .from('review_votes')
@@ -310,12 +322,12 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
     );
   }
 
-  if (!business) {
+  if (notFound || !business) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-16 text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-gray-50 text-gray-400"><Search className="h-7 w-7" /></div>
-        <h1 className="font-display text-2xl font-bold text-ink">Usaha Tidak Ditemukan</h1>
-        <p className="mt-2 text-gray-500">Usaha yang Anda cari mungkin belum terdaftar atau sudah dihapus.</p>
+        <h1 className="font-display text-2xl font-bold text-ink">Usaha Tidak Tersedia</h1>
+        <p className="mt-2 text-gray-500">Listing ini sedang ditinjau oleh pengurus atau sudah tidak tersedia.</p>
         <a href="/umkm" className="mt-6 inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-5 py-2.5 font-bold text-white transition hover:bg-gold-600 active:translate-y-px">
           <ArrowLeft className="h-4 w-4" /> Kembali ke Direktori
         </a>
@@ -334,6 +346,17 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <PageViewTracker type="business" slug={slug} />
+
+      {/* Flagged banner — visible to owner/admin only */}
+      {business.is_flagged && (
+        <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-semibold">Listing Dilaporkan & Sementara Disembunyikan</p>
+            <p className="mt-0.5 text-xs opacity-80">Listing ini menerima laporan dan disembunyikan dari publik. Pengurus sedang meninjau.</p>
+          </div>
+        </div>
+      )}
 
       {/* Status preview banner */}
       {business.status !== 'approved' && (

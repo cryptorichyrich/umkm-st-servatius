@@ -1277,16 +1277,12 @@ export default function AdminPanel() {
     setReportActionId(reportId);
     setError(null);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const { error: updErr } = await supabase
-        .from('reports')
-        .update({
-          status: newStatus,
-          reviewed_by: session?.user.id || null,
-          reviewed_at: new Date().toISOString(),
-        })
-        .eq('id', reportId);
-      if (updErr) throw updErr;
+      const { error: rpcErr } = await supabase.rpc('resolve_report', {
+        p_report_id: reportId,
+        p_status: newStatus,
+        p_note: '',
+      });
+      if (rpcErr) throw rpcErr;
       setReports((prev) => prev.map((r) => r.id === reportId ? { ...r, status: newStatus } : r));
     } catch (err) {
       alert(err instanceof Error ? `Gagal: ${err.message}` : 'Gagal memperbarui laporan.');
