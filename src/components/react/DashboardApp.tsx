@@ -813,14 +813,14 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      const ext = file.name.split('.').pop();
-                      const path = `${user?.id}/avatar.${ext}`;
-                      const { error: upErr } = await supabase.storage.from('business-images').upload(path, file, { upsert: true });
-                      if (upErr) { alert('Gagal upload: ' + upErr.message); return; }
-                      const { data: { publicUrl } } = supabase.storage.from('business-images').getPublicUrl(path);
-                      const url = publicUrl + '?t=' + Date.now();
-                      await supabase.from('profiles').update({ avatar_url: url }).eq('id', user!.id);
-                      setProfile(p => p ? { ...p, avatar_url: url } : p);
+                      try {
+                        const { uploadToR2 } = await import('../../lib/r2-upload');
+                        const { url } = await uploadToR2(file);
+                        await supabase.from('profiles').update({ avatar_url: url }).eq('id', user!.id);
+                        setProfile(p => p ? { ...p, avatar_url: url } : p);
+                      } catch (err) {
+                        alert('Gagal upload: ' + (err instanceof Error ? err.message : 'Unknown error'));
+                      }
                     }}
                   />
                 </label>

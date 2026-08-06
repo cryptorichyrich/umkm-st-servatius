@@ -320,21 +320,9 @@ export default function BusinessForm({ businessId: propBusinessId }: Props) {
     setError(null);
 
     try {
-      const userId = session.user.id;
-      const ext = file.name.split('.').pop() || 'jpg';
-      const fileName = `${userId}/logo-${Date.now()}.${ext}`;
-
-      const { error: uploadErr } = await supabase.storage
-        .from('business-images')
-        .upload(fileName, file, { cacheControl: '3600', upsert: false });
-
-      if (uploadErr) throw uploadErr;
-
-      const { data: pubData } = supabase.storage
-        .from('business-images')
-        .getPublicUrl(fileName);
-
-      setForm((prev) => ({ ...prev, logo_url: pubData.publicUrl }));
+      const { uploadToR2 } = await import('../../lib/r2-upload');
+      const { url } = await uploadToR2(file);
+      setForm((prev) => ({ ...prev, logo_url: url }));
     } catch (err) {
       setError(
         err instanceof Error

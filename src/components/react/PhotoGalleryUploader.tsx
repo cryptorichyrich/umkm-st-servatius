@@ -56,20 +56,13 @@ export default function PhotoGalleryUploader({
         setError(`${file.name} melebihi 5MB.`);
         continue;
       }
-      const ext = file.name.split('.').pop() || 'jpg';
-      const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-
-      const { error: uploadErr } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, file, { cacheControl: '3600', upsert: false });
-
-      if (uploadErr) {
-        setError(`Gagal upload ${file.name}: ${uploadErr.message}`);
-        continue;
+      try {
+        const { uploadToR2 } = await import('../../lib/r2-upload');
+        const { url } = await uploadToR2(file);
+        uploaded.push(url);
+      } catch (err) {
+        setError(`Gagal upload ${file.name}: ${err instanceof Error ? err.message : 'Unknown'}`);
       }
-
-      const { data: pubData } = supabase.storage.from(bucket).getPublicUrl(fileName);
-      uploaded.push(pubData.publicUrl);
     }
 
     if (uploaded.length) {

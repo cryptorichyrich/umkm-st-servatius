@@ -170,21 +170,9 @@ export default function ProductForm({ businessId, productId, onSaved, onCancel }
     setError(null);
 
     try {
-      const userId = session.user.id;
-      const ext = file.name.split('.').pop() || 'jpg';
-      const fileName = `${userId}/products/product-${Date.now()}.${ext}`;
-
-      const { error: uploadErr } = await supabase.storage
-        .from('business-images')
-        .upload(fileName, file, { cacheControl: '3600', upsert: false });
-
-      if (uploadErr) throw uploadErr;
-
-      const { data: pubData } = supabase.storage
-        .from('business-images')
-        .getPublicUrl(fileName);
-
-      setForm((prev) => ({ ...prev, image_url: pubData.publicUrl }));
+      const { uploadToR2 } = await import('../../lib/r2-upload');
+      const { url } = await uploadToR2(file);
+      setForm((prev) => ({ ...prev, image_url: url }));
     } catch (err) {
       setError(
         err instanceof Error

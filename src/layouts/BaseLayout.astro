@@ -411,13 +411,15 @@ const sbKey = 'sb_publishable_jph_9XaA6S_pIuVdOYaTkA_TCak_Oz4';
                 return;
               }
               notifList.innerHTML = notifs.map(n => {
+                const esc = (s) => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
                 const time = new Date(n.created_at).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
                 const dot = n.is_read ? '' : '<span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-paroki-500"></span>';
-                return `<a href="${n.link || '#'}" data-id="${n.id}" class="notif-item flex gap-2.5 px-4 py-3 transition hover:bg-paroki-50 ${n.is_read ? 'opacity-60' : ''}">
+                const safeLink = /^[\/a-zA-Z0-9\-._~%!$&'()*+,;=:@]*$/.test(n.link||'') ? (n.link || '#') : '#';
+                return `<a href="${safeLink}" data-id="${esc(n.id)}" class="notif-item flex gap-2.5 px-4 py-3 transition hover:bg-paroki-50 ${n.is_read ? 'opacity-60' : ''}">
                   <div class="flex-1 min-w-0">
-                    <p class="text-sm font-semibold text-gray-800">${n.title}</p>
-                    <p class="mt-0.5 text-xs text-gray-500 line-clamp-2">${n.message}</p>
-                    <p class="mt-1 text-[10px] text-gray-400">${time}</p>
+                    <p class="text-sm font-semibold text-gray-800">${esc(n.title)}</p>
+                    <p class="mt-0.5 text-xs text-gray-500 line-clamp-2">${esc(n.message)}</p>
+                    <p class="mt-1 text-[10px] text-gray-400">${esc(time)}</p>
                   </div>${dot}
                 </a>`;
               }).join('');
