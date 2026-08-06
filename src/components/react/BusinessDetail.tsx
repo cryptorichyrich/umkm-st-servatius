@@ -405,19 +405,18 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
         </div>
       )}
 
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div className="flex-1">
-          <div className="mb-2.5 flex flex-wrap items-center gap-2">
+      <div className="mb-6">
+        <div className="mb-2.5 flex flex-wrap items-center gap-2">
             {business.category && <a href={`/kategori/${business.category.slug}`} className="inline-flex items-center rounded-full bg-paroki-50 px-3 py-1 text-xs font-semibold text-paroki-800 transition hover:bg-paroki-100">{business.category.name}</a>}
             {business.area && <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-3 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-200"><MapPin className="h-3.5 w-3.5" />{business.area}</span>}
             {business.is_featured && <span className="inline-flex items-center gap-1 rounded-full bg-gold-100 px-3 py-1 text-xs font-bold text-gold-700"><Star className="h-3.5 w-3.5" />Pilihan</span>}
           </div>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink break-words">{business.name}</h1>
-          <div className="mt-2 flex items-center gap-3">
+          <h1 className="font-display text-2xl font-extrabold leading-tight tracking-tight text-ink break-words md:text-3xl">{business.name}</h1>
+          <div className="mt-2.5 flex flex-wrap items-center gap-3">
             <ViewCounter count={business.view_count || 0} />
           </div>
-        </div>
-        <div className="flex items-center gap-2">
+        {/* Action buttons row — separate row to prevent overlap */}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <FavoriteButton targetType="business" targetId={business.id} variant="button" />
           {waLink && (
             <a href={waLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-3.5 py-2 text-sm font-bold text-white transition hover:bg-gold-600 active:translate-y-px sm:px-4 sm:py-2.5">
@@ -425,8 +424,8 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
             </a>
           )}
           <ReportButton targetType="business" targetId={business.id} variant="full" className="rounded-lg border border-gray-200 px-3 py-3" />
+          <ShareButtons title={business.name} />
         </div>
-        <ShareButtons title={business.name} className="mt-3" />
       </div>
 
       {business.description && (
