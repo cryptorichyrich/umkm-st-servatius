@@ -956,7 +956,7 @@ export default function AdminPanel() {
   // ───────────────────────────────────────────
   const handleVerifyUser = async (
     userId: string,
-    status: 'verified' | 'rejected',
+    status: 'verified' | 'rejected' | 'unverified',
   ) => {
     setUserVerifyingId(userId);
     setError(null);
@@ -3018,6 +3018,18 @@ export default function AdminPanel() {
                                 </button>
                               </div>
                             )}
+                            {(u.verification_status === 'verified' ||
+                              u.verification_status === 'rejected') && (
+                              <button
+                                onClick={() =>
+                                  handleVerifyUser(u.id, 'unverified')
+                                }
+                                disabled={userVerifyingId === u.id}
+                                className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Batalkan
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -3088,6 +3100,16 @@ export default function AdminPanel() {
                           Tolak
                         </button>
                       </div>
+                    )}
+                    {(u.verification_status === 'verified' ||
+                      u.verification_status === 'rejected') && (
+                      <button
+                        onClick={() => handleVerifyUser(u.id, 'unverified')}
+                        disabled={userVerifyingId === u.id}
+                        className="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Batalkan Verifikasi
+                      </button>
                     )}
                   </div>
                 ))}
