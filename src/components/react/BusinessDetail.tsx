@@ -111,15 +111,6 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
           .eq('id', session.user.id)
           .single();
         setIsVerified(profile?.verification_status === 'verified');
-        // Check if this user owns this business
-        if (business) {
-          const { data: biz } = await supabase
-            .from('businesses')
-            .select('owner_id')
-            .eq('id', business.id)
-            .single();
-          setIsOwner(biz?.owner_id === session.user.id || profile?.role === 'admin');
-        }
         // Fetch user's helpful votes
         const { data: myVotes } = await supabase
           .from('review_votes')
@@ -134,6 +125,24 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
       setAuthChecked(true);
     })();
   }, []);
+
+  // Check ownership when business loads
+  useEffect(() => {
+    if (!business?.id || !currentUserId) return;
+    (async () => {
+      const { data: biz } = await supabase
+        .from('businesses')
+        .select('owner_id')
+        .eq('id', business.id)
+        .single();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', currentUserId)
+        .single();
+      setIsOwner(biz?.owner_id === currentUserId || profile?.role === 'admin');
+    })();
+  }, [business?.id, currentUserId]);
 
   async function fetchReviews(businessId: string) {
     const { data: revs } = await supabase
@@ -388,8 +397,8 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
         <div className="flex items-center gap-2">
           <FavoriteButton targetType="business" targetId={business.id} variant="button" />
           {waLink && (
-            <a href={waLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-gold-500 px-5 py-3 font-bold text-white transition hover:bg-gold-600 active:translate-y-px">
-              <MessageCircle className="h-5 w-5" />Hubungi via WhatsApp
+            <a href={waLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-3.5 py-2 text-sm font-bold text-white transition hover:bg-gold-600 active:translate-y-px sm:px-4 sm:py-2.5">
+              <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" /><span className="sm:inline">Hubungi via WhatsApp</span>
             </a>
           )}
           <ReportButton targetType="business" targetId={business.id} variant="full" className="rounded-lg border border-gray-200 px-3 py-3" />
