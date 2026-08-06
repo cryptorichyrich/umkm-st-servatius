@@ -17,15 +17,15 @@ function formatPrice(price: number | null, note: string): string {
 
 export default function ProductDetail({ slug: propSlug }: Props) {
   // Parse slug from URL — /{biz-slug}/{prod-slug} and legacy /produk/{slug}
-  const slug = propSlug || (typeof window !== 'undefined'
-    ? (() => {
-        const parts = window.location.pathname.split('/').filter(Boolean);
-        if (parts[0] === 'produk') return parts[1] || '';
-        // /{biz-slug}/{prod-slug} — product slug is the last segment
-        if (parts.length >= 2) return parts[parts.length - 1] || '';
-        return parts[0] || '';
-      })()
-    : '');
+  const { bizSlug, prodSlug } = (() => {
+    if (propSlug) return { bizSlug: '', prodSlug: propSlug };
+    if (typeof window === 'undefined') return { bizSlug: '', prodSlug: '' };
+    const parts = window.location.pathname.split('/').filter(Boolean);
+    if (parts[0] === 'produk') return { bizSlug: '', prodSlug: parts[1] || '' };
+    if (parts.length >= 2) return { bizSlug: parts[0], prodSlug: parts[parts.length - 1] };
+    return { bizSlug: '', prodSlug: parts[0] || '' };
+  })();
+  const slug = prodSlug;
   const [product, setProduct] = useState<Product | null>(null);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [activeImage, setActiveImage] = useState(0);
@@ -44,12 +44,13 @@ export default function ProductDetail({ slug: propSlug }: Props) {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('products')
-        .select(`*, business:businesses(id, name, slug, whatsapp, phone, email, address, area, description, logo_url, instagram, facebook, tiktok, category:categories(id, name, slug, icon))`)
-        .eq('slug', slug)
-        .eq('is_available', true)
-        .single();
+        .select(`*, business:businesses!inner(id, name, slug, whatsapp, phone, email, address, area, description, logo_url, instagram, facebook, tiktok, category:categories(id, name, slug, icon))`)
+        .eq('slug', prodSlug)
+        .eq('is_available', true);
+      if (bizSlug) query = query.eq('business.slug', bizSlug);
+      const { data, error } = await query.limit(1).single();
       if (!error && data) {
         const p = data as unknown as Product;
         setProduct(p);
