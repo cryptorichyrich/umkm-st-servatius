@@ -4,3 +4,6 @@
 /produk/:slug /produk/_/index.html 200
 /blog/:slug /blog/_/index.html 200
 /berita/:slug /berita/_/index.html 200
+
+# Admin SPA — client-side routing for all sub-tabs
+/admin/* /admin/index.html 200
