@@ -484,13 +484,13 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
               const priceStr = p.price ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(p.price) : p.price_note || 'Hubungi untuk harga';
               return (
                 <div key={p.id} className="group flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white transition hover:border-gold-400 hover:shadow-soft">
-                  <a href={`/produk/${p.slug}`} className="block">
+                  <a href={`/umkm/${business.slug}/${p.slug}`} className="block">
                     <div className="relative aspect-square overflow-hidden bg-gray-100">
                       {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" loading="lazy" /> : <div className="flex h-full w-full items-center justify-center text-gray-300"><Package className="h-10 w-10" /></div>}
                     </div>
                   </a>
                   <div className="flex flex-1 flex-col p-3">
-                    <a href={`/produk/${p.slug}`}><h3 className="font-display text-sm font-bold leading-snug text-ink break-words hover:text-paroki-700">{p.name}</h3></a>
+                    <a href={`/umkm/${business.slug}/${p.slug}`}><h3 className="font-display text-sm font-bold leading-snug text-ink break-words hover:text-paroki-700">{p.name}</h3></a>
                     {p.description && <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-gray-500">{p.description}</p>}
                     <div className="mt-1 text-sm font-bold text-paroki-700">{priceStr}</div>
                     <div className="mt-auto pt-2">

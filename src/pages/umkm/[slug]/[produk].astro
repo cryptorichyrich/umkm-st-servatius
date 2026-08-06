@@ -1,0 +1,15 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ProductDetail from '../../../components/react/ProductDetail.tsx';
+
+export async function getStaticPaths() {
+  return [{ params: { slug: '_', produk: '_' } }];
+}
+
+const seoTitle = 'Produk UMKM Paroki St. Servatius';
+const seoDesc = 'Produk UMKM Paroki St. Servatius, Kampung Sawah.';
+---
+
+<BaseLayout title={seoTitle} description={seoDesc}>
+  <ProductDetail client:load />
+</BaseLayout>

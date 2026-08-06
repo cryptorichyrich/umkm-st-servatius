@@ -11,12 +11,13 @@ function xmlEscape(s) {
 }
 
 async function fetchSlugs(table, filters = '') {
+  const select = table === 'products' ? 'slug,business:businesses!inner(slug)' : 'slug';
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/${table}?select=slug${filters}`,
+    `${SUPABASE_URL}/rest/v1/${table}?select=${select}${filters}`,
     { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
   );
   const items = await res.json();
-  return (items || []).map(i => i.slug).filter(Boolean);
+  return items || [];
 }
 
 export async function onRequestGet(context) {
@@ -38,11 +39,14 @@ export async function onRequestGet(context) {
 
     // Build dynamic URLs
     const now = new Date().toISOString();
+    const productUrls = productSlugs
+      .filter(p => p.slug && p.business?.slug)
+      .map(p => `${SITE_URL}/umkm/${p.business.slug}/${p.slug}/`);
     const dynamicUrls = [
-      ...businessSlugs.map(s => `${SITE_URL}/umkm/${s}/`),
-      ...productSlugs.map(s => `${SITE_URL}/produk/${s}/`),
-      ...blogSlugs.map(s => `${SITE_URL}/blog/${s}/`),
-      ...newsSlugs.map(s => `${SITE_URL}/berita/${s}/`),
+      ...businessSlugs.map(s => s.slug ? `${SITE_URL}/umkm/${s.slug}/` : '').filter(Boolean),
+      ...productUrls,
+      ...blogSlugs.map(s => s.slug ? `${SITE_URL}/blog/${s.slug}/` : '').filter(Boolean),
+      ...newsSlugs.map(s => s.slug ? `${SITE_URL}/berita/${s.slug}/` : '').filter(Boolean),
     ];
 
     const allUrls = [...staticUrls, ...dynamicUrls];

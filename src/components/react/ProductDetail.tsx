@@ -16,13 +16,30 @@ function formatPrice(price: number | null, note: string): string {
 }
 
 export default function ProductDetail({ slug: propSlug }: Props) {
+  // Parse slug from URL — supports /umkm/{biz-slug}/{prod-slug} and legacy /produk/{slug}
   const slug = propSlug || (typeof window !== 'undefined'
-    ? window.location.pathname.replace(/^\/produk\//, '').replace(/\/$/, '')
+    ? (() => {
+        const parts = window.location.pathname.split('/').filter(Boolean);
+        if (parts[0] === 'produk') return parts[1] || '';
+        if (parts[0] === 'umkm') return parts[2] || '';
+        return parts[parts.length - 1] || '';
+      })()
     : '');
   const [product, setProduct] = useState<Product | null>(null);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [activeImage, setActiveImage] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [fromProduk, setFromProduk] = useState(false);
+
+  useEffect(() => {
+    // Detect if user came from /produk listing for smart breadcrumb
+    try {
+      const ref = new URL(document.referrer);
+      if (ref.origin === window.location.origin && (ref.pathname === '/produk' || ref.pathname.startsWith('/produk'))) {
+        setFromProduk(true);
+      }
+    } catch { /* external/no referrer → default UMKM breadcrumb */ }
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -74,10 +91,18 @@ export default function ProductDetail({ slug: propSlug }: Props) {
     <div className="mx-auto max-w-5xl px-4 py-6 md:py-8">
       <PageViewTracker type="product" slug={slug} />
 
-      {/* Breadcrumb */}
+      {/* Breadcrumb — smart based on origin */}
       <nav className="mb-4 flex items-center gap-1.5 text-sm text-gray-500">
         <a href="/" className="transition hover:text-paroki-700">Beranda</a><span>/</span>
-        <a href="/produk" className="transition hover:text-paroki-700">Produk</a><span>/</span>
+        {fromProduk ? (
+          <>
+            <a href="/produk" className="transition hover:text-paroki-700">Produk</a><span>/</span>
+          </>
+        ) : b?.slug ? (
+          <>
+            <a href={`/umkm/${b.slug}`} className="transition hover:text-paroki-700">{b.name}</a><span>/</span>
+          </>
+        ) : null}
         <span className="font-medium text-gray-700 line-clamp-1">{product.name}</span>
       </nav>
 
@@ -219,11 +244,21 @@ export default function ProductDetail({ slug: propSlug }: Props) {
         </div>
       )}
 
-      {/* Back link */}
+      {/* Back link — smart based on origin */}
       <div className="mt-8">
-        <a href="/produk" className="inline-flex items-center gap-1.5 text-sm font-semibold text-paroki-700 transition hover:text-paroki-900 hover:underline">
-          <ArrowLeft className="h-4 w-4" />Kembali ke Produk
-        </a>
+        {fromProduk ? (
+          <a href="/produk" className="inline-flex items-center gap-1.5 text-sm font-semibold text-paroki-700 transition hover:text-paroki-900 hover:underline">
+            <ArrowLeft className="h-4 w-4" />Kembali ke Produk
+          </a>
+        ) : b?.slug ? (
+          <a href={`/umkm/${b.slug}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-paroki-700 transition hover:text-paroki-900 hover:underline">
+            <ArrowLeft className="h-4 w-4" />Kembali ke {b.name}
+          </a>
+        ) : (
+          <a href="/produk" className="inline-flex items-center gap-1.5 text-sm font-semibold text-paroki-700 transition hover:text-paroki-900 hover:underline">
+            <ArrowLeft className="h-4 w-4" />Kembali ke Produk
+          </a>
+        )}
       </div>
     </div>
   );

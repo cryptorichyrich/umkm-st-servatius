@@ -30,7 +30,7 @@ export async function GET({ url }: { url: URL }) {
       { headers },
     ),
     fetch(
-      `${SUPABASE_URL}/rest/v1/products?select=slug,updated_at&is_available=eq.true`,
+      `${SUPABASE_URL}/rest/v1/products?select=slug,updated_at,business:businesses!inner(slug)&is_available=eq.true`,
       { headers },
     ),
     fetch(
@@ -81,11 +81,12 @@ export async function GET({ url }: { url: URL }) {
     }
   }
 
-  // Product detail pages
+  // Product detail pages — /umkm/{biz-slug}/{prod-slug}
   for (const p of products) {
-    if (p.slug) {
+    const bizSlug = Array.isArray(p.business) ? p.business[0]?.slug : p.business?.slug;
+    if (p.slug && bizSlug) {
       entries.push({
-        loc: `${BASE_URL}/produk/${xmlEscape(p.slug)}`,
+        loc: `${BASE_URL}/umkm/${xmlEscape(bizSlug)}/${xmlEscape(p.slug)}`,
         lastmod: p.updated_at,
         changefreq: 'weekly',
         priority: '0.8',
