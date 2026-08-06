@@ -96,6 +96,13 @@ export interface Business {
   tiktok: string;
   operating_hours: Record<string, string>;
   logo_url: string;
+  ktp_url: string;
+  catalog_url: string;
+  omset_range: string;
+  has_nib: boolean;
+  has_pirt: boolean;
+  has_halal: boolean;
+  harapan_gabung: string;
   status: BusinessStatus;
   is_featured: boolean;
   view_count: number;

@@ -1806,36 +1806,55 @@ export default function AdminPanel() {
                         )}
                       </div>
 
-                      {/* Verification documents from verifikasi request */}
-                      {(verifDoc?.ktp_url || verifDoc?.kk_gereja_url || verifDoc?.catalog_url) && (
+                      {/* Business logo + images + KTP + catalog from business record */}
+                      {(b.logo_url || b.ktp_url || b.catalog_url || (b.images && b.images.length > 0)) && (
                         <div className="mt-3">
-                          <div className="mb-1.5 text-xs font-medium text-paroki-500">Dokumen Verifikasi:</div>
-                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                            {verifDoc.kk_gereja_url && (
-                              <DocThumbnail url={verifDoc.kk_gereja_url} label="KK Gereja" />
-                            )}
-                            {verifDoc.ktp_url && (
-                              <DocThumbnail url={verifDoc.ktp_url} label="KTP" />
-                            )}
-                            {verifDoc.catalog_url && (
-                              <DocThumbnail url={verifDoc.catalog_url} label="Katalog Produk" />
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Business logo + images */}
-                      {(b.logo_url || (b.images && b.images.length > 0)) && (
-                        <div className="mt-3">
-                          <div className="mb-1.5 text-xs font-medium text-paroki-500">Foto Usaha:</div>
-                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                          <div className="mb-1.5 text-xs font-medium text-paroki-500">Foto & Dokumen Usaha:</div>
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                             {b.logo_url && (
                               <DocThumbnail url={b.logo_url} label="Logo" />
                             )}
                             {b.images?.map((img) => (
                               <DocThumbnail key={img.id} url={img.image_url} label={img.caption || 'Foto'} />
                             ))}
+                            {b.ktp_url && (
+                              <DocThumbnail url={b.ktp_url} label="KTP Pemilik" />
+                            )}
+                            {b.catalog_url && (
+                              <DocThumbnail url={b.catalog_url} label="Katalog Produk" />
+                            )}
                           </div>
+                        </div>
+                      )}
+
+                      {/* Business verification info (NIB, PIRT, Halal, Omset) */}
+                      {(b.has_nib || b.has_pirt || b.has_halal || b.omset_range || b.harapan_gabung) && (
+                        <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50/50 p-2.5">
+                          <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-gray-600">
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            Informasi Usaha (untuk verifikasi)
+                          </div>
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
+                            <span className={b.has_nib ? 'text-green-700 font-medium' : 'text-gray-400'}>
+                              {b.has_nib ? '✅' : '⬜'} NIB
+                            </span>
+                            <span className={b.has_pirt ? 'text-green-700 font-medium' : 'text-gray-400'}>
+                              {b.has_pirt ? '✅' : '⬜'} PIRT
+                            </span>
+                            <span className={b.has_halal ? 'text-green-700 font-medium' : 'text-gray-400'}>
+                              {b.has_halal ? '✅' : '⬜'} Halal
+                            </span>
+                            {b.omset_range && (
+                              <span className="text-paroki-700">
+                                💰 Omset: <strong>{b.omset_range}</strong>
+                              </span>
+                            )}
+                          </div>
+                          {b.harapan_gabung && (
+                            <p className="mt-1.5 text-xs italic text-paroki-500">
+                              "{b.harapan_gabung}"
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
