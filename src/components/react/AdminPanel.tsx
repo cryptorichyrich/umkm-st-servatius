@@ -19,6 +19,7 @@ import {
   Newspaper,
   History,
   Shield,
+  Mail,
 } from 'lucide-react';
 import {
   supabase,
@@ -36,6 +37,7 @@ const NewsManager = lazy(() => import('./NewsManager'));
 const BlogModeration = lazy(() => import('./BlogModeration'));
 const AdminActivityLog = lazy(() => import('./AdminActivityLog'));
 const SecurityLog = lazy(() => import('./SecurityLog'));
+const EmailSettings = lazy(() => import('./EmailSettings'));
 
 const TabFallback = () => (
   <div className="flex items-center justify-center py-20">
@@ -160,7 +162,8 @@ type TabKey =
   | 'bazar'
   | 'berita'
   | 'moderasi-blog'
-  | 'log';
+  | 'log'
+  | 'email';
 
 const VALID_TABS: TabKey[] = [
   'moderasi',
@@ -175,6 +178,7 @@ const VALID_TABS: TabKey[] = [
   'berita',
   'moderasi-blog',
   'log',
+  'email',
 ];
 
 function getTabFromURL(): TabKey {
@@ -1563,6 +1567,7 @@ export default function AdminPanel() {
     { key: 'moderasi-blog', label: 'Moderasi Blog', icon: FileText },
     { key: 'log', label: 'Log Aktivitas', icon: History },
     { key: 'keamanan', label: 'Log Keamanan', icon: Shield },
+    { key: 'email', label: 'Email', icon: Mail },
   ];
 
   // ───────────────────────────────────────────
@@ -3545,6 +3550,15 @@ export default function AdminPanel() {
       {activeTab === 'keamanan' && authState === 'ok' && (
         <Suspense fallback={<TabFallback />}>
           <SecurityLog />
+        </Suspense>
+      )}
+
+      {/* ─────────────────────────────────────────── */}
+      {/* EMAIL SETTINGS TAB */}
+      {/* ─────────────────────────────────────────── */}
+      {activeTab === 'email' && authState === 'ok' && (
+        <Suspense fallback={<TabFallback />}>
+          <EmailSettings />
         </Suspense>
       )}
 
