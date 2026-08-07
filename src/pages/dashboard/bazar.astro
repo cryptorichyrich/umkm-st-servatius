@@ -4,7 +4,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import DashboardApp from '../../components/react/DashboardApp.tsx';
 ---
 
-<BaseLayout title="Bazar" description="Jadwal bazar UMKM Anda.">
+<BaseLayout title="Bazar" description="Jadwal bazar UMKM Anda." noindex hideSearch>
   <section class="mx-auto max-w-4xl px-4 py-8">
     <DashboardApp client:load initialTab="bazar" />
   </section>

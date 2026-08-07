@@ -21,6 +21,6 @@ export async function getStaticPaths() {
 const title = 'Admin Panel';
 ---
 
-<BaseLayout title={title} noindex>
+<BaseLayout title={title} noindex hideSearch>
   <AdminPanel client:only="react" />
 </BaseLayout>

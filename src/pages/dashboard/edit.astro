@@ -7,7 +7,7 @@ import ProductManager from '../../components/react/ProductManager.tsx';
 const businessId = Astro.url.searchParams.get('id') || '';
 ---
 
-<BaseLayout title="Edit Usaha" noindex>
+<BaseLayout title="Edit Usaha" noindex hideSearch>
   <BusinessForm client:load />
   <ProductManager client:idle businessId={businessId} />
 </BaseLayout>

@@ -4,6 +4,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import DashboardApp from '../../components/react/DashboardApp.tsx';
 ---
 
-<BaseLayout title="Dashboard" noindex>
+<BaseLayout title="Dashboard" noindex hideSearch>
   <DashboardApp client:load initialTab="usaha" />
 </BaseLayout>

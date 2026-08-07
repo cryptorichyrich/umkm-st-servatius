@@ -4,6 +4,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import DashboardApp from '../../components/react/DashboardApp.tsx';
 ---
 
-<BaseLayout title="Favorit Saya" noindex>
+<BaseLayout title="Favorit Saya" noindex hideSearch>
   <DashboardApp client:load initialTab="favorit" />
 </BaseLayout>
