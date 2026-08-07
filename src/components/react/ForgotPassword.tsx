@@ -29,12 +29,16 @@ async function checkHuman(token: string, failed: boolean): Promise<boolean> {
 
 /** Log security events (fire-and-forget). */
 function logSecurity(eventType: string, identifier: string, success: boolean, details?: Record<string, unknown>) {
-  supabase.rpc('log_security_event', {
-    p_event_type: eventType,
-    p_identifier: identifier,
-    p_success: success,
-    p_details: details || {},
-  }).catch(() => {});
+  (async () => {
+    try {
+      await supabase.rpc('log_security_event', {
+        p_event_type: eventType,
+        p_identifier: identifier,
+        p_success: success,
+        p_details: details || {},
+      });
+    } catch { /* fire-and-forget */ }
+  })();
 }
 
 export default function ForgotPassword() {

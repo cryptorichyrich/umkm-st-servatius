@@ -18,6 +18,7 @@ import {
   Eye,
   Newspaper,
   History,
+  Shield,
 } from 'lucide-react';
 import {
   supabase,
@@ -34,6 +35,7 @@ const BazarManager = lazy(() => import('./BazarManager'));
 const NewsManager = lazy(() => import('./NewsManager'));
 const BlogModeration = lazy(() => import('./BlogModeration'));
 const AdminActivityLog = lazy(() => import('./AdminActivityLog'));
+const SecurityLog = lazy(() => import('./SecurityLog'));
 
 const TabFallback = () => (
   <div className="flex items-center justify-center py-20">
@@ -1560,6 +1562,7 @@ export default function AdminPanel() {
     { key: 'berita', label: 'Berita', icon: Newspaper },
     { key: 'moderasi-blog', label: 'Moderasi Blog', icon: FileText },
     { key: 'log', label: 'Log Aktivitas', icon: History },
+    { key: 'keamanan', label: 'Log Keamanan', icon: Shield },
   ];
 
   // ───────────────────────────────────────────
@@ -3533,6 +3536,15 @@ export default function AdminPanel() {
       {activeTab === 'log' && authState === 'ok' && (
         <Suspense fallback={<TabFallback />}>
           <AdminActivityLog />
+        </Suspense>
+      )}
+
+      {/* ─────────────────────────────────────────── */}
+      {/* KEAMANAN / SECURITY LOG TAB */}
+      {/* ─────────────────────────────────────────── */}
+      {activeTab === 'keamanan' && authState === 'ok' && (
+        <Suspense fallback={<TabFallback />}>
+          <SecurityLog />
         </Suspense>
       )}
 
