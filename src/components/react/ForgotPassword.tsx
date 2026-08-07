@@ -1,16 +1,44 @@
 import { useState, type FormEvent } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Mail, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import Turnstile from './Turnstile';
+
+const TURNSTILE_SITE_KEY = '0x4AAAAAAEJHcFlPC0c4YqQI';
+const SUPABASE_URL = 'https://vfqcydqmwhfelqizxzbi.supabase.co';
+
+async function verifyTurnstile(token: string): Promise<boolean> {
+  if (!token) return false;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/verify-turnstile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const data = await res.json();
+    return data.success === true;
+  } catch {
+    return false;
+  }
+}
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+
+    // Bot protection
+    const human = await verifyTurnstile(turnstileToken);
+    if (!human) {
+      setError('Verifikasi keamanan gagal. Mohon coba lagi.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -79,6 +107,8 @@ export default function ForgotPassword() {
           {error}
         </div>
       )}
+
+      <Turnstile siteKey={TURNSTILE_SITE_KEY} onToken={setTurnstileToken} />
 
       <button
         type="submit"
