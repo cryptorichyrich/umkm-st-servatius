@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { supabase, type Business, type Profile, type BusinessStatus, type Product, type Favorite } from '../../lib/supabase';
-import { Eye, EyeOff, Store } from 'lucide-react';
-import FavoriteButton from './FavoriteButton';
-import BazarSchedule from './BazarSchedule';
-import BlogEditor from './BlogEditor';
+import { Eye, EyeOff, Store, Plus, ShieldCheck, Heart, Settings as SettingsIcon, LogOut, Calendar, FileText, ChevronRight, ExternalLink } from 'lucide-react';
+
+const BazarSchedule = lazy(() => import('./BazarSchedule'));
+const BlogEditor = lazy(() => import('./BlogEditor'));
 
 // ─────────────────────────────────────────────
 // Types
@@ -23,14 +23,14 @@ interface FavoriteProductRow extends Favorite {
 type TabKey = 'usaha' | 'verifikasi' | 'favorit' | 'pengaturan' | 'bazar' | 'artikel';
 
 // ─────────────────────────────────────────────
-// Status badge helper (preserved from original)
+// Status badge
 // ─────────────────────────────────────────────
 function StatusBadge({ status }: { status: BusinessStatus }) {
   const styles: Record<BusinessStatus, string> = {
-    draft: 'bg-gray-100 text-gray-700',
-    pending: 'bg-yellow-100 text-yellow-800',
-    approved: 'bg-green-100 text-green-800',
-    rejected: 'bg-red-100 text-red-800',
+    draft: 'bg-gray-100 text-gray-600',
+    pending: 'bg-amber-100 text-amber-700',
+    approved: 'bg-green-100 text-green-700',
+    rejected: 'bg-red-100 text-red-700',
   };
   const labels: Record<BusinessStatus, string> = {
     draft: 'Draft',
@@ -39,19 +39,16 @@ function StatusBadge({ status }: { status: BusinessStatus }) {
     rejected: 'Ditolak',
   };
   return (
-    <span
-      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status]}`}
-    >
+    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status]}`}>
       {labels[status]}
     </span>
   );
 }
 
 // ─────────────────────────────────────────────
-// Verification badge helper (for header)
+// Verification badge
 // ─────────────────────────────────────────────
 function VerificationBadge({ type, status, role }: { type: string; status: string; role?: string }) {
-  // Admin always shows as admin badge
   if (role === 'admin') {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-gold-100 px-2.5 py-0.5 text-xs font-semibold text-gold-800 ring-1 ring-gold-300">
@@ -64,7 +61,7 @@ function VerificationBadge({ type, status, role }: { type: string; status: strin
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-300">
         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5L18.2 22 12 17.5 5.8 22l2.4-8.1L2 9.4h7.6z"/></svg>
-        UMKM
+        UMKM Terverifikasi
       </span>
     );
   }
@@ -72,7 +69,7 @@ function VerificationBadge({ type, status, role }: { type: string; status: strin
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800 ring-1 ring-green-300">
         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
-        Member
+        Member Terverifikasi
       </span>
     );
   }
@@ -91,52 +88,26 @@ function VerificationBadge({ type, status, role }: { type: string; status: strin
   );
 }
 
-// ─────────────────────────────────────────────
-// Tab link (URL-based navigation)
-// ─────────────────────────────────────────────
-function TabLink({
-  href,
-  active,
-  children,
-}: {
-  href: string;
-  active: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <a
-      href={href}
-      className={`whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold transition ${
-        active
-          ? 'border-paroki-600 text-paroki-700'
-          : 'border-transparent text-paroki-500 hover:text-paroki-700'
-      }`}
-    >
-      {children}
-    </a>
-  );
-}
-
 // ═══════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
 interface DashboardAppProps {
-  initialTab?: 'usaha' | 'verifikasi' | 'favorit' | 'pengaturan' | 'bazar' | 'artikel';
+  initialTab?: TabKey;
 }
 
 export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps) {
   const activeTab: TabKey = initialTab;
 
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [businesses, setBusinesses] = useState<BusinessRow[]>([]);
   const [favorites, setFavorites] = useState<{ businesses: FavoriteBusinessRow[]; products: FavoriteProductRow[] }>({ businesses: [], products: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
-
-  // Favorites tab state
   const [favoritesLoading, setFavoritesLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // ── Settings / Change Password state ──
   const [newPassword, setNewPassword] = useState('');
@@ -175,7 +146,7 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
   };
 
   // ─────────────────────────────────────────────
-  // Initial load: session + profile + businesses
+  // Initial load
   // ─────────────────────────────────────────────
   useEffect(() => {
     (async () => {
@@ -188,14 +159,13 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
         return;
       }
 
-      const userId = session.user.id;
+      setUserId(session.user.id);
       setUserEmail(session.user.email || null);
 
-      // Fetch profile
       const { data: profileData, error: profileErr } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId)
+        .eq('id', session.user.id)
         .single();
 
       if (profileErr) {
@@ -204,16 +174,10 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
         setProfile(profileData as Profile);
       }
 
-      // Fetch businesses with category join
       const { data: bizData, error: bizErr } = await supabase
         .from('businesses')
-        .select(
-          `
-          *,
-          category:categories(*)
-        `,
-        )
-        .eq('owner_id', userId)
+        .select(`*, category:categories(*)`)
+        .eq('owner_id', session.user.id)
         .order('created_at', { ascending: false });
 
       if (bizErr) {
@@ -238,33 +202,18 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
       } = await supabase.auth.getSession();
       if (!session) return;
 
-      // Fetch business favorites with business details
       const { data: bizFavs, error: bizFavErr } = await supabase
         .from('favorites')
-        .select(
-          `
-          *,
-          business:businesses(*)
-        `,
-        )
+        .select(`*, business:businesses(*)`)
         .eq('user_id', session.user.id)
         .not('business_id', 'is', null)
         .order('created_at', { ascending: false });
 
       if (bizFavErr) throw bizFavErr;
 
-      // Fetch product favorites with product + business details
       const { data: prodFavs, error: prodFavErr } = await supabase
         .from('favorites')
-        .select(
-          `
-          *,
-          product:products(
-            *,
-            business:businesses(id, name, slug)
-          )
-        `,
-        )
+        .select(`*, product:products(*, business:businesses(id, name, slug))`)
         .eq('user_id', session.user.id)
         .not('product_id', 'is', null)
         .order('created_at', { ascending: false });
@@ -282,9 +231,6 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
     }
   }, []);
 
-  // ─────────────────────────────────────────────
-  // Lazy-load tab data based on initialTab prop
-  // ─────────────────────────────────────────────
   useEffect(() => {
     if (activeTab === 'favorit') {
       fetchFavorites();
@@ -292,26 +238,16 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
   }, [activeTab, fetchFavorites]);
 
   // ─────────────────────────────────────────────
-  // Business handlers (preserved from original)
+  // Handlers
   // ─────────────────────────────────────────────
   const handleSubmitForReview = useCallback(async (businessId: string) => {
     setSubmittingId(businessId);
     try {
-      const { error: rpcErr } = await supabase.rpc('submit_for_review', {
-        p_business_id: businessId,
-      });
+      const { error: rpcErr } = await supabase.rpc('submit_for_review', { p_business_id: businessId });
       if (rpcErr) throw rpcErr;
-
-      // Update local state
-      setBusinesses((prev) =>
-        prev.map((b) => (b.id === businessId ? { ...b, status: 'pending' } : b)),
-      );
+      setBusinesses((prev) => prev.map((b) => (b.id === businessId ? { ...b, status: 'pending' } : b)));
     } catch (err) {
-      alert(
-        err instanceof Error
-          ? `Gagal mengirim untuk review: ${err.message}`
-          : 'Gagal mengirim untuk review.',
-      );
+      alert(err instanceof Error ? `Gagal mengirim: ${err.message}` : 'Gagal mengirim untuk review.');
     } finally {
       setSubmittingId(null);
     }
@@ -323,627 +259,548 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
   }, []);
 
   const formatDate = useCallback((dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
+    return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
   }, []);
 
-  // ─────────────────────────────────────────────
-  // Favorite removal
-  // ─────────────────────────────────────────────
-  const handleRemoveFavorite = useCallback(
-    async (favId: string, type: 'business' | 'product') => {
-      try {
-        const { error: delErr } = await supabase
-          .from('favorites')
-          .delete()
-          .eq('id', favId);
-
-        if (delErr) throw delErr;
-
-        if (type === 'business') {
-          setFavorites((prev) => ({
-            ...prev,
-            businesses: prev.businesses.filter((f) => f.id !== favId),
-          }));
-        } else {
-          setFavorites((prev) => ({
-            ...prev,
-            products: prev.products.filter((f) => f.id !== favId),
-          }));
-        }
-      } catch (err) {
-        alert(
-          err instanceof Error
-            ? `Gagal menghapus favorit: ${err.message}`
-            : 'Gagal menghapus favorit.',
-        );
+  const handleRemoveFavorite = useCallback(async (favId: string, type: 'business' | 'product') => {
+    try {
+      const { error: delErr } = await supabase.from('favorites').delete().eq('id', favId);
+      if (delErr) throw delErr;
+      if (type === 'business') {
+        setFavorites((prev) => ({ ...prev, businesses: prev.businesses.filter((f) => f.id !== favId) }));
+      } else {
+        setFavorites((prev) => ({ ...prev, products: prev.products.filter((f) => f.id !== favId) }));
       }
-    },
-    [],
-  );
+    } catch (err) {
+      alert(err instanceof Error ? `Gagal menghapus: ${err.message}` : 'Gagal menghapus favorit.');
+    }
+  }, []);
 
-  // Derived values
-  // Admin bypasses verification — always can add businesses
   const isAdmin = profile?.role === 'admin';
   const isVerifiedStatus = profile?.verification_status === 'verified';
-  const canAddBusiness =
-    isAdmin ||
-    (isVerifiedStatus &&
-     (profile?.verification_type === 'member' || profile?.verification_type === 'umkm'));
+  const canAddBusiness = isAdmin || (isVerifiedStatus && (profile?.verification_type === 'member' || profile?.verification_type === 'umkm'));
+
+  const approvedCount = businesses.filter(b => b.status === 'approved').length;
+  const pendingCount = businesses.filter(b => b.status === 'pending').length;
 
   // ─────────────────────────────────────────────
-  // Loading state
+  // Sidebar nav items
   // ─────────────────────────────────────────────
+  const navItems: { key: TabKey; label: string; href: string; icon: React.ComponentType<{ className?: string }>; show?: boolean }[] = [
+    { key: 'usaha', label: 'Usaha Saya', href: '/dashboard', icon: Store },
+    { key: 'verifikasi', label: 'Verifikasi', href: '/dashboard/verifikasi', icon: ShieldCheck },
+    { key: 'favorit', label: 'Favorit', href: '/dashboard/favorit', icon: Heart },
+    { key: 'bazar', label: 'Bazar', href: '/dashboard/bazar', icon: Calendar, show: businesses.length > 0 },
+    { key: 'artikel', label: 'Tulis Artikel', href: '/dashboard/artikel', icon: FileText, show: businesses.length > 0 },
+    { key: 'pengaturan', label: 'Pengaturan', href: '/dashboard/pengaturan', icon: SettingsIcon },
+  ];
+
+  // ═══════════════════════════════════════════════════════════════
+  // RENDER: Loading
+  // ═══════════════════════════════════════════════════════════════
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-10">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 w-64 rounded bg-paroki-100" />
-          <div className="h-24 rounded-xl bg-paroki-100" />
-          <div className="h-24 rounded-xl bg-paroki-100" />
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-pulse space-y-3 text-center">
+          <div className="mx-auto h-12 w-12 rounded-2xl bg-paroki-200" />
+          <div className="mx-auto h-4 w-32 rounded bg-paroki-100" />
+          <div className="mx-auto h-3 w-48 rounded bg-paroki-50" />
         </div>
       </div>
     );
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // RENDER
+  // RENDER: Main — sidebar layout
   // ═══════════════════════════════════════════════════════════════
-  return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
-      {/* ── Header ── */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-paroki-900">Dashboard</h1>
-          <p className="mt-1 text-sm text-paroki-600">
-            {profile?.full_name
-              ? `Selamat datang, ${profile.full_name}!`
-              : 'Kelola usaha Anda di sini.'}
-          </p>
-          {profile && (
-            <div className="mt-2">
-              <VerificationBadge
-                type={profile.verification_type}
-                status={profile.verification_status}
-                role={profile.role}
-              />
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {profile?.role === 'admin' && (
-            <a
-              href="/admin"
-              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-paroki-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-paroki-800"
-            >
-              ⚙️ Admin
-            </a>
-          )}
-          {canAddBusiness ? (
-            <a
-              href="/dashboard/baru"
-              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-paroki-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-paroki-700"
-            >
-              <span>+</span> Tambah Usaha Baru
-            </a>
-          ) : (
-            <a
-              href="/dashboard/verifikasi"
-              title="Anda harus verifikasi member terlebih dahulu untuk menambah usaha"
-              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-800 shadow-sm transition hover:bg-amber-100"
-            >
-              ⚠ Verifikasi Diperlukan
-            </a>
-          )}
-        </div>
-      </div>
+  const activeLabel = navItems.find(n => n.key === activeTab)?.label || 'Dashboard';
 
-      {error && (
-        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
+  return (
+    <div className="flex min-h-screen bg-[#f8f9fa]">
+      {/* ───── Mobile overlay ───── */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* ── Tab Bar ── */}
-      <div className="mb-6 overflow-x-auto border-b border-paroki-200">
-        <div className="flex">
-          <TabLink href="/dashboard" active={activeTab === 'usaha'}>
-            Usaha Saya
-          </TabLink>
-          <TabLink href="/dashboard/verifikasi" active={activeTab === 'verifikasi'}>
-            Verifikasi Member
-          </TabLink>
-          <TabLink href="/dashboard/favorit" active={activeTab === 'favorit'}>
-            Favorit Saya
-          </TabLink>
-          <TabLink href="/dashboard/pengaturan" active={activeTab === 'pengaturan'}>
-            Pengaturan
-          </TabLink>
-          {businesses.length > 0 && (
-            <TabLink href="/dashboard/bazar" active={activeTab === 'bazar'}>
-              🎪 Bazar
-            </TabLink>
-          )}
-          {businesses.length > 0 && (
-            <TabLink href="/dashboard/artikel" active={activeTab === 'artikel'}>
-              ✍️ Tulis Artikel
-            </TabLink>
+      {/* ───── Sidebar ───── */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col overflow-y-auto bg-gradient-to-b from-paroki-900 to-paroki-800 text-paroki-100 transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {/* Profile header */}
+        <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gold-500/20 text-sm font-bold text-gold-300 ring-1 ring-gold-400/30">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+            ) : (
+              (profile?.full_name || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-serif text-sm font-bold text-gold-400">{profile?.full_name || 'Pengguna'}</p>
+            <p className="truncate text-[11px] text-paroki-300">{userEmail}</p>
+          </div>
+          <button onClick={() => setSidebarOpen(false)} className="ml-auto text-paroki-300 hover:text-white lg:hidden">
+            <ChevronRight className="h-5 w-5 rotate-180" />
+          </button>
+        </div>
+
+        {/* Verification badge */}
+        {profile && (
+          <div className="px-5 py-3 border-b border-white/10">
+            <VerificationBadge type={profile.verification_type} status={profile.verification_status} role={profile.role} />
+          </div>
+        )}
+
+        {/* Stats chips */}
+        <div className="flex items-center gap-2 px-5 py-3 border-b border-white/10">
+          <div className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5">
+            <Store className="h-3 w-3 text-paroki-400" />
+            <span className="text-xs font-semibold text-white">{businesses.length}</span>
+            <span className="text-[10px] text-paroki-400">Usaha</span>
+          </div>
+          {approvedCount > 0 && (
+            <div className="flex items-center gap-1.5 rounded-lg bg-green-500/10 px-2.5 py-1.5">
+              <span className="text-xs font-semibold text-green-300">{approvedCount}</span>
+              <span className="text-[10px] text-green-400">Aktif</span>
+            </div>
           )}
         </div>
-      </div>
 
-      {/* ═══════════════════════════════════════════════════════════
-          TAB 1: USAHA SAYA (Business Management — preserved)
-      ═══════════════════════════════════════════════════════════ */}
-      {activeTab === 'usaha' && (
-        <>
-          {businesses.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-paroki-300 bg-white py-16 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-paroki-50 text-paroki-400">
-                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9.5 5.5 5h13L20 9.5M4 9.5h16M4 9.5V19a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9.5M9.5 20v-4.5h5V20"/></svg>
-              </div>
-              <p className="font-medium text-paroki-700">Belum ada usaha terdaftar</p>
-              <p className="mt-1 text-sm text-paroki-400">
-                Klik "Tambah Usaha Baru" untuk mulai mendaftarkan usaha Anda.
-              </p>
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-4">
+          {navItems.filter(n => n.show !== false).map((item) => (
+            <a
+              key={item.key}
+              href={item.href}
+              onClick={() => setSidebarOpen(false)}
+              className={`group relative flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-all ${
+                activeTab === item.key
+                  ? 'bg-white/10 font-medium text-white shadow-sm'
+                  : 'text-paroki-200 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              {activeTab === item.key && (
+                <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-gold-400" />
+              )}
+              <item.icon className={`h-4 w-4 shrink-0 ${activeTab === item.key ? 'text-gold-400' : 'text-paroki-400 group-hover:text-paroki-200'}`} />
+              <span className="truncate">{item.label}</span>
+              {item.key === 'usaha' && pendingCount > 0 && (
+                <span className="ml-auto rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">{pendingCount}</span>
+              )}
+            </a>
+          ))}
+        </nav>
+
+        {/* Footer */}
+        <div className="space-y-1 border-t border-white/10 px-3 py-3">
+          {isAdmin && (
+            <a href="/admin" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-gold-300 transition hover:bg-white/5 hover:text-gold-200">
+              <ShieldCheck className="h-4 w-4" />
+              Admin Panel
+            </a>
+          )}
+          <a href="/" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs text-paroki-300 transition hover:bg-white/5 hover:text-white">
+            <ExternalLink className="h-3.5 w-3.5" />
+            Lihat Situs Publik
+          </a>
+          <button onClick={handleLogout} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-red-300 transition hover:bg-red-500/10 hover:text-red-200">
+            <LogOut className="h-4 w-4" />
+            Keluar
+          </button>
+        </div>
+      </aside>
+
+      {/* ───── Main content ───── */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Top bar */}
+        <header className="sticky top-0 z-20 border-b border-gray-200/80 bg-white/80 backdrop-blur-lg">
+          <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
+            <button onClick={() => setSidebarOpen(true)} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 lg:hidden">
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18" /></svg>
+            </button>
+            <div className="flex-1">
+              <h1 className="font-serif text-lg font-bold text-paroki-900 sm:text-xl">{activeLabel}</h1>
             </div>
-          ) : (
-            <>
-              {/* Desktop table */}
-              <div className="hidden overflow-hidden rounded-2xl border border-paroki-200 bg-white shadow-sm md:block">
-                <table className="w-full text-left text-sm">
-                  <thead className="border-b border-paroki-200 bg-paroki-50 text-paroki-700">
-                    <tr>
-                      <th className="px-4 py-3 font-semibold">Nama Usaha</th>
-                      <th className="px-4 py-3 font-semibold">Kategori</th>
-                      <th className="px-4 py-3 font-semibold">Status</th>
-                      <th className="px-4 py-3 font-semibold">Dibuat</th>
-                      <th className="px-4 py-3 text-right font-semibold">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-paroki-100">
-                    {businesses.map((b) => (
-                      <tr key={b.id} className="hover:bg-paroki-50/50">
-                        <td className="px-4 py-3">
-                          <a href={`/${b.slug}`} target="_blank" rel="noopener noreferrer" className="font-medium text-paroki-900 transition hover:text-gold-600 hover:underline">
-                            {b.name}
-                          </a>
-                          {b.status === 'rejected' && b.rejection_note && (
-                            <div className="mt-1 max-w-xs text-xs text-red-600">
-                              Catatan: {b.rejection_note}
+            {/* Quick action */}
+            {activeTab === 'usaha' && (
+              canAddBusiness ? (
+                <a href="/dashboard/baru" className="inline-flex items-center gap-1.5 rounded-xl bg-gold-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-gold-600">
+                  <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Tambah Usaha</span><span className="sm:hidden">Tambah</span>
+                </a>
+              ) : (
+                <a href="/dashboard/verifikasi" className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800 transition hover:bg-amber-100">
+                  <ShieldCheck className="h-4 w-4" /> <span className="hidden sm:inline">Verifikasi Diperlukan</span><span className="sm:hidden">Verifikasi</span>
+                </a>
+              )
+            )}
+          </div>
+        </header>
+
+        {/* Error banner */}
+        {error && (
+          <div className="mx-4 mt-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 sm:mx-6">
+            {error}
+          </div>
+        )}
+
+        {/* ───── Tab content ───── */}
+        <div className="flex-1 p-4 sm:p-6">
+          <div className="mx-auto max-w-4xl">
+
+            {/* ═══ TAB 1: USAHA ═══ */}
+            {activeTab === 'usaha' && (
+              <>
+                {businesses.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-paroki-300 bg-white py-20 text-center">
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-paroki-50">
+                      <Store className="h-8 w-8 text-paroki-400" />
+                    </div>
+                    <p className="font-serif text-lg font-bold text-paroki-800">Belum ada usaha terdaftar</p>
+                    <p className="mt-1 max-w-sm text-sm text-paroki-500">
+                      Mulai daftarkan usaha Anda untuk tampil di direktori UMKM Paroki St. Servatius.
+                    </p>
+                    {canAddBusiness && (
+                      <a href="/dashboard/baru" className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-gold-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gold-600">
+                        <Plus className="h-4 w-4" /> Tambah Usaha Baru
+                      </a>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    {/* Desktop table */}
+                    <div className="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm md:block">
+                      <table className="w-full text-left text-sm">
+                        <thead className="border-b border-gray-200 bg-gray-50 text-gray-700">
+                          <tr>
+                            <th className="px-5 py-3 font-semibold">Nama Usaha</th>
+                            <th className="px-4 py-3 font-semibold">Kategori</th>
+                            <th className="px-4 py-3 font-semibold">Status</th>
+                            <th className="px-4 py-3 font-semibold">Dibuat</th>
+                            <th className="px-4 py-3 text-right font-semibold">Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {businesses.map((b) => (
+                            <tr key={b.id} className="transition hover:bg-gray-50/50">
+                              <td className="px-5 py-3.5">
+                                <a href={`/${b.slug}`} target="_blank" rel="noopener noreferrer" className="font-medium text-paroki-900 transition hover:text-gold-600 hover:underline">
+                                  {b.name}
+                                </a>
+                                {b.status === 'rejected' && b.rejection_note && (
+                                  <div className="mt-1 max-w-xs text-xs text-red-600">Catatan: {b.rejection_note}</div>
+                                )}
+                              </td>
+                              <td className="px-4 py-3.5 text-gray-600">
+                                {b.category ? `${b.category.icon} ${b.category.name}` : '-'}
+                              </td>
+                              <td className="px-4 py-3.5"><StatusBadge status={b.status} /></td>
+                              <td className="px-4 py-3.5 text-gray-400">{formatDate(b.created_at)}</td>
+                              <td className="px-4 py-3.5">
+                                <div className="flex justify-end gap-1.5">
+                                  {b.status === 'approved' && (
+                                    <a href={`/${b.slug}`} className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50">Lihat</a>
+                                  )}
+                                  <a href={`/dashboard/edit?id=${b.id}`} className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50">Edit</a>
+                                  {(b.status === 'draft' || b.status === 'rejected') && (
+                                    <button onClick={() => handleSubmitForReview(b.id)} disabled={submittingId === b.id} className="rounded-lg bg-paroki-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-paroki-700 disabled:cursor-not-allowed disabled:opacity-60">
+                                      {submittingId === b.id ? 'Mengirim...' : b.status === 'rejected' ? 'Kirim Ulang' : 'Kirim Review'}
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile cards */}
+                    <div className="space-y-3 md:hidden">
+                      {businesses.map((b) => (
+                        <div key={b.id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <h3 className="font-medium">
+                                <a href={`/${b.slug}`} target="_blank" rel="noopener noreferrer" className="text-paroki-900 transition hover:text-gold-600 hover:underline">{b.name}</a>
+                              </h3>
+                              <p className="mt-0.5 text-xs text-gray-500">
+                                {b.category ? `${b.category.icon} ${b.category.name}` : 'Tanpa kategori'} {' \u00B7 '} {formatDate(b.created_at)}
+                              </p>
                             </div>
+                            <StatusBadge status={b.status} />
+                          </div>
+                          {b.status === 'rejected' && b.rejection_note && (
+                            <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">Catatan: {b.rejection_note}</p>
                           )}
-                        </td>
-                        <td className="px-4 py-3 text-paroki-600">
-                          {b.category ? `${b.category.icon} ${b.category.name}` : '-'}
-                        </td>
-                        <td className="px-4 py-3">
-                          <StatusBadge status={b.status} />
-                        </td>
-                        <td className="px-4 py-3 text-paroki-500">
-                          {formatDate(b.created_at)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex justify-end gap-1.5">
+                          <div className="mt-3 flex flex-wrap gap-1.5">
                             {b.status === 'approved' && (
-                              <a
-                                href={`/${b.slug}`}
-                                className="rounded-md border border-paroki-200 px-3 py-1.5 text-xs font-medium text-paroki-700 hover:bg-paroki-50"
-                              >
-                                Lihat
-                              </a>
+                              <a href={`/${b.slug}`} className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50">Lihat</a>
                             )}
-                            <a
-                              href={`/dashboard/edit?id=${b.id}`}
-                              className="rounded-md border border-paroki-200 px-3 py-1.5 text-xs font-medium text-paroki-700 hover:bg-paroki-50"
-                            >
-                              Edit
-                            </a>
-                            {b.status === 'draft' && (
-                              <button
-                                onClick={() => handleSubmitForReview(b.id)}
-                                disabled={submittingId === b.id}
-                                className="rounded-md bg-paroki-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-paroki-700 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                {submittingId === b.id ? 'Mengirim...' : 'Kirim untuk Review'}
-                              </button>
-                            )}
-                            {b.status === 'rejected' && (
-                              <button
-                                onClick={() => handleSubmitForReview(b.id)}
-                                disabled={submittingId === b.id}
-                                className="rounded-md bg-paroki-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-paroki-700 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                {submittingId === b.id ? 'Mengirim...' : 'Kirim Ulang'}
+                            <a href={`/dashboard/edit?id=${b.id}`} className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50">Edit</a>
+                            {(b.status === 'draft' || b.status === 'rejected') && (
+                              <button onClick={() => handleSubmitForReview(b.id)} disabled={submittingId === b.id} className="rounded-lg bg-paroki-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-paroki-700 disabled:cursor-not-allowed disabled:opacity-60">
+                                {submittingId === b.id ? 'Mengirim...' : b.status === 'rejected' ? 'Kirim Ulang' : 'Kirim Review'}
                               </button>
                             )}
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile cards */}
-              <div className="space-y-3 md:hidden">
-                {businesses.map((b) => (
-                  <div
-                    key={b.id}
-                    className="rounded-xl border border-paroki-200 bg-white p-4 shadow-sm"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <h3 className="font-medium">
-                          <a href={`/${b.slug}`} target="_blank" rel="noopener noreferrer" className="text-paroki-900 transition hover:text-gold-600 hover:underline">
-                            {b.name}
-                          </a>
-                        </h3>
-                        <p className="mt-0.5 text-xs text-paroki-500">
-                          {b.category ? `${b.category.icon} ${b.category.name}` : 'Tanpa kategori'}
-                          {' · '}
-                          {formatDate(b.created_at)}
-                        </p>
-                      </div>
-                      <StatusBadge status={b.status} />
-                    </div>
-
-                    {b.status === 'rejected' && b.rejection_note && (
-                      <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">
-                        Catatan penolakan: {b.rejection_note}
-                      </p>
-                    )}
-
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {b.status === 'approved' && (
-                        <a
-                          href={`/${b.slug}`}
-                          className="rounded-md border border-paroki-200 px-3 py-1.5 text-xs font-medium text-paroki-700 hover:bg-paroki-50"
-                        >
-                          Lihat
-                        </a>
-                      )}
-                      <a
-                        href={`/dashboard/edit?id=${b.id}`}
-                        className="rounded-md border border-paroki-200 px-3 py-1.5 text-xs font-medium text-paroki-700 hover:bg-paroki-50"
-                      >
-                        Edit
-                      </a>
-                      {(b.status === 'draft' || b.status === 'rejected') && (
-                        <button
-                          onClick={() => handleSubmitForReview(b.id)}
-                          disabled={submittingId === b.id}
-                          className="rounded-md bg-paroki-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-paroki-700 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {submittingId === b.id
-                            ? 'Mengirim...'
-                            : b.status === 'rejected'
-                              ? 'Kirim Ulang'
-                              : 'Kirim untuk Review'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </>
-      )}
-
-      {/* ═══════════════════════════════════════════════════════════
-          TAB 2: VERIFIKASI — redirect to dedicated page
-      ═══════════════════════════════════════════════════════════ */}
-      {activeTab === 'verifikasi' && (
-        <div className="py-10 text-center">
-          <a
-            href="/dashboard/verifikasi"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-paroki-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-paroki-700"
-          >
-            Ke Halaman Verifikasi →
-          </a>
-        </div>
-      )}
-
-      {/* ═══════════════════════════════════════════════════════════
-          TAB 3: FAVORIT SAYA
-      ═══════════════════════════════════════════════════════════ */}
-      {activeTab === 'favorit' && (
-        <>
-          {favoritesLoading ? (
-            <div className="animate-pulse space-y-4">
-              <div className="h-20 w-full rounded-lg bg-paroki-100" />
-              <div className="h-20 w-full rounded-lg bg-paroki-100" />
-            </div>
-          ) : favorites.businesses.length === 0 && favorites.products.length === 0 ? (
-            /* Empty state */
-            <div className="rounded-lg border border-dashed border-paroki-300 bg-white py-16 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-paroki-50 text-paroki-400">
-                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/></svg>
-              </div>
-              <p className="font-medium text-paroki-700">Belum ada favorit</p>
-              <p className="mt-1 text-sm text-paroki-400">
-                Anda belum memiliki favorit. Jelajahi direktori untuk menyimpan usaha/produk favorit Anda!
-              </p>
-              <a
-                href="/umkm"
-                className="mt-4 inline-flex items-center rounded-lg bg-paroki-600 px-4 py-2 text-sm font-semibold text-white hover:bg-paroki-700"
-              >
-                Jelajahi Direktori
-              </a>
-            </div>
-          ) : (
-            <div className="space-y-8">
-              {/* Usaha Favorit */}
-              {favorites.businesses.length > 0 && (
-                <div>
-                  <h3 className="mb-3 font-serif text-lg font-bold text-paroki-900">
-                    Usaha Favorit
-                  </h3>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {favorites.businesses.map((fav) => {
-                      const biz = fav.business;
-                      if (!biz) return null;
-                      return (
-                        <div
-                          key={fav.id}
-                          className="flex items-center gap-3 rounded-xl border border-paroki-200 bg-white p-3 shadow-sm"
-                        >
-                          {/* Thumbnail / Logo */}
-                          <a href={`/${biz.slug}`} className="flex-shrink-0">
-                            <div className="h-14 w-14 overflow-hidden rounded-lg bg-paroki-50">
-                              {biz.logo_url ? (
-                                <img src={biz.logo_url} alt={biz.name} className="h-full w-full object-cover" />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center text-paroki-300">
-                                  <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 9.5 5.5 5h13L20 9.5M4 9.5h16M4 9.5V19a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9.5M9.5 20v-4.5h5V20"/></svg>
-                                </div>
-                              )}
-                            </div>
-                          </a>
-
-                          {/* Info */}
-                          <a href={`/${biz.slug}`} className="min-w-0 flex-1">
-                            <h4 className="truncate font-medium text-paroki-900 hover:text-paroki-700">{biz.name}</h4>
-                            <p className="truncate text-xs text-paroki-500">
-                              {biz.area || 'Lokasi tidak tersedia'}
-                            </p>
-                          </a>
-
-                          {/* Remove */}
-                          <button
-                            onClick={() => handleRemoveFavorite(fav.id, 'business')}
-                            className="flex-shrink-0 rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
-                            title="Hapus dari favorit"
-                          >
-                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                          </button>
                         </div>
-                      );
-                    })}
-                  </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+
+            {/* ═══ TAB 2: VERIFIKASI ═══ */}
+            {activeTab === 'verifikasi' && (
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-paroki-300 bg-white py-20 text-center">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-paroki-50">
+                  <ShieldCheck className="h-8 w-8 text-paroki-400" />
                 </div>
-              )}
+                <p className="font-serif text-lg font-bold text-paroki-800">Verifikasi Akun</p>
+                <p className="mt-1 max-w-sm text-sm text-paroki-500">
+                  Verifikasi keanggotaan untuk mengakses fitur pendaftaran usaha dan layanan lainnya.
+                </p>
+                <a href="/dashboard/verifikasi/member" className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-paroki-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-paroki-700">
+                  Ke Halaman Verifikasi <ChevronRight className="h-4 w-4" />
+                </a>
+              </div>
+            )}
 
-              {/* Produk Favorit */}
-              {favorites.products.length > 0 && (
-                <div>
-                  <h3 className="mb-3 font-serif text-lg font-bold text-paroki-900">
-                    Produk Favorit
-                  </h3>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {favorites.products.map((fav) => {
-                      const prod = fav.product;
-                      if (!prod) return null;
-                      return (
-                        <div
-                          key={fav.id}
-                          className="flex items-center gap-3 rounded-xl border border-paroki-200 bg-white p-3 shadow-sm"
-                        >
-                          {/* Thumbnail */}
-                          <a href={`/${prod.business?.slug || '_'}/${prod.slug}`} className="flex-shrink-0">
-                            <div className="h-14 w-14 overflow-hidden rounded-lg bg-paroki-50">
-                              {prod.image_url ? (
-                                <img src={prod.image_url} alt={prod.name} className="h-full w-full object-cover" />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center text-paroki-300">
-                                  <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.5-3.5L9 20"/></svg>
-                                </div>
-                              )}
-                            </div>
-                          </a>
-
-                          {/* Info */}
-                          <a href={`/${prod.business?.slug || '_'}/${prod.slug}`} className="min-w-0 flex-1">
-                            <h4 className="truncate font-medium text-paroki-900 hover:text-paroki-700">{prod.name}</h4>
-                            <p className="truncate text-xs text-paroki-500">
-                              {prod.business?.name || ''}
-                              {prod.price != null
-                                ? ` · Rp ${new Intl.NumberFormat('id-ID').format(prod.price)}`
-                                : ''}
-                            </p>
-                          </a>
-
-                          {/* Remove */}
-                          <button
-                            onClick={() => handleRemoveFavorite(fav.id, 'product')}
-                            className="flex-shrink-0 rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
-                            title="Hapus dari favorit"
-                          >
-                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                          </button>
-                        </div>
-                      );
-                    })}
+            {/* ═══ TAB 3: FAVORIT ═══ */}
+            {activeTab === 'favorit' && (
+              <>
+                {favoritesLoading ? (
+                  <div className="animate-pulse space-y-4">
+                    <div className="h-20 w-full rounded-xl bg-gray-100" />
+                    <div className="h-20 w-full rounded-xl bg-gray-100" />
                   </div>
-                </div>
-              )}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ═══════════════════════════════════════════════════════════
-          TAB 4: PENGATURAN (Settings / Change Password)
-      ═══════════════════════════════════════════════════════════ */}
-      {activeTab === 'pengaturan' && (
-        <div className="space-y-6">
-          {/* Profile info card */}
-          <div className="rounded-lg border border-gray-200 bg-white p-5">
-            <h3 className="mb-4 font-display text-lg font-bold text-ink">Informasi Akun</h3>
-            {/* Avatar upload */}
-            <div className="mb-4 flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-paroki-900 text-xl font-bold text-white">
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="h-16 w-16 object-cover" />
+                ) : favorites.businesses.length === 0 && favorites.products.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-paroki-300 bg-white py-20 text-center">
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-paroki-50">
+                      <Heart className="h-8 w-8 text-paroki-400" />
+                    </div>
+                    <p className="font-serif text-lg font-bold text-paroki-800">Belum ada favorit</p>
+                    <p className="mt-1 max-w-sm text-sm text-paroki-500">
+                      Jelajahi direktori untuk menyimpan usaha dan produk favorit Anda.
+                    </p>
+                    <a href="/umkm" className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-paroki-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-paroki-700">
+                      Jelajahi Direktori
+                    </a>
+                  </div>
                 ) : (
-                  (profile?.full_name || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+                  <div className="space-y-8">
+                    {favorites.businesses.length > 0 && (
+                      <div>
+                        <h3 className="mb-3 font-serif text-lg font-bold text-paroki-900">Usaha Favorit</h3>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {favorites.businesses.map((fav) => {
+                            const biz = fav.business;
+                            if (!biz) return null;
+                            return (
+                              <div key={fav.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm transition hover:shadow-md">
+                                <a href={`/${biz.slug}`} className="shrink-0">
+                                  <div className="h-14 w-14 overflow-hidden rounded-lg bg-gray-100">
+                                    {biz.logo_url ? (
+                                      <img src={biz.logo_url} alt={biz.name} className="h-full w-full object-cover" />
+                                    ) : (
+                                      <div className="flex h-full w-full items-center justify-center text-gray-300"><Store className="h-6 w-6" /></div>
+                                    )}
+                                  </div>
+                                </a>
+                                <a href={`/${biz.slug}`} className="min-w-0 flex-1">
+                                  <h4 className="truncate font-medium text-paroki-900 hover:text-paroki-700">{biz.name}</h4>
+                                  <p className="truncate text-xs text-gray-500">{biz.area || 'Lokasi tidak tersedia'}</p>
+                                </a>
+                                <button onClick={() => handleRemoveFavorite(fav.id, 'business')} className="shrink-0 rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-500" title="Hapus dari favorit">
+                                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {favorites.products.length > 0 && (
+                      <div>
+                        <h3 className="mb-3 font-serif text-lg font-bold text-paroki-900">Produk Favorit</h3>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {favorites.products.map((fav) => {
+                            const prod = fav.product;
+                            if (!prod) return null;
+                            return (
+                              <div key={fav.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm transition hover:shadow-md">
+                                <a href={`/${prod.business?.slug || '_'}/${prod.slug}`} className="shrink-0">
+                                  <div className="h-14 w-14 overflow-hidden rounded-lg bg-gray-100">
+                                    {prod.image_url ? (
+                                      <img src={prod.image_url} alt={prod.name} className="h-full w-full object-cover" />
+                                    ) : (
+                                      <div className="flex h-full w-full items-center justify-center text-gray-300"><FileText className="h-6 w-6" /></div>
+                                    )}
+                                  </div>
+                                </a>
+                                <a href={`/${prod.business?.slug || '_'}/${prod.slug}`} className="min-w-0 flex-1">
+                                  <h4 className="truncate font-medium text-paroki-900 hover:text-paroki-700">{prod.name}</h4>
+                                  <p className="truncate text-xs text-gray-500">
+                                    {prod.business?.name || ''}{prod.price != null ? ` \u00B7 Rp ${new Intl.NumberFormat('id-ID').format(prod.price)}` : ''}
+                                  </p>
+                                </a>
+                                <button onClick={() => handleRemoveFavorite(fav.id, 'product')} className="shrink-0 rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-500" title="Hapus dari favorit">
+                                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
-              </div>
-              <div>
-                <label className="cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
-                  Ganti Foto
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      try {
-                        const { uploadToR2 } = await import('../../lib/r2-upload');
-                        const { url } = await uploadToR2(file);
-                        await supabase.from('profiles').update({ avatar_url: url }).eq('id', user!.id);
-                        setProfile(p => p ? { ...p, avatar_url: url } : p);
-                      } catch (err) {
-                        alert('Gagal upload: ' + (err instanceof Error ? err.message : 'Unknown error'));
-                      }
-                    }}
-                  />
-                </label>
-                <p className="mt-1 text-xs text-gray-400">JPG/PNG, maks 2MB</p>
-              </div>
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between border-b border-gray-100 pb-2">
-                <span className="text-gray-500">Nama</span>
-                <span className="font-medium text-ink">{profile?.full_name || '-'}</span>
-              </div>
-              <div className="flex justify-between border-b border-gray-100 pb-2">
-                <span className="text-gray-500">Email</span>
-                <span className="font-medium text-ink">{userEmail || '-'}</span>
-              </div>
-              <div className="flex justify-between border-b border-gray-100 pb-2">
-                <span className="text-gray-500">Telepon</span>
-                <span className="font-medium text-ink">{profile?.phone || '-'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Role</span>
-                <span className="font-medium text-ink capitalize">{profile?.role || '-'}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Change password card */}
-          <div className="rounded-lg border border-gray-200 bg-white p-5">
-            <h3 className="mb-1 font-display text-lg font-bold text-ink">Ubah Kata Sandi</h3>
-            <p className="mb-4 text-sm text-gray-500">
-              Pastikan menggunakan kata sandi yang kuat (min. 6 karakter).
-            </p>
-
-            {passwordSuccess && (
-              <div className="mb-4 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="10" /></svg>
-                Kata sandi berhasil diubah!
-              </div>
+              </>
             )}
 
-            {passwordError && (
-              <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" /></svg>
-                {passwordError}
-              </div>
-            )}
+            {/* ═══ TAB 4: PENGATURAN ═══ */}
+            {activeTab === 'pengaturan' && (
+              <div className="space-y-6">
+                {/* Profile card */}
+                <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                  <h3 className="mb-5 font-serif text-lg font-bold text-paroki-900">Informasi Akun</h3>
+                  <div className="mb-5 flex items-center gap-4">
+                    <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-paroki-700 to-paroki-900 text-xl font-bold text-white shadow-md ring-2 ring-gold-300/30">
+                      {profile?.avatar_url ? (
+                        <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        (profile?.full_name || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+                      )}
+                    </div>
+                    <div>
+                      <label className="cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+                        Ganti Foto
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file || !userId) return;
+                            try {
+                              const { uploadToR2 } = await import('../../lib/r2-upload');
+                              const { url } = await uploadToR2(file);
+                              await supabase.from('profiles').update({ avatar_url: url }).eq('id', userId);
+                              setProfile(p => p ? { ...p, avatar_url: url } : p);
+                            } catch (err) {
+                              alert('Gagal upload: ' + (err instanceof Error ? err.message : 'Unknown error'));
+                            }
+                          }}
+                        />
+                      </label>
+                      <p className="mt-1 text-xs text-gray-400">JPG/PNG, maks 2MB</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3 text-sm">
+                    {[
+                      { label: 'Nama', value: profile?.full_name || '-' },
+                      { label: 'Email', value: userEmail || '-' },
+                      { label: 'Telepon', value: profile?.phone || '-' },
+                      { label: 'Role', value: (profile?.role || '-').charAt(0).toUpperCase() + (profile?.role || '-').slice(1) },
+                    ].map((row) => (
+                      <div key={row.label} className="flex justify-between border-b border-gray-100 pb-3">
+                        <span className="text-gray-500">{row.label}</span>
+                        <span className="font-medium text-paroki-900">{row.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-            <form onSubmit={handleChangePassword} className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-ink-soft">
-                  Kata Sandi Baru
-                </label>
-                <div className="relative">
-                  <input
-                    type={showNewPassword ? 'text' : 'password'}
-                    required
-                    minLength={8}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-ink outline-none transition focus:border-gold-400 focus:ring-2 focus:ring-gold-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600"
-                    tabIndex={-1}
-                  >
-                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                {/* Change password */}
+                <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                  <h3 className="mb-1 font-serif text-lg font-bold text-paroki-900">Ubah Kata Sandi</h3>
+                  <p className="mb-5 text-sm text-gray-500">Pastikan menggunakan kata sandi yang kuat (min. 6 karakter).</p>
+
+                  {passwordSuccess && (
+                    <div className="mb-4 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                      <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="10" /></svg>
+                      Kata sandi berhasil diubah!
+                    </div>
+                  )}
+
+                  {passwordError && (
+                    <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{passwordError}</div>
+                  )}
+
+                  <form onSubmit={handleChangePassword} className="space-y-4">
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">Kata Sandi Baru</label>
+                      <div className="relative">
+                        <input
+                          type={showNewPassword ? 'text' : 'password'}
+                          required
+                          minLength={6}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Min. 6 karakter"
+                          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gold-400 focus:ring-2 focus:ring-gold-100"
+                        />
+                        <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600" tabIndex={-1}>
+                          {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">Ulangi Kata Sandi Baru</label>
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        required
+                        minLength={6}
+                        value={confirmNewPassword}
+                        onChange={(e) => setConfirmNewPassword(e.target.value)}
+                        placeholder="Ulangi kata sandi"
+                        className={`w-full rounded-xl border bg-white px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:ring-2 ${
+                          confirmNewPassword && newPassword !== confirmNewPassword
+                            ? 'border-red-300 focus:border-red-400 focus:ring-red-100'
+                            : confirmNewPassword && newPassword === confirmNewPassword
+                              ? 'border-green-300 focus:border-green-400 focus:ring-green-100'
+                              : 'border-gray-200 focus:border-gold-400 focus:ring-gold-100'
+                        }`}
+                      />
+                      {confirmNewPassword && newPassword !== confirmNewPassword && (
+                        <p className="mt-1 text-xs text-red-500">Kata sandi tidak cocok</p>
+                      )}
+                      {confirmNewPassword && newPassword === confirmNewPassword && (
+                        <p className="mt-1 text-xs text-green-600">Kata sandi cocok</p>
+                      )}
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={passwordLoading || (!!confirmNewPassword && newPassword !== confirmNewPassword)}
+                      className="rounded-xl bg-gold-500 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-gold-600 disabled:cursor-not-allowed disabled:opacity-60 active:translate-y-px"
+                    >
+                      {passwordLoading ? 'Menyimpan...' : 'Simpan Kata Sandi Baru'}
+                    </button>
+                  </form>
                 </div>
               </div>
+            )}
 
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-ink-soft">
-                  Ulangi Kata Sandi Baru
-                </label>
-                <input
-                  type={showNewPassword ? 'text' : 'password'}
-                  required
-                  minLength={8}
-                  value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className={`w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-ink outline-none transition focus:ring-2 ${
-                    confirmNewPassword && newPassword !== confirmNewPassword
-                      ? 'border-red-300 focus:border-red-400 focus:ring-red-100'
-                      : confirmNewPassword && newPassword === confirmNewPassword
-                        ? 'border-green-300 focus:border-green-400 focus:ring-green-100'
-                        : 'border-gray-200 focus:border-gold-400 focus:ring-gold-200'
-                  }`}
-                />
-                {confirmNewPassword && newPassword !== confirmPassword && (
-                  <p className="mt-1 text-xs text-red-500">Kata sandi tidak cocok</p>
-                )}
-                {confirmNewPassword && newPassword === confirmNewPassword && (
-                  <p className="mt-1 text-xs text-green-600">✓ Kata sandi cocok</p>
-                )}
-              </div>
+            {/* ═══ TAB 5: BAZAR ═══ */}
+            {activeTab === 'bazar' && businesses.length > 0 && (
+              <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-paroki-600" /></div>}>
+                <BazarSchedule businessId={businesses[0].id} businessName={businesses[0].name} />
+              </Suspense>
+            )}
 
-              <button
-                type="submit"
-                disabled={passwordLoading || (!!confirmNewPassword && newPassword !== confirmNewPassword)}
-                className="rounded-lg bg-gold-500 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-gold-600 disabled:cursor-not-allowed disabled:opacity-60 active:translate-y-px"
-              >
-                {passwordLoading ? 'Menyimpan...' : 'Simpan Kata Sandi Baru'}
-              </button>
-            </form>
+            {/* ═══ TAB 6: ARTIKEL ═══ */}
+            {activeTab === 'artikel' && (
+              <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-paroki-600" /></div>}>
+                <BlogEditor />
+              </Suspense>
+            )}
+
           </div>
         </div>
-      )}
-
-      {/* ═══════════════════════════════════════════════════════════
-          TAB 5: BAZAR (Jadwal & Konfirmasi)
-      ═══════════════════════════════════════════════════════════ */}
-      {activeTab === 'bazar' && businesses.length > 0 && (
-        <BazarSchedule businessId={businesses[0].id} businessName={businesses[0].name} />
-      )}
-
-      {/* ═══════════════════════════════════════════════════════════
-          TAB 6: ARTIKEL (Tulis Blog)
-      ═══════════════════════════════════════════════════════════ */}
-      {activeTab === 'artikel' && <BlogEditor />}
+      </div>
     </div>
   );
 }
