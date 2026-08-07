@@ -7,7 +7,6 @@ const TURNSTILE_SITE_KEY = '0x4AAAAAAEJHcFlPC0c4YqQI';
 const SUPABASE_URL = 'https://vfqcydqmwhfelqizxzbi.supabase.co';
 
 async function verifyTurnstile(token: string): Promise<boolean> {
-  if (!token) return false;
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/verify-turnstile`, {
       method: 'POST',
@@ -21,19 +20,27 @@ async function verifyTurnstile(token: string): Promise<boolean> {
   }
 }
 
+/** If Turnstile is blocked, fall back to rate limiting only. */
+async function checkHuman(token: string, failed: boolean): Promise<boolean> {
+  if (failed) return true;
+  if (!token) return false;
+  return verifyTurnstile(token);
+}
+
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileFailed, setTurnstileFailed] = useState(false);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
     // Bot protection
-    const human = await verifyTurnstile(turnstileToken);
+    const human = await checkHuman(turnstileToken, turnstileFailed);
     if (!human) {
       setError('Verifikasi keamanan gagal. Mohon coba lagi.');
       return;
@@ -108,7 +115,7 @@ export default function ForgotPassword() {
         </div>
       )}
 
-      <Turnstile siteKey={TURNSTILE_SITE_KEY} onToken={setTurnstileToken} />
+      <Turnstile siteKey={TURNSTILE_SITE_KEY} onToken={setTurnstileToken} onTimeout={() => setTurnstileFailed(true)} />
 
       <button
         type="submit"

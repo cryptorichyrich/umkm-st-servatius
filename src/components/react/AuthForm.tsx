@@ -7,9 +7,17 @@ import Turnstile from './Turnstile';
 const TURNSTILE_SITE_KEY = '0x4AAAAAAEJHcFlPC0c4YqQI';
 const SUPABASE_URL = 'https://vfqcydqmwhfelqizxzbi.supabase.co';
 
-/** Verify Turnstile token server-side before proceeding with auth. */
-async function verifyTurnstile(token: string): Promise<boolean> {
+/** Verify Turnstile token server-side before proceeding with auth.
+ *  If Turnstile failed to load (ad blocker, network), skip verification
+ *  and rely on honeypot + rate limiter instead. */
+async function checkHuman(token: string, failed: boolean): Promise<boolean> {
+  if (failed) return true; // Turnstile unavailable — fall back to other protections
   if (!token) return false;
+  return verifyTurnstile(token);
+}
+
+/** Call Cloudflare siteverify via our Edge Function. */
+async function verifyTurnstile(token: string): Promise<boolean> {
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/verify-turnstile`, {
       method: 'POST',
@@ -175,6 +183,7 @@ export default function AuthForm({ mode }: Props) {
   // ── Bot protection ──
   const [turnstileToken, setTurnstileToken] = useState('');
   const [captchaError, setCaptchaError] = useState<string | null>(null);
+  const [turnstileFailed, setTurnstileFailed] = useState(false);
   // Honeypot: bots fill hidden fields, humans never see them
   const [honeypot, setHoneypot] = useState('');
 
@@ -206,8 +215,8 @@ export default function AuthForm({ mode }: Props) {
   const handleEmailLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null); setInfo(null); setCaptchaError(null);
-    // Bot protection: verify Turnstile token server-side
-    const human = await verifyTurnstile(turnstileToken);
+    // Bot protection
+    const human = await checkHuman(turnstileToken, turnstileFailed);
     if (!human) {
       setCaptchaError('Verifikasi keamanan gagal. Mohon coba lagi.');
       return;
@@ -237,7 +246,7 @@ export default function AuthForm({ mode }: Props) {
     e.preventDefault();
     setError(null); setInfo(null); setCaptchaError(null);
     // Bot protection
-    const human = await verifyTurnstile(turnstileToken);
+    const human = await checkHuman(turnstileToken, turnstileFailed);
     if (!human) {
       setCaptchaError('Verifikasi keamanan gagal. Mohon coba lagi.');
       return;
@@ -265,7 +274,7 @@ export default function AuthForm({ mode }: Props) {
     e.preventDefault();
     setError(null); setInfo(null); setCaptchaError(null);
     // Bot protection
-    const human = await verifyTurnstile(turnstileToken);
+    const human = await checkHuman(turnstileToken, turnstileFailed);
     if (!human) {
       setCaptchaError('Verifikasi keamanan gagal. Mohon coba lagi.');
       return;
@@ -308,7 +317,7 @@ export default function AuthForm({ mode }: Props) {
     e?.preventDefault();
     setError(null); setInfo(null); setCaptchaError(null);
     // Bot protection
-    const human = await verifyTurnstile(turnstileToken);
+    const human = await checkHuman(turnstileToken, turnstileFailed);
     if (!human) {
       setCaptchaError('Verifikasi keamanan gagal. Mohon coba lagi.');
       return;
@@ -379,7 +388,7 @@ export default function AuthForm({ mode }: Props) {
     if (honeypot) return;
 
     // Bot protection: verify Turnstile
-    const human = await verifyTurnstile(turnstileToken);
+    const human = await checkHuman(turnstileToken, turnstileFailed);
     if (!human) {
       setCaptchaError('Verifikasi keamanan gagal. Mohon coba lagi.');
       return;
@@ -513,7 +522,7 @@ export default function AuthForm({ mode }: Props) {
                     </div>
                   </div>
                   <ErrorBox />
-                  <Turnstile siteKey={TURNSTILE_SITE_KEY} onToken={setTurnstileToken} />
+                  <Turnstile siteKey={TURNSTILE_SITE_KEY} onToken={setTurnstileToken} onTimeout={() => setTurnstileFailed(true)} />
                   <button type="submit" disabled={loading || lockSecs > 0}
                     className="w-full rounded-lg bg-gold-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-gold-600 disabled:cursor-not-allowed disabled:opacity-60 active:translate-y-px">
                     {loading ? 'Memproses...' : lockSecs > 0 ? 'Terlalu cepat — tunggu...' : 'Masuk'}
@@ -601,7 +610,7 @@ export default function AuthForm({ mode }: Props) {
                   </div>
                 </div>
                 <ErrorBox />
-                <Turnstile siteKey={TURNSTILE_SITE_KEY} onToken={setTurnstileToken} />
+                <Turnstile siteKey={TURNSTILE_SITE_KEY} onToken={setTurnstileToken} onTimeout={() => setTurnstileFailed(true)} />
                 <button type="submit" disabled={loading || lockSecs > 0}
                   className="w-full rounded-lg bg-gold-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-gold-600 disabled:cursor-not-allowed disabled:opacity-60 active:translate-y-px">
                   {loading ? 'Memproses...' : lockSecs > 0 ? 'Terlalu cepat — tunggu...' : 'Masuk'}
@@ -697,7 +706,7 @@ export default function AuthForm({ mode }: Props) {
       </div>
 
       {/* Bot protection */}
-      <Turnstile siteKey={TURNSTILE_SITE_KEY} onToken={setTurnstileToken} />
+      <Turnstile siteKey={TURNSTILE_SITE_KEY} onToken={setTurnstileToken} onTimeout={() => setTurnstileFailed(true)} />
 
       {/* Terms checkbox */}
       <label className="flex items-start gap-2.5">
