@@ -31,6 +31,16 @@ async function verifyTurnstile(token: string): Promise<boolean> {
   }
 }
 
+/** Log security events to Supabase (fire-and-forget). */
+function logSecurity(eventType: string, identifier: string, success: boolean, details?: Record<string, unknown>) {
+  supabase.rpc('log_security_event', {
+    p_event_type: eventType,
+    p_identifier: identifier,
+    p_success: success,
+    p_details: details || {},
+  }).catch(() => {});
+}
+
 interface Props {
   mode: 'login' | 'register';
 }
@@ -219,6 +229,7 @@ export default function AuthForm({ mode }: Props) {
     const human = await checkHuman(turnstileToken, turnstileFailed);
     if (!human) {
       setCaptchaError('Verifikasi keamanan gagal. Mohon coba lagi.');
+      logSecurity('turnstile_blocked', email.toLowerCase().trim(), false);
       return;
     }
     const id = email.toLowerCase().trim();
@@ -226,6 +237,7 @@ export default function AuthForm({ mode }: Props) {
     if (lock.locked) {
       setError(formatLockMsg(lock.secs));
       setLockSecs(lock.secs);
+      logSecurity('login_rate_limited', id, false);
       return;
     }
     setLoading(true);
@@ -233,9 +245,11 @@ export default function AuthForm({ mode }: Props) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       clearFail(id);
+      logSecurity('login_success', id, true, { method: 'email' });
       window.location.href = '/dashboard';
     } catch (err) {
       const { lockSecs: ls, triesLeft } = recordFail(id);
+      logSecurity('login_failed', id, false, { method: 'email', triesLeft });
       if (ls > 0) { setError(formatLockMsg(ls)); setLockSecs(ls); }
       else { setError(`Email atau kata sandi salah. Sisa percobaan: ${triesLeft}.`); }
     } finally { setLoading(false); }
@@ -264,8 +278,10 @@ export default function AuthForm({ mode }: Props) {
       if (error) throw error;
       setMagicLinkSent(true);
       setInfo(`✓ Tautan magic link telah dikirim ke ${email}. Klik tautan di email untuk masuk.`);
+      logSecurity('magic_link_sent', email.toLowerCase().trim(), true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal mengirim magic link.');
+      logSecurity('magic_link_failed', email.toLowerCase().trim(), false);
     } finally { setLoading(false); }
   };
 
@@ -299,10 +315,12 @@ export default function AuthForm({ mode }: Props) {
       });
       if (error) throw error;
       clearFail(normalized);
+      logSecurity('login_success', normalized, true, { method: 'phone' });
       window.location.href = '/dashboard';
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Gagal masuk.';
       const { lockSecs: ls, triesLeft } = recordFail(normalized);
+      logSecurity('login_failed', normalized, false, { method: 'phone', triesLeft });
       if (ls > 0) { setError(formatLockMsg(ls)); setLockSecs(ls); }
       else if (msg.includes('Invalid login') || msg.includes('credentials')) {
         setError(`Nomor HP atau kata sandi salah. Sisa percobaan: ${triesLeft}.`);
@@ -344,9 +362,11 @@ export default function AuthForm({ mode }: Props) {
       setWaSent(true);
       setInfo(`Kode OTP telah dikirim ke ${normalized}`);
       startResendTimer();
+      logSecurity('otp_sent', normalized, true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Gagal mengirim kode.';
       const { lockSecs: ls } = recordFail('otp:' + normalized);
+      logSecurity('otp_failed', normalized, false);
       if (ls > 0) { setError(formatLockMsg(ls)); setLockSecs(ls); }
       else { setError(msg); }
       setWaSent(false);
@@ -371,9 +391,11 @@ export default function AuthForm({ mode }: Props) {
       });
       if (verifyError) throw verifyError;
       clearFail('otp:' + normalized);
+      logSecurity('login_success', normalized, true, { method: 'otp' });
       window.location.href = '/dashboard';
     } catch (err) {
       const { lockSecs: ls, triesLeft } = recordFail('otp:' + normalized);
+      logSecurity('otp_verify_failed', normalized, false, { triesLeft });
       if (ls > 0) { setError(formatLockMsg(ls)); setLockSecs(ls); }
       else { setError(`Kode salah atau kedaluwarsa. Sisa percobaan: ${triesLeft}.`); }
     } finally { setLoading(false); }
@@ -385,7 +407,10 @@ export default function AuthForm({ mode }: Props) {
     setError(null); setInfo(null); setCaptchaError(null);
 
     // Honeypot: if filled, silently reject (bot caught)
-    if (honeypot) return;
+    if (honeypot) {
+      logSecurity('honeypot_triggered', email.toLowerCase().trim(), false);
+      return;
+    }
 
     // Bot protection: verify Turnstile
     const human = await checkHuman(turnstileToken, turnstileFailed);
@@ -430,9 +455,11 @@ export default function AuthForm({ mode }: Props) {
         });
       }
       recordReg();
+      logSecurity('register_success', email.toLowerCase().trim(), true);
       window.location.href = '/dashboard';
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Terjadi kesalahan. Silakan coba lagi.');
+      logSecurity('register_failed', email.toLowerCase().trim(), false);
     } finally { setLoading(false); }
   };
 

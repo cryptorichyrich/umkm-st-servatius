@@ -27,6 +27,16 @@ async function checkHuman(token: string, failed: boolean): Promise<boolean> {
   return verifyTurnstile(token);
 }
 
+/** Log security events (fire-and-forget). */
+function logSecurity(eventType: string, identifier: string, success: boolean, details?: Record<string, unknown>) {
+  supabase.rpc('log_security_event', {
+    p_event_type: eventType,
+    p_identifier: identifier,
+    p_success: success,
+    p_details: details || {},
+  }).catch(() => {});
+}
+
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -54,9 +64,11 @@ export default function ForgotPassword() {
       });
       if (error) throw error;
       setSent(true);
+      logSecurity('password_reset_sent', email.toLowerCase().trim(), true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Terjadi kesalahan.';
       setError(msg);
+      logSecurity('password_reset_failed', email.toLowerCase().trim(), false);
     } finally {
       setLoading(false);
     }
