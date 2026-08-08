@@ -281,6 +281,9 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
   const isVerifiedStatus = profile?.verification_status === 'verified';
   const canAddBusiness = isAdmin || (isVerifiedStatus && (profile?.verification_type === 'member' || profile?.verification_type === 'umkm'));
 
+  // Selected business for bazar tab (multi-UMKM support)
+  const [selectedBazarBizId, setSelectedBazarBizId] = useState<string | null>(null);
+
   const approvedCount = businesses.filter(b => b.status === 'approved').length;
   const pendingCount = businesses.filter(b => b.status === 'pending').length;
 
@@ -788,7 +791,28 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
             {/* ═══ TAB 5: BAZAR ═══ */}
             {activeTab === 'bazar' && businesses.length > 0 && (
               <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-paroki-600" /></div>}>
-                <BazarSchedule businessId={businesses[0].id} businessName={businesses[0].name} />
+                {businesses.length > 1 && (
+                  <div className="mb-4 flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
+                    <Store className="h-5 w-5 shrink-0 text-paroki-500" />
+                    <div className="flex-1">
+                      <label className="mb-1 block text-xs font-semibold text-gray-500">Pilih Usaha untuk Bazar</label>
+                      <select
+                        value={selectedBazarBizId ?? businesses[0].id}
+                        onChange={(e) => setSelectedBazarBizId(e.target.value)}
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-ink outline-none focus:border-paroki-400 focus:ring-2 focus:ring-paroki-100"
+                      >
+                        {businesses.map((b) => (
+                          <option key={b.id} value={b.id}>{b.name}{b.status !== 'approved' ? ' (belum disetujui)' : ''}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+                <BazarSchedule
+                  key={selectedBazarBizId ?? businesses[0].id}
+                  businessId={selectedBazarBizId ?? businesses[0].id}
+                  businessName={businesses.find(b => b.id === (selectedBazarBizId ?? businesses[0].id))?.name ?? ''}
+                />
               </Suspense>
             )}
 
