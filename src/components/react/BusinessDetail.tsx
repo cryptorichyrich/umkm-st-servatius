@@ -441,6 +441,51 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
         </div>
       )}
 
+      {/* Sertifikasi & Legalitas */}
+      {(business.has_nib || business.has_pirt || business.has_halal || business.omset_range) && (
+        <div className="mb-6">
+          <h2 className="mb-3 font-display text-lg font-bold text-ink">Sertifikasi & Legalitas</h2>
+          <div className="flex flex-wrap gap-2.5">
+            {business.has_nib && (
+              <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3.5 py-2.5" title="Nomor Induk Berusaha — terdaftar resmi di sistem pemerintah">
+                <svg className="h-5 w-5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>
+                  <div className="text-sm font-bold text-green-800">NIB</div>
+                  <div className="text-[10px] text-green-600">Terdaftar Resmi</div>
+                </div>
+              </div>
+            )}
+            {business.has_pirt && (
+              <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-2.5" title="Pangan Industri Rumah Tangga — bersertifikat standan pangan">
+                <svg className="h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>
+                  <div className="text-sm font-bold text-blue-800">PIRT</div>
+                  <div className="text-[10px] text-blue-600">Standar Pangan</div>
+                </div>
+              </div>
+            )}
+            {business.has_halal && (
+              <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2.5" title="Bersertifikat Halal">
+                <svg className="h-5 w-5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>
+                  <div className="text-sm font-bold text-emerald-800">Halal</div>
+                  <div className="text-[10px] text-emerald-600">Bersertifikat</div>
+                </div>
+              </div>
+            )}
+            {business.omset_range && (
+              <div className="flex items-center gap-2 rounded-lg border border-gold-200 bg-gold-50 px-3.5 py-2.5" title="Kisaran omset tahunan">
+                <svg className="h-5 w-5 text-gold-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>
+                  <div className="text-sm font-bold text-gold-800">Omset</div>
+                  <div className="text-[10px] text-gold-600">{business.omset_range}</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-lg border border-gray-200 bg-white p-5">
           <h3 className="mb-3 flex items-center gap-2 font-display font-bold text-ink"><Phone className="h-4 w-4 text-gray-400" />Kontak</h3>
