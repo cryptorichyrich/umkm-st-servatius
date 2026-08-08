@@ -49,11 +49,11 @@ function StatusBadge({ status }: { status: BusinessStatus }) {
 // Verification badge
 // ─────────────────────────────────────────────
 function VerificationBadge({ type, status, role }: { type: string; status: string; role?: string }) {
-  if (role === 'admin') {
+  if (role === 'admin' || role === 'verifier') {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-gold-100 px-2.5 py-0.5 text-xs font-semibold text-gold-800 ring-1 ring-gold-300">
         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5L18.2 22 12 17.5 5.8 22l2.4-8.1L2 9.4h7.6z"/></svg>
-        Admin
+        {role === 'verifier' ? 'Verifier' : 'Admin'}
       </span>
     );
   }
@@ -277,6 +277,7 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
   }, []);
 
   const isAdmin = profile?.role === 'admin';
+  const canAccessAdmin = isAdmin || profile?.role === 'verifier';
   const isVerifiedStatus = profile?.verification_status === 'verified';
   const canAddBusiness = isAdmin || (isVerifiedStatus && (profile?.verification_type === 'member' || profile?.verification_type === 'umkm'));
 
@@ -395,10 +396,10 @@ export default function DashboardApp({ initialTab = 'usaha' }: DashboardAppProps
 
         {/* Footer */}
         <div className="space-y-1 border-t border-white/10 px-3 py-3">
-          {isAdmin && (
+          {canAccessAdmin && (
             <a href="/admin" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-gold-300 transition hover:bg-white/5 hover:text-gold-200">
               <ShieldCheck className="h-4 w-4" />
-              Admin Panel
+              {profile?.role === 'verifier' ? 'Panel Verifikasi' : 'Admin Panel'}
             </a>
           )}
           <a href="/" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs text-paroki-300 transition hover:bg-white/5 hover:text-white">

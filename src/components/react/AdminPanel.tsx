@@ -86,7 +86,7 @@ interface UserProfile {
   full_name: string | null;
   email: string | null;
   phone: string | null;
-  role: 'owner' | 'member' | 'admin' | null;
+  role: 'owner' | 'member' | 'admin' | 'verifier' | null;
   verification_status: 'unverified' | 'pending' | 'verified' | 'rejected' | null;
   verification_type: string | null;
   verified_at: string | null;
@@ -399,6 +399,8 @@ export default function AdminPanel() {
   // ── Auth / loading ──
   const [authState, setAuthState] = useState<'loading' | 'denied' | 'ok'>('loading');
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<'admin' | 'verifier' | null>(null);
+  const isVerifierOnly = userRole === 'verifier';
 
   // ── URL-based tab routing ──
   const [activeTab, setActiveTab] = useState<TabKey>(getTabFromURL());
@@ -642,19 +644,20 @@ export default function AdminPanel() {
           return;
         }
 
-        // Verify admin role
+        // Verify admin or verifier role
         const { data: profile, error: profileErr } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', session.user.id)
           .single();
 
-        if (profileErr || !profile || profile.role !== 'admin') {
+        if (profileErr || !profile || (profile.role !== 'admin' && profile.role !== 'verifier')) {
           setAuthState('denied');
           setLoading(false);
           return;
         }
 
+        setUserRole(profile.role as 'admin' | 'verifier');
         setAuthState('ok');
 
         // Load all data
@@ -1551,7 +1554,7 @@ export default function AdminPanel() {
   // ───────────────────────────────────────────
   // Tab navigation config
   // ───────────────────────────────────────────
-  const tabs: {
+  const allTabs: {
     key: TabKey;
     label: string;
     icon: React.ComponentType<{ className?: string }>;
@@ -1572,6 +1575,12 @@ export default function AdminPanel() {
     { key: 'keamanan', label: 'Log Keamanan', icon: Shield },
     { key: 'email', label: 'Email', icon: Mail },
   ];
+
+  // Verifier-only role sees just the verification tab
+  const verifierTabs = ['verifikasi'] as const;
+  const tabs = isVerifierOnly
+    ? allTabs.filter(t => (verifierTabs as readonly string[]).includes(t.key))
+    : allTabs;
 
   // ───────────────────────────────────────────
   // Render: Loading
@@ -1625,7 +1634,7 @@ export default function AdminPanel() {
     { title: 'Data', items: tabs.filter(t => ['listing', 'kategori', 'wilayah', 'users', 'reviews'].includes(t.key)) },
     { title: 'Konten', items: tabs.filter(t => ['bazar', 'berita', 'moderasi-blog'].includes(t.key)) },
     { title: 'Sistem', items: tabs.filter(t => ['log', 'keamanan', 'email'].includes(t.key)) },
-  ];
+  ].filter(g => g.items.length > 0);
 
   return (
     <div className="flex min-h-screen bg-[#f8f9fa]">
