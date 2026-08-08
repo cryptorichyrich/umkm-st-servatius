@@ -792,17 +792,27 @@ export default function BusinessDetail({ slug: propSlug }: Props) {
                     {/* Owner reply form */}
                     {replyingTo === rev.id && (
                       <div className="mt-3 rounded-lg border border-paroki-200 bg-paroki-50/50 p-3">
+                        {/* Professional reply guideline */}
+                        <div className="mb-2.5 flex gap-2 rounded-md bg-gold-50 border border-gold-200 px-3 py-2">
+                          <svg className="h-4 w-4 shrink-0 text-gold-600 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                          <p className="text-[11px] leading-relaxed text-gold-800">
+                            <span className="font-semibold">Tanggapan Anda mencerminkan reputasi usaha.</span> Balaslah dengan sopan, profesional, dan bersifat konstruktif. Hindari kata-kata yang menyinggung atau bersifat pembelaan diri.
+                          </p>
+                        </div>
                         <textarea
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}
-                          rows={2}
+                          rows={3}
                           maxLength={500}
-                          placeholder="Tulis balasan untuk ulasan ini..."
+                          placeholder="Contoh: Terima kasih atas ulasan Anda. Kami senang mendengar pengalaman Anda dan akan terus meningkatkan pelayanan kami."
                           className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-ink outline-none focus:border-paroki-400 focus:ring-2 focus:ring-paroki-100"
                         />
-                        <div className="mt-2 flex gap-2">
-                          <button onClick={() => handleOwnerReply(rev.id)} disabled={!replyText.trim()} className="rounded-lg bg-paroki-600 px-4 py-1.5 text-xs font-bold text-white transition hover:bg-paroki-700 disabled:opacity-50">Kirim Balasan</button>
-                          <button onClick={() => { setReplyingTo(null); setReplyText(''); }} className="rounded-lg border border-gray-200 px-4 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">Batal</button>
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                          <span className="text-[10px] text-gray-400">{replyText.length}/500</span>
+                          <div className="flex gap-2">
+                            <button onClick={() => { setReplyingTo(null); setReplyText(''); }} className="rounded-lg border border-gray-200 px-4 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">Batal</button>
+                            <button onClick={() => handleOwnerReply(rev.id)} disabled={!replyText.trim()} className="rounded-lg bg-paroki-600 px-4 py-1.5 text-xs font-bold text-white transition hover:bg-paroki-700 disabled:opacity-50">Kirim Balasan</button>
+                          </div>
                         </div>
                       </div>
                     )}
